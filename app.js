@@ -23,6 +23,53 @@ const QUA = { 1: { label: '普通', star: 1 }, 2: { label: '美味', star: 2 }, 
 const BAG_CAP = 40;        // 背包固定 40 格
 const WAREHOUSE_CAP = 60;  // 仓库默认 60 格（一期只读，扩容逻辑二期）
 
+/* ---------- 技能 / 境界 静态定义（与主站一致，二期 v7/v8） ---------- */
+const SKILL_MAX = 10;
+const SKILL_DEFS = {
+  '陶笛':   { group: 'interest', desc: '吹奏陶笛，怡情养性、安神定志' },
+  '围棋':   { group: 'interest', desc: '黑白对弈，锻炼逻辑与大局观' },
+  '画画':   { group: 'interest', desc: '笔墨丹青，记录眼中的世界' },
+  'PS':     { group: 'interest', desc: '图像后期，修图与设计表达' },
+  'Python': { group: 'pro',      desc: '编程生产力，自动化与数据分析' },
+  '广联达': { group: 'pro',      desc: '造价算量，专业硬核技能' },
+  'Office': { group: 'office',   desc: '办公三件套，职场基本功' }
+};
+const SKILL_GROUPS = [
+  { key: 'pro',      label: '专业技能' },
+  { key: 'interest', label: '兴趣爱好' },
+  { key: 'office',   label: '办公技能' }
+];
+function skillCost(lv) { return lv <= 3 ? 20 : (lv <= 6 ? 40 : 60); } // Lv0-3:20 / 4-6:40 / 7-9:60
+function skillTotalLevel() {
+  const s = player().skills || {};
+  return Object.keys(SKILL_DEFS).reduce((sum, k) => sum + (Number(s[k]) || 0), 0);
+}
+const REALM_DEFS = {
+  '炼体法': { group:'body', story:'以八段锦为基，淬炼筋骨气血，乃修行之根。', effect:'每参悟一层，每日副本「运动打卡」愿力产出 +5%。', baseCost:50, costStep:30, maxLayer:9, minDungeons:0,
+    layers:['散炼境','凝筋境','易骨境','锻脏境','换血境','通脉境','洗髓境','伐毛境','大圆满'] },
+  '万卷书': { group:'mind', story:'读万卷书，明事理、开智慧。', effect:'每参悟一层，每日副本「写日记 / 学英语」愿力产出 +5%。', baseCost:50, costStep:30, maxLayer:9, minDungeons:0,
+    layers:['百卷境','三百卷','五百卷','八百卷','千卷境','千五卷','两千卷','三千卷','大圆满'] },
+  '万里路': { group:'mind', story:'行万里路，见天地、阔眼界。', effect:'参悟圆满可提升心魔抵抗。', baseCost:50, costStep:30, maxLayer:9, minDungeons:2,
+    layers:['初行境','百里境','千里境','万里境','遍历境','通达境','洞明境','无界境','大圆满'] },
+  '功德法': { group:'heart', story:'渡人渡己，积功德于无形。', effect:'参悟圆满可提升魅魔抵抗。', baseCost:50, costStep:30, maxLayer:9, minDungeons:3,
+    layers:['初善境','行善境','积善境','圆满境','广济境','普度境','无量境','慈悲境','大圆满'] },
+  '千面法': { group:'heart', story:'理智与感性并存，千人千面。', effect:'每参悟一层，每日全副本愿力产出 +3%。', baseCost:50, costStep:30, maxLayer:9, minDungeons:4,
+    layers:['初面境','双面境','多面境','洞悉境','无相境','随心境','通明境','自在境','大圆满'] }
+};
+function realmCost(def, layer) { return def.baseCost + def.costStep * layer; }
+function realmLayer(key) {
+  const v = (player().realms || {})[key];
+  if (typeof v === 'number') return v;
+  const m = String(v || '').match(/第(\d+)层/);
+  return m ? parseInt(m[1], 10) : 0;
+}
+function realmTotalLayers() { return Object.keys(REALM_DEFS).reduce((s, k) => s + realmLayer(k), 0); }
+function realmMaxTotal() { return Object.keys(REALM_DEFS).reduce((s, k) => s + REALM_DEFS[k].maxLayer, 0); }
+function realmUnlocked(def) {
+  if (!def.minDungeons) return true;
+  return DAILY_DUNGEONS.filter(d => dungeonDone(d.id)).length >= def.minDungeons;
+}
+
 let DATA = null;
 
 /* ---------- 工具 ---------- */
@@ -494,20 +541,143 @@ function renderBag() { return renderBagHtml(); }
 
 function renderSkill() {
   const sk = player().skills || {};
-  const keys = Object.keys(sk);
-  if (!keys.length) return renderPlaceholder('技能', '暂无技能数据（player.skills 为空）。');
-  const cards = keys.map(k => `<div class="card"><span class="tag">技能</span><h3>${esc(k)}</h3>
-    <div class="meta">${esc(typeof sk[k] === 'object' ? JSON.stringify(sk[k]) : sk[k])}</div></div>`).join('');
-  return `<div class="section-title">⚔️ 技能 · ${keys.length}</div><div class="cards">${cards}</div>`;
+  const total = skillTotalLevel();
+  const wp = num(player().willpower, 0);
+  const groupsHtml = SKILL_GROUPS.map(g => {
+    const cards = Object.keys(SKILL_DEFS).filter(k => SKILL_DEFS[k].group === g.key).map(k => {
+      const lv = Number(sk[k]) || 0;
+      const maxed = lv >= SKILL_MAX;
+      const cost = skillCost(lv);
+      const can = !maxed && wp >= cost;
+      const pct = Math.round(lv / SKILL_MAX * 100);
+      return `<div class="card skill-card">
+        <span class="tag">${esc(g.label)}</span>
+        <h3>${esc(k)}</h3>
+        <div class="meta">Lv.${lv} / ${SKILL_MAX}</div>
+        <div class="bar"><i style="width:${pct}%"></i></div>
+        <div class="skill-desc">${esc(SKILL_DEFS[k].desc)}</div>
+        <button class="btn primary sm skill-cult-btn" ${can ? '' : 'disabled'} onclick="cultivateSkill('${k}')">${maxed ? '已满级' : ('修炼（耗 ' + cost + ' 愿力）')}</button>
+      </div>`;
+    }).join('');
+    return `<div class="skill-group-title">${esc(g.label)}</div><div class="cards">${cards}</div>`;
+  }).join('');
+  return `<div class="section-title">⚔️ 技能修炼台 <span class="game-tag">消耗愿力点升级</span></div>
+    <div class="skill-total">总技能等级 <b>${total}</b> / ${Object.keys(SKILL_DEFS).length * SKILL_MAX}　·　愿力 <b>${wp}</b></div>
+    ${groupsHtml}
+    <div class="meta" style="margin-top:12px">修炼消耗愿力点（真实生活攒来的经验货币）。满级 Lv.${SKILL_MAX}；Lv0-3 耗20 / 4-6 耗40 / 7-9 耗60。</div>`;
+}
+async function cultivateSkill(name) {
+  const p = player();
+  const wp = num(p.willpower, 0);
+  const skills = Object.assign({}, p.skills || {});
+  const lv = Number(skills[name]) || 0;
+  if (lv >= SKILL_MAX) { toast(name + ' 已满级', ''); return; }
+  const cost = skillCost(lv);
+  if (wp < cost) { toast('愿力点不足，需 ' + cost + ' 点', 'warn'); return; }
+  try {
+    const j = await fetch('/api/reward', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ willpower: -cost, source: '技能修炼', text: name }) });
+    const r = await j.json();
+    if (!r.ok) { toast('修炼失败：' + (r.error || ''), 'warn'); return; }
+    skills[name] = lv + 1;
+    const newP = r.player || {};
+    const j2 = await (await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { skills: JSON.stringify(skills), willpower: newP.willpower, starwish: newP.starwish, contract: newP.contract, level: newP.level } }) })).json();
+    if (j2.ok && j2.player) DATA.player = j2.player;
+    else { DATA.player.skills = skills; if (newP.willpower != null) DATA.player.willpower = newP.willpower; }
+    renderResbar(); renderMain('skill');
+    if (skills[name] >= SKILL_MAX) skillAchievePopup(name, skills[name]);
+    else toast('🎉 ' + name + ' 升级至 Lv.' + skills[name], 'good');
+  } catch (e) { toast('修炼失败：' + e.message, 'warn'); }
+}
+function skillAchievePopup(name, lv) {
+  const el = document.createElement('div');
+  el.className = 'levelup-pop skill-achieve';
+  el.innerHTML = '<div class="lu-badge">🏆 技能圆满！</div><div class="lu-sub">' + esc(name) + ' 已达 Lv.' + lv + '</div>';
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => el.classList.remove('show'), 2600);
+  setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 3100);
 }
 
 function renderRealm() {
   const rm = player().realms || {};
-  const keys = Object.keys(rm);
-  if (!keys.length) return renderPlaceholder('境界', '暂无境界数据（player.realms 为空）。');
-  const cards = keys.map(k => `<div class="card"><span class="tag">境界</span><h3>${esc(k)}</h3>
-    <div class="meta">${esc(typeof rm[k] === 'object' ? JSON.stringify(rm[k]) : rm[k])}</div></div>`).join('');
-  return `<div class="section-title">🌟 境界 · ${keys.length}</div><div class="cards">${cards}</div>`;
+  const totalLayer = realmTotalLayers(), maxLayer = realmMaxTotal();
+  const doneCount = DAILY_DUNGEONS.filter(d => dungeonDone(d.id)).length;
+  const cards = Object.keys(REALM_DEFS).map(k => {
+    const def = REALM_DEFS[k];
+    const layer = realmLayer(k);
+    const maxed = layer >= def.maxLayer;
+    const unlocked = realmUnlocked(def);
+    const cls = 'card realm-card' + (maxed ? ' maxed' : '') + (unlocked ? '' : ' locked');
+    const stage = def.layers[Math.min(layer, def.layers.length - 1)];
+    const seg = unlocked ? '' : '<div class="realm-lock">🔒 需完成 ' + def.minDungeons + ' 个每日秘境</div>';
+    return `<div class="${cls}">
+      ${seg}
+      <div class="dc-head"><div><span class="tag">${esc(def.group)}</span><h3>${esc(k)}</h3></div></div>
+      <div class="meta">${maxed ? '已圆满' : ('第' + layer + '/' + def.maxLayer + '层')} · ${esc(stage)}</div>
+      <div class="meta">${esc(def.effect)}</div>
+      ${unlocked ? '<button class="btn primary sm realm-cult-btn" ' + (maxed ? 'disabled' : '') + ' onclick="openRealm(\'' + k + '\')">' + (maxed ? '此境界已圆满' : '参悟一层') + '</button>' : ''}
+    </div>`;
+  }).join('');
+  return `<div class="section-title">🌟 境界参悟 <span class="game-tag">点击参悟</span></div>
+    <div class="realm-total">总参悟层数 <b>${totalLayer}</b> / ${maxLayer}　·　今日已通秘境 <b>${doneCount}/${DAILY_DUNGEONS.length}</b></div>
+    <div class="cards">${cards}</div>
+    <div class="meta" style="margin-top:12px">点击境界卡参悟一层，消耗愿力点；满层显示「此境界已圆满」。高阶境界需先完成一定数量的每日秘境（炼体法/万卷书联动见卡片效果）。</div>`;
+}
+function openRealm(key) {
+  const def = REALM_DEFS[key];
+  if (!def) return;
+  const layer = realmLayer(key);
+  const maxed = layer >= def.maxLayer;
+  const unlocked = realmUnlocked(def);
+  const cost = realmCost(def, layer);
+  const layerList = def.layers.map((nm, i) => {
+    const done = i < layer;
+    const cur = (i === layer) && !maxed;
+    const cls = (done || cur) ? ' cur' : ' locked-layer';
+    const mark = done ? '✓' : (cur ? '◀ 当前' : '未达');
+    return '<div class="realm-detail-layer' + cls + '"><span>' + (i + 1) + '. ' + esc(nm) + '</span><span>' + mark + '</span></div>';
+  }).join('');
+  let foot;
+  if (!unlocked) foot = '<button class="realm-cult-btn" disabled style="opacity:.6">🔒 需先完成 ' + def.minDungeons + ' 个每日秘境</button>';
+  else if (maxed) foot = '<button class="realm-cult-btn" disabled>此境界已圆满</button>';
+  else foot = '<button class="realm-cult-btn" onclick="cultivateRealm(\'' + key + '\')">参悟一层（耗 ' + cost + ' 愿力）</button>';
+  const box = document.createElement('div');
+  box.className = 'realm-modal';
+  box.innerHTML = '<div class="realm-modal-box"><h3>🌟 ' + esc(key) + '</h3>' +
+    '<p>' + esc(def.story) + '</p>' +
+    '<div class="realm-card-effect" style="margin-bottom:8px"><b>境界效果：</b>' + esc(def.effect) + '</div>' +
+    '<div style="font-size:13px;font-weight:600;margin:6px 0 4px">参悟阶段（' + layer + '/' + def.maxLayer + '）</div>' +
+    layerList + foot +
+    '<button class="btn" style="margin-top:8px;background:var(--bg);color:var(--text-secondary)" onclick="closeRealm()">关闭</button></div>';
+  box.onclick = (e) => { if (e.target === box) box.remove(); };
+  document.body.appendChild(box);
+}
+function closeRealm() { document.querySelectorAll('.realm-modal').forEach(m => m.remove()); }
+async function cultivateRealm(key) {
+  const def = REALM_DEFS[key];
+  if (!def) return;
+  if (!realmUnlocked(def)) { toast('该境界尚未解锁', 'warn'); return; }
+  const p = player();
+  const wp = num(p.willpower, 0);
+  const layer = realmLayer(key);
+  if (layer >= def.maxLayer) { toast(key + ' 已圆满', ''); return; }
+  const cost = realmCost(def, layer);
+  if (wp < cost) { toast('愿力点不足，需 ' + cost + ' 点', 'warn'); return; }
+  const realms = Object.assign({}, p.realms || {});
+  const newLayer = layer + 1;
+  realms[key] = newLayer;
+  try {
+    const j = await fetch('/api/reward', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ willpower: -cost, source: '境界参悟', text: key }) });
+    const r = await j.json();
+    if (!r.ok) { toast('参悟失败：' + (r.error || ''), 'warn'); return; }
+    const newP = r.player || {};
+    const j2 = await (await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { realms: JSON.stringify(realms), willpower: newP.willpower, starwish: newP.starwish, contract: newP.contract, level: newP.level } }) })).json();
+    if (j2.ok && j2.player) DATA.player = j2.player;
+    else { DATA.player.realms = realms; if (newP.willpower != null) DATA.player.willpower = newP.willpower; }
+    closeRealm(); renderResbar(); renderMain('realm');
+    if (newLayer >= def.maxLayer) toast('🏆 ' + key + ' 已圆满！', 'good');
+    else toast('🎉 ' + key + ' 参悟至第 ' + newLayer + ' 层', 'good');
+  } catch (e) { toast('参悟失败：' + e.message, 'warn'); }
 }
 
 function renderSuccubus() {
