@@ -45,6 +45,33 @@
     </div>
   </div>
 </div>
+<div class="modal" id="bagAddModal">
+  <div class="modal-card">
+    <div class="modal-title">➕ 添加物品到背包/仓库</div>
+    <form class="form" id="bagAddForm">
+      <label>名称</label>
+      <input class="input" id="bagAddName" placeholder="如 鸡蛋 / 凉拌黄瓜">
+      <label>类型</label>
+      <select class="input" id="bagAddType">
+        <option value="ingredient">🥬 食材</option>
+        <option value="dish">🍲 料理</option>
+        <option value="item">🔮 道具</option>
+      </select>
+      <label>数量</label>
+      <input class="input" id="bagAddQty" type="number" min="1" value="1">
+      <label>位置</label>
+      <select class="input" id="bagAddLoc">
+        <option value="bag">🎒 背包</option>
+        <option value="warehouse">📦 仓库</option>
+        <option value="fridge">🧊 冰箱区</option>
+      </select>
+    </form>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeBagAddModal()">取消</button>
+      <button class="btn primary" onclick="saveBagAdd()">➕ 添加</button>
+    </div>
+  </div>
+</div>
 <div class="toast-wrap" id="toastWrap"></div>
 <div class="loading" id="loading">正在连接修行数据…</div>
 <script src="/game/app.js"></script>

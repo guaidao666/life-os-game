@@ -122,7 +122,7 @@ function renderDashboard() {
     <div class="card"><span class="tag">🍳 烹饪</span><h3>已习得 ${got}/${recipes.length}</h3>
       <div class="meta">菜谱库总 ${recipes.length} 道</div></div>
     <div class="card"><span class="tag">🎒 背包仓库</span><h3>背包 ${bag}/${BAG_CAP}</h3>
-      <div class="meta">仓库 ${wh}/${WAREHOUSE_CAP} 格</div></div>
+      <div class="meta">仓库 ${wh}/${getWhCap()} 格</div></div>
     <div class="card"><span class="tag">🔮 命愿祈铺</span><h3>LP ${num(p.lucky, 0)} → DP ${num(p.destiny, 0)}</h3>
       <div class="meta">凝结比例 10 LP = 1 DP</div></div>
   </div>`;
@@ -245,23 +245,126 @@ function toast(msg, kind) {
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 2400);
 }
 
-function renderBag() {
-  const items = inv();
-  const bag = items.filter(i => i.location === 'bag');
-  const wh = items.filter(i => i.location === 'warehouse');
-  const fridge = wh.filter(i => i.zone === 'fridge');
-  const whOther = wh.filter(i => i.zone !== 'fridge');
-  function list(arr) {
-    if (!arr.length) return '<div class="meta">（空）</div>';
-    return arr.map(i => `<div class="kv"><span>${esc(i.name)}</span><b>×${num(i.qty, 1)}</b></div>`).join('');
-  }
-  return `<div class="section-title">🎒 背包仓库</div>
-  <div class="cards">
-    <div class="card"><span class="tag">背包 ${bag.length}/${BAG_CAP}</span><h3>随身 ${bag.length} 件</h3>${list(bag)}</div>
-    <div class="card"><span class="tag">仓库 ${wh.length}/${WAREHOUSE_CAP}</span><h3>仓储 ${whOther.length} 件</h3>${list(whOther)}</div>
-    <div class="card"><span class="tag">🧊 冰箱区</span><h3>${fridge.length} 件</h3>${list(fridge)}</div>
-  </div>`;
+/* ---------- 背包仓库交互（接 /api/inventory） ---------- */
+let bagView = 'bag';     // 'bag' | 'warehouse'
+let bagSub = 'all';      // 'all' | 'fridge'（仅 warehouse 下）
+function invIcon_(type) { return type === 'ingredient' ? '🥬' : (type === 'dish' ? '🍲' : (type === 'item' ? '🔮' : '📦')); }
+const RARITY_INFO = { 1:{label:'普通',c:'#9aa0a6'}, 2:{label:'良好',c:'#73b888'}, 3:{label:'稀有',c:'#5b8def'}, 4:{label:'史诗',c:'#a855f7'}, 5:{label:'传说',c:'#c9a227'} };
+function getWhCap() {
+  const m = inv().find(x => x.item_type === 'meta' && x.item_key === 'warehouseCap');
+  return m ? (Number(m.qty) || 60) : 60;
 }
+async function invUpsert(item) {
+  item = Object.assign({ item_type:'ingredient', item_key:(item.name||'item')+'', name:item.name||'物品', qty:1, rarity:3, location:'bag', zone:null }, item);
+  try {
+    const j = await fetch('/api/inventory', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'upsert', item }) });
+    const r = await j.json();
+    if (r.ok && r.inventory) DATA.player.inventory = r.inventory;
+    else throw new Error('no inventory');
+  } catch (e) { toast('背包更新失败：' + e.message, 'warn'); }
+}
+async function invSet(arr) {
+  try {
+    const j = await fetch('/api/inventory', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'set', inventory: arr }) });
+    const r = await j.json();
+    if (r.ok && r.inventory) { DATA.player.inventory = r.inventory; return r.inventory; }
+    throw new Error('no inventory');
+  } catch (e) { toast('背包保存失败：' + e.message, 'warn'); return null; }
+}
+async function moveInvItem(type, key, fromLoc, fromZone, toLoc, toZone) {
+  let arr = inv().slice();
+  const idx = arr.findIndex(x => x.item_type === type && String(x.item_key) === String(key) && (x.location||'bag') === fromLoc && (x.zone||null) === fromZone);
+  if (idx < 0) return;
+  const it = arr[idx];
+  const tIdx = arr.findIndex(x => x !== it && x.item_type === it.item_type && String(x.item_key) === String(it.item_key) && (x.location||'bag') === toLoc && (x.zone||null) === toZone);
+  if (tIdx >= 0) { arr[tIdx].qty = (Number(arr[tIdx].qty)||0) + (Number(it.qty)||0); arr.splice(idx,1); }
+  else arr[idx] = Object.assign({}, it, { location: toLoc, zone: toZone, ts: new Date().toISOString() });
+  const res = await invSet(arr);
+  if (res) { renderBag(); toast('已' + (toLoc === 'bag' ? '取出背包' : '存入仓库'), ''); }
+}
+async function delInvItem(type, key, loc, zone) {
+  if (!confirm('确定丢弃该物品？此操作不可恢复。')) return;
+  let arr = inv().filter(x => !(x.item_type === type && String(x.item_key) === String(key) && (x.location||'bag') === loc && (x.zone||null) === zone));
+  const res = await invSet(arr);
+  if (res) { renderBag(); toast('已丢弃', 'warn'); }
+}
+async function expandWarehouse() {
+  const cost = 50; const wp = num(player().willpower, 0);
+  if (wp < cost) { toast('愿力不足，需 ' + cost + ' 点', 'warn'); return; }
+  if (!confirm('花费 ' + cost + ' 愿力，将仓库扩容 +20 格？')) return;
+  try {
+    const j = await fetch('/api/reward', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ willpower: -cost, source:'仓库扩容', text:'+20 格' }) });
+    const r = await j.json();
+    if (!r.ok) { toast('扩容失败', 'warn'); return; }
+    DATA.player.willpower = r.player.willpower; renderResbar();
+    await invUpsert({ item_type:'meta', item_key:'warehouseCap', name:'仓库容量', qty: getWhCap()+20, rarity:3, location:'warehouse', zone:null, note:'容量上限' });
+    renderBag(); toast('📦 仓库已扩容至 ' + getWhCap() + ' 格', 'good');
+  } catch (e) { toast('扩容失败：' + e.message, 'warn'); }
+}
+function openBagAddModal() {
+  const f = document.getElementById('bagAddForm'); if (f) f.reset();
+  const m = document.getElementById('bagAddModal'); if (m) m.classList.add('open');
+}
+function closeBagAddModal() { const m = document.getElementById('bagAddModal'); if (m) m.classList.remove('open'); }
+async function saveBagAdd() {
+  const name = document.getElementById('bagAddName').value.trim();
+  if (!name) { toast('名称不能为空', 'warn'); return; }
+  const type = document.getElementById('bagAddType').value;
+  const qty = Math.max(1, parseInt(document.getElementById('bagAddQty').value) || 1);
+  const locSel = document.getElementById('bagAddLoc').value;
+  const loc = locSel === 'fridge' ? 'warehouse' : locSel;
+  const zone = locSel === 'fridge' ? 'fridge' : null;
+  await invUpsert({ item_type: type, item_key: name, name, qty, rarity: 3, location: loc, zone, note: '' });
+  closeBagAddModal();
+  renderBag();
+  toast('已入库：' + name + ' ×' + qty, 'good');
+}
+function bagItemHtml(it) {
+  const ri = RARITY_INFO[it.rarity] || RARITY_INFO[3];
+  const loc = it.location || 'bag';
+  const zone = it.zone || null;
+  const locLabel = loc === 'bag' ? '背包' : (zone === 'fridge' ? '冰箱区' : '仓库');
+  const moveTo = loc === 'bag' ? ['warehouse', null] : ['bag', null];
+  const moveLabel = loc === 'bag' ? '存入仓库' : '取出背包';
+  const key = String(it.item_key).replace(/'/g, "\\'");
+  return '<div class="bag-item rar-' + (it.rarity||3) + '" style="border-color:' + ri.c + ';">' +
+    '<div class="bi-icon" style="background:' + ri.c + '22;">' + invIcon_(it.item_type) + '</div>' +
+    '<div class="bi-body">' +
+      '<div class="bi-name">' + esc(it.name) + (it.qty ? (' ×' + it.qty) : '') + '</div>' +
+      '<div class="bi-meta"><span class="bi-loc">' + locLabel + '</span><span class="bi-rar" style="color:' + ri.c + ';">' + ri.label + '</span></div>' +
+      (it.note && it.item_type !== 'meta' ? '<div class="bi-note">' + esc(it.note) + '</div>' : '') +
+    '</div>' +
+    '<div class="bi-acts">' +
+      '<button class="bi-btn" onclick="moveInvItem(\'' + it.item_type + '\',\'' + key + '\',\'' + loc + '\',' + (zone ? '\'' + zone + '\'' : 'null') + ',\'' + moveTo[0] + '\',' + (moveTo[1] ? '\'' + moveTo[1] + '\'' : 'null') + ')">' + moveLabel + '</button>' +
+      (it.item_type !== 'meta' ? '<button class="bi-btn danger" onclick="delInvItem(\'' + it.item_type + '\',\'' + key + '\',\'' + loc + '\',' + (zone ? '\'' + zone + '\'' : 'null') + ')">丢弃</button>' : '') +
+    '</div>' +
+  '</div>';
+}
+function renderBagHtml() {
+  const all = inv().filter(x => x.item_type !== 'meta');
+  const bag = all.filter(x => (x.location||'bag') === 'bag');
+  const wh = all.filter(x => (x.location||'bag') === 'warehouse');
+  const whNormal = wh.filter(x => (x.zone||null) !== 'fridge');
+  const whFridge = wh.filter(x => (x.zone||null) === 'fridge');
+  let items = bagView === 'bag' ? bag : (bagSub === 'fridge' ? whFridge : whNormal);
+  const bagCap = BAG_CAP;
+  const whCap = getWhCap();
+  const curCap = bagView === 'bag' ? bagCap : whCap;
+  const curCount = bagView === 'bag' ? bag.length : (bagSub === 'fridge' ? whFridge.length : whNormal.length);
+  const full = curCount >= curCap;
+  const tabs = [['bag','🎒 背包'],['warehouse','📦 仓库']];
+  let html = '<div class="mod-toolbar"><div class="section-title">🎒 背包仓库</div><button class="btn primary" onclick="openBagAddModal()">➕ 添加物品</button></div>';
+  html += '<div class="bag-tabs">' + tabs.map(t => '<div class="bag-tab' + (bagView===t[0]?' active':'') + '" onclick="bagView=\'' + t[0] + '\';renderBag()">' + t[1] + '</div>').join('') + '</div>';
+  if (bagView === 'warehouse') {
+    const subs = [['all','🗃️ 全部仓库'],['fridge','🧊 冰箱区']];
+    html += '<div class="bag-subs">' + subs.map(s => '<div class="bag-sub' + (bagSub===s[0]?' active':'') + '" onclick="bagSub=\'' + s[0] + '\';renderBag()">' + s[1] + '</div>').join('') + '</div>';
+  }
+  html += '<div class="bag-cap' + (full?' full':'') + '">容量 ' + curCount + ' / ' + curCap + (bagView==='warehouse' ? ' <button class="bi-btn" style="margin-left:8px;" onclick="expandWarehouse()">＋扩容(+20，50愿力)</button>' : '') + '</div>';
+  if (!items.length) html += '<div class="empty">这里还空空如也' + (bagView==='warehouse' ? '，去「烹饪」做菜会产出料理，或点「添加物品」入库' : '，做菜会自动产出料理到背包') + '</div>';
+  else html += '<div class="bag-grid">' + items.map(bagItemHtml).join('') + '</div>';
+  return html;
+}
+function renderBag() { return renderBagHtml(); }
 
 function renderSkill() {
   const sk = player().skills || {};
