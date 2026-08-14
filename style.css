@@ -253,3 +253,33 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .hf-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;align-items:end}
 .hf-form .input{width:100%}
 .hf-form .btn{grid-column:1/-1;justify-self:start}
+/* 角色主页 */
+.game-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--gap)}
+.game-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px}
+.game-char-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.game-avatar{width:46px;height:46px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;flex:0 0 auto}
+.game-char-name{font-size:17px;font-weight:800}
+.game-char-sub{font-size:12px;color:var(--muted)}
+.game-xp-label{font-size:13px;color:var(--muted)}
+.game-xp-label b{color:var(--wp);font-weight:700}
+.game-bar.big{height:12px}
+.game-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:4px}
+.game-stat{text-align:center;background:var(--panel2);border-radius:10px;padding:8px 4px}
+.game-stat-num{font-size:18px;font-weight:800;color:var(--text)}
+.game-stat-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+.game-energy-num{font-size:30px;font-weight:800;color:var(--lp)}
+.game-energy-unit{font-size:14px;color:var(--muted);font-weight:500}
+.game-card-note{font-size:12px;color:var(--muted);line-height:1.6}
+.game-res-net{font-size:15px;margin-bottom:6px}
+.game-res-net b{color:var(--wp);font-weight:700}
+.game-res-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+.game-res-row .pos{color:var(--lp);font-weight:600}
+.game-res-row .neg{color:#c0392b;font-weight:600}
+.gs-panel{border-color:var(--accent)}
+.gs-risk{font-size:14px;font-weight:700;padding:8px 12px;border-radius:10px;background:var(--panel2);border:1px solid var(--border)}
+.gs-risk.warn{border-color:#c8902c;color:#c8902c;background:rgba(200,144,44,.1)}
+.gs-risk.danger{border-color:#c0392b;color:#c0392b;background:rgba(192,57,43,.1)}
+.gs-sub{font-size:12px;color:var(--muted);margin-top:6px}
+.gs-buff{font-size:13px;margin-top:6px}
+.gs-buff b{color:var(--text)}
+.gs-buff-sub{font-size:12px;color:var(--lp);margin-top:4px}

@@ -151,6 +151,7 @@ function renderMain(id) {
     case 'npc':       html = renderNpc(); break;
     case 'map':       html = renderMap(); break;
     case 'heart':     html = renderHeart(); break;
+    case 'char':      html = renderChar(); break;
     case 'succubus':  html = renderSuccubus(); break;
     default: html = renderPlaceholder(mod.name, '该模块数据接口将在二期接入，本期仅占位。');
   }
@@ -180,8 +181,9 @@ function renderDashboard() {
 }
 
 function demonDanger(d) {
-  if (d.key === 'meimo') { const sed = Number((DATA.succubus || {}).seductions) || 0; return Math.max(0, Math.min(1, sed / 3)); }
-  const mx = d.key === 'xinmo' ? 100 : (Number(d.max_hp) || 1); return mx > 0 ? Math.max(0, Math.min(1, (Number(d.hp) || 0) / mx)) : 0;
+  if (d.key === 'meimo') { const sed = Number((DATA.succubus || {}).seductions) || 0; const base = Math.max(0, Math.min(1, sed / 3)); return Math.max(0, base * (1 - heartBuffSum('meimoResist') / 100)); }
+  if (d.key === 'xinmo') { const base = Math.max(0, Math.min(1, xinmoHpFromDungeons() / 100)); return Math.max(0, base * (1 - heartBuffSum('xinmoResist') / 100)); }
+  const mx = Number(d.max_hp) || 1; return mx > 0 ? Math.max(0, Math.min(1, (Number(d.hp) || 0) / mx)) : 0;
 }
 function renderDemon() {
   const ds = demons();
@@ -979,6 +981,63 @@ async function cultivateRealm(key) {
         '<div class="hf-buff-sum">当前生效：' + buffSummary + '</div>' +
         '<div class="hf-tabs">' + tabHtml + '</div>' +
         '<div class="hf-grid">' + cards + '</div>' + customForm;
+    }
+
+    /* ---------- 角色主页（二期 v12.0，移植主站逻辑，全局状态面板 + 精力/资产/技能境界统计） ---------- */
+    function renderChar() {
+      const p = player();
+      const willpower = num(p.willpower, 0);
+      const contract = num(p.contract, 0);
+      const level = num(p.level, 1);
+      const mod = willpower % 1000;
+      const xpPct = Math.max(0, Math.min(100, mod / 10));
+      const xpRemain = Math.max(0, 1000 - mod);
+      const fin = (DATA && DATA.finance && DATA.finance.records) || [];
+      let net = 0, inc = 0, exp = 0;
+      fin.forEach(r => { const a = Number(r.amount) || 0; net += a; if (a >= 0) inc += a; else exp += -a; });
+      const exLogs = (DATA && DATA.exercise && DATA.exercise.logs) || [];
+      const today = todayCST();
+      const todayCal = exLogs.filter(l => l.date === today).reduce((s, l) => s + (Number(l.cal) || 0), 0);
+      const energy = Math.max(0, Math.min(100, 60 + Math.round(todayCal / 15)));
+      const xinmoD = demonDanger({ key: 'xinmo', maxHp: 100 });
+      const meimoD = demonDanger({ key: 'meimo' });
+      const riskPct = Math.round(Math.max(xinmoD, meimoD) * 100);
+      const riskLevel = riskPct >= 66 ? '高危' : (riskPct >= 33 ? '警戒' : '平稳');
+      const riskCls = riskPct >= 66 ? 'danger' : (riskPct >= 33 ? 'warn' : '');
+      const activeHearts = heartActive();
+      const heartNames = HEART_DEFS.filter(d => activeHearts.includes(d.id)).map(d => d.name)
+        .concat(heartCustom().filter(c => activeHearts.includes('c_' + c.id)).map(c => c.name));
+      const heartSummary = heartNames.length ? heartNames.join('、') : '无（心法页可激活）';
+      const npcToday = (DATA.npcs || []).filter(n => n.meta && n.meta.lastVisit === today).length;
+      const resCard = fin.length
+        ? '<div class="game-card"><div class="game-card-title">💰 资源总览</div>' +
+          '<div class="game-res-net">净资产 <b>¥' + net.toFixed(2) + '</b></div>' +
+          '<div class="game-res-row"><span>收入</span><b class="pos">+' + inc.toFixed(2) + '</b></div>' +
+          '<div class="game-res-row"><span>支出</span><b class="neg">-' + exp.toFixed(2) + '</b></div></div>'
+        : '<div class="game-card"><div class="game-card-title">💰 资源总览</div><div class="game-card-note">还没有记账数据</div></div>';
+      return '<div class="section-title">👤 角色主页 <span class="game-tag">全局状态面板</span></div>' +
+        '<div class="game-grid">' +
+          '<div class="game-card game-char">' +
+            '<div class="game-char-head"><div class="game-avatar">🎮</div><div><div class="game-char-name">玩家 · 凯</div><div class="game-char-sub">Lv.' + level + '</div></div></div>' +
+            '<div class="game-xp-label" title="愿力经验 = 当前愿力点对 1000 取模；满 1000 自动凝结升阶">愿力经验 <b>' + willpower.toFixed(1) + '</b> / 1000（距升级还差 ' + xpRemain.toFixed(1) + '）</div>' +
+            '<div class="game-bar big"><span style="width:' + xpPct + '%"></span></div>' +
+            '<div class="game-stats">' +
+              '<div class="game-stat" title="契约点：心魔被击破等里程碑奖励，永久累积"><div class="game-stat-num">' + contract + '</div><div class="game-stat-lbl">📜 契约点</div></div>' +
+              '<div class="game-stat" title="等级：愿力经验凝结升阶所得"><div class="game-stat-num">' + level + '</div><div class="game-stat-lbl">🏅 等级</div></div>' +
+              '<div class="game-stat" title="总技能等级：七艺修炼之和，上限 70"><div class="game-stat-num">' + skillTotalLevel() + '</div><div class="game-stat-lbl">🛠️ 技能</div></div>' +
+              '<div class="game-stat" title="总参悟层数：五境累计，上限 45"><div class="game-stat-num">' + realmTotalLayers() + '</div><div class="game-stat-lbl">🗺️ 境界</div></div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="game-card"><div class="game-card-title">🔋 今日精力 <span class="game-tag">疲劳·派生</span></div><div class="game-energy-num">' + energy + '<span class="game-energy-unit">/100</span></div><div class="game-bar"><span style="width:' + energy + '%"></span></div>' +
+            '<div class="game-card-note">由今日运动 ' + todayCal + ' kcal 派生（约 +' + Math.round(todayCal / 15) + ' 精力）；今日 NPC 拜访 ' + npcToday + ' 次</div></div>' +
+          resCard +
+          '<div class="game-card gs-panel"><div class="game-card-title">🛡️ 全局状态 <span class="game-tag">实时</span></div>' +
+            '<div class="gs-risk ' + riskCls + '">魔障风险：<b>' + riskLevel + '</b>（' + riskPct + '%）</div>' +
+            '<div class="gs-sub">心魔威胁 ' + Math.round(xinmoD * 100) + '% · 魅魔沉沦 ' + Math.round(meimoD * 100) + '%</div>' +
+            '<div class="gs-buff">生效心法：<b>' + esc(heartSummary) + '</b></div>' +
+            '<div class="gs-buff-sub">心魔抵抗 +' + heartBuffSum('xinmoResist') + '% · 魅魔抵抗 +' + heartBuffSum('meimoResist') + '% · 任务愿力 +' + heartBuffSum('taskBonus') + '%</div>' +
+            '</div>' +
+        '</div>';
     }
 
     function renderSuccubus() {
