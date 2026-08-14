@@ -105,6 +105,23 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .bi-btn:hover{filter:brightness(.97)}
 .bi-btn.danger{border-color:#e0b4ad;color:#c0392b}
 .bi-btn.danger:hover{background:#fbeae8}
+/* 命愿祈铺 · 化命台 */
+.fate-convert{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:22px;max-width:520px;box-shadow:var(--shadow)}
+.fc-title{font-size:18px;font-weight:800;color:var(--text)}
+.fc-sub{font-size:12px;font-weight:500;color:var(--muted);margin-left:6px}
+.fc-row{font-size:14px;color:var(--muted);margin:10px 0 14px}
+.fc-balance{display:flex;gap:10px;margin-bottom:12px}
+.sb{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:14px}
+.fc-preview{font-size:14px;color:var(--text);margin-bottom:14px}
+.fc-preview b{color:var(--dp)}
+.fc-btn{cursor:pointer;font-family:inherit;font-size:15px;font-weight:700;padding:11px 22px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--dp),var(--accent));color:#fff;box-shadow:var(--shadow);transition:.15s}
+.fc-btn:hover{filter:brightness(1.05)}
+.fc-btn.disabled,.fc-btn:disabled{opacity:.45;cursor:not-allowed;filter:grayscale(.4)}
+.fc-note{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.6}
+/* 确认弹窗 */
+.modal-msg{white-space:pre-line;font-size:14px;color:var(--text);line-height:1.7;padding:4px 2px 14px;font-family:inherit}
+.btn.danger{background:#c0392b;border-color:transparent;color:#fff}
+.btn.danger:hover{filter:brightness(1.05)}
 @media(max-width:780px){
   .layout{grid-template-columns:1fr}
   .nav{position:static;display:flex;flex-wrap:wrap;gap:6px;align-items:center}

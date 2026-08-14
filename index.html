@@ -72,6 +72,16 @@
     </div>
   </div>
 </div>
+<div class="modal" id="confirmModal">
+  <div class="modal-card">
+    <div class="modal-title" id="confirmTitle">确认</div>
+    <div class="modal-msg" id="confirmMsg"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeConfirm()">取消</button>
+      <button class="btn danger" id="confirmYes" onclick="onConfirmYes()">确定</button>
+    </div>
+  </div>
+</div>
 <div class="toast-wrap" id="toastWrap"></div>
 <div class="loading" id="loading">正在连接修行数据…</div>
 <script src="/game/app.js"></script>

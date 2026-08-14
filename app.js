@@ -143,21 +143,52 @@ function renderDemon() {
   return `<div class="section-title">🩸 魔障 · 共 ${ds.length} 道</div><div class="cards">${cards}</div>`;
 }
 
+/* ---------- 通用确认弹窗（不可逆操作二次确认） ---------- */
+let _confirmCb = null;
+function showConfirm(title, msg, cb, yesLabel) {
+  const t = document.getElementById('confirmTitle'); if (t) t.textContent = title;
+  const m = document.getElementById('confirmMsg'); if (m) m.textContent = msg;
+  const y = document.getElementById('confirmYes'); if (y && yesLabel) y.textContent = yesLabel;
+  _confirmCb = cb;
+  const el = document.getElementById('confirmModal'); if (el) el.classList.add('open');
+}
+function closeConfirm() { const el = document.getElementById('confirmModal'); if (el) el.classList.remove('open'); _confirmCb = null; }
+function onConfirmYes() { const cb = _confirmCb; _confirmCb = null; closeConfirm(); if (cb) cb(); }
 function renderAltar() {
   const p = player();
+  const lp = num(p.lucky, 0), dp = num(p.destiny, 0);
+  const can = Math.floor(lp / 10);
+  const enough = lp >= 10;
   return `<div class="section-title">🔮 命愿祈铺 · 化命台</div>
-  <div class="cards">
-    <div class="card"><span class="tag">当前持有</span>
-      <div class="kv"><span>幸运 LP</span><b>${num(p.lucky, 0)}</b></div>
-      <div class="kv"><span>天命 DP</span><b>${num(p.destiny, 0)}</b></div>
-      <div class="kv"><span>契约</span><b>${num(p.contract, 0)} 日</b></div>
+  <div class="fate-convert">
+    <div class="fc-title">🔥 化命台 <span class="fc-sub">唯一货币升级渠道 · 不可逆</span></div>
+    <div class="fc-row">10 幸运点(LP) → 1 天命点(DP)</div>
+    <div class="fc-balance">
+      <span class="sb">🍀 <b>${lp}</b> LP</span>
+      <span class="sb">👑 <b>${dp}</b> DP</span>
     </div>
-    <div class="card"><span class="tag">凝结规则（只读）</span>
-      <div class="kv"><span>比例</span><b>10 LP = 1 DP</b></div>
-      <div class="kv"><span>可凝结</span><b>${Math.floor(num(p.lucky, 0) / 10)} DP</b></div>
-      <div class="meta" style="margin-top:8px">向上凝结为手动不可逆操作，写交互将在二期实现。</div>
-    </div>
+    <div class="fc-preview">本次可凝结：<b>+${can} DP</b>（凝结后剩余 ${lp - can * 10} LP）</div>
+    <button class="fc-btn${enough ? '' : ' disabled'}" ${enough ? '' : 'disabled'} onclick="condenseFate()">凝结（${can} LP → ${can} DP）</button>
+    <div class="fc-note">化命台将幸运点凝结为天命点，此过程<b>不可逆</b>。请谨慎操作。</div>
   </div>`;
+}
+async function condenseFate() {
+  const p = player();
+  const lp = num(p.lucky, 0), dp = num(p.destiny, 0);
+  if (lp < 10) { toast('幸运点不足 10，无法凝结', 'warn'); return; }
+  const gain = Math.floor(lp / 10);
+  showConfirm('⚠ 化命台凝结确认', '将把 ' + (gain * 10) + ' 幸运点凝结为 ' + gain + ' 天命点。\n此过程不可逆，确定凝结？', function () {
+    showConfirm('⚠ 仍要凝结？', '再次确认：消耗 ' + (gain * 10) + ' LP，获得 ' + gain + ' DP。\n（凝结后剩余 ' + (lp - gain * 10) + ' LP，' + (dp + gain) + ' DP）', async function () {
+      try {
+        const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lucky: lp - gain * 10, destiny: dp + gain }) });
+        const r = await j.json();
+        if (!r.ok) { toast('凝结失败：' + (r.error || ''), 'warn'); return; }
+        DATA.player.lucky = r.player.lucky; DATA.player.destiny = r.player.destiny;
+        renderResbar(); renderAltar();
+        toast('🔥 凝结成功：+' + gain + ' DP', 'good');
+      } catch (e) { toast('凝结失败：' + e.message, 'warn'); }
+    }, '仍要凝结');
+  }, '凝结');
 }
 
 function renderCook() {
