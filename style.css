@@ -180,3 +180,36 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .realm-modal .realm-cult-btn{width:100%;margin-top:10px;cursor:pointer;border:1px solid var(--border);background:var(--accent);color:#fff;padding:9px 14px;border-radius:10px;font-size:13px;font-weight:700;transition:.15s;font-family:inherit}
 .realm-modal .realm-cult-btn:hover{filter:brightness(1.05)}
 .realm-modal .realm-cult-btn:disabled{cursor:not-allowed;opacity:.5;filter:grayscale(.4)}
+/* 江湖 NPC */
+.npc-toolbar{display:flex;gap:10px;margin:10px 0 14px;flex-wrap:wrap}
+.npc-toolbar .input{flex:1;min-width:160px}
+.npc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--gap)}
+.npc-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);cursor:pointer;transition:.15s}
+.npc-card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.npc-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.npc-avatar{width:38px;height:38px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;flex:0 0 auto}
+.npc-id{flex:1;min-width:0}
+.npc-name{font-size:15px;font-weight:700;word-break:break-word}
+.npc-sub{font-size:12px;color:var(--muted)}
+.npc-status{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--panel2);color:var(--muted);border:1px solid var(--border);flex:0 0 auto}
+.npc-status.met{background:rgba(111,207,151,.18);color:var(--lp);border-color:var(--lp)}
+.npc-status.known{background:rgba(244,194,94,.2);color:var(--wp);border-color:var(--wp)}
+.npc-desc{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:8px;max-height:48px;overflow:hidden}
+.npc-aff{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.npc-aff-bar{flex:1;height:6px;border-radius:6px;background:var(--panel2);overflow:hidden}
+.npc-aff-bar span{display:block;height:100%;background:var(--wp)}
+.npc-actions{display:flex;gap:8px}
+.npc-visit{flex:1;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;padding:7px 10px;border-radius:9px;border:none;background:var(--accent);color:#fff;transition:.15s}
+.npc-visit:hover{filter:brightness(1.05)}
+.npc-visit:disabled{cursor:not-allowed;opacity:.6;background:var(--panel2);color:var(--muted)}
+.npc-del{cursor:pointer;font-size:12px;padding:7px 10px;border-radius:9px;border:1px solid var(--border);background:var(--panel2);color:var(--muted);font-family:inherit;transition:.15s}
+.npc-del:hover{color:#c0392b;border-color:#c0392b}
+.npc-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}
+.npc-form .input{width:100%}
+.npc-form .btn{grid-column:1/-1;justify-self:start}
+.npc-detail-meta{font-size:13px;color:var(--muted);margin-bottom:8px}
+.npc-detail-desc{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:10px}
+.game-empty{text-align:center;color:var(--muted);padding:18px;font-size:13px}
+.log-row{display:flex;gap:10px;font-size:13px;padding:6px 0;border-bottom:1px dashed var(--border)}
+.log-ts{color:var(--muted);flex:0 0 auto;font-variant-numeric:tabular-nums}
+.log-item{color:var(--text)}

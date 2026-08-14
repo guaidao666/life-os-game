@@ -148,6 +148,7 @@ function renderMain(id) {
     case 'bag':       html = renderBag(); break;
     case 'skill':     html = renderSkill(); break;
     case 'realm':     html = renderRealm(); break;
+    case 'npc':       html = renderNpc(); break;
     case 'succubus':  html = renderSuccubus(); break;
     default: html = renderPlaceholder(mod.name, '该模块数据接口将在二期接入，本期仅占位。');
   }
@@ -677,10 +678,138 @@ async function cultivateRealm(key) {
     closeRealm(); renderResbar(); renderMain('realm');
     if (newLayer >= def.maxLayer) toast('🏆 ' + key + ' 已圆满！', 'good');
     else toast('🎉 ' + key + ' 参悟至第 ' + newLayer + ' 层', 'good');
-  } catch (e) { toast('参悟失败：' + e.message, 'warn'); }
-}
+      } catch (e) { toast('参悟失败：' + e.message, 'warn'); }
+    }
 
-function renderSuccubus() {
+    /* ---------- 江湖 NPC（二期 v9.0，移植主站逻辑，接 /api/insert/update/delete + /api/reward） ---------- */
+    let npcSearch = '';
+    let npcFilter = 'all';
+    const NPC_TYPES = ['家人', '同窗', '挚友', '助手', '其他'];
+    function npcsArr() { return (DATA && DATA.npcs) || []; }
+    function getNpcMeta(n) { return (n && n.meta && typeof n.meta === 'object') ? n.meta : {}; }
+    function todayCST() { return new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }); }
+    function npcList() {
+      const all = npcsArr().filter(n => (n.type || '') !== '野外首领');
+      const kw = (npcSearch || '').trim().toLowerCase();
+      return all.filter(n => {
+        if (npcFilter !== 'all' && (n.type || '') !== npcFilter) return false;
+        if (kw && !((n.name || '') + (n.desc || '') + (n.region || '')).toLowerCase().includes(kw)) return false;
+        return true;
+      });
+    }
+    function npcCardsHtml() {
+      const list = npcList();
+      if (!list.length) return '<div class="empty">没有匹配的 NPC</div>';
+      return list.map(n => {
+        const st = n.status || '未遇';
+        const stCls = st === '熟识' ? 'known' : (st === '已遇' ? 'met' : '');
+        const meta = getNpcMeta(n);
+        const aff = Number(meta.affinity) || 0;
+        const lastTs = Number(meta.lastVisitTs) || 0;
+        const cooling = lastTs && (Date.now() - lastTs) < 24 * 3600 * 1000;
+        return '<div class="npc-card" onclick="openNpcDetail(' + n.id + ')">' +
+          '<div class="npc-head"><div class="npc-avatar">' + esc((n.name || '?').slice(0, 1)) + '</div>' +
+          '<div class="npc-id"><div class="npc-name">' + esc(n.name || '') + '</div><div class="npc-sub">' + esc(n.type || '') + ' · ' + esc(n.region || '') + '</div></div>' +
+          '<span class="npc-status ' + stCls + '">' + esc(st) + '</span></div>' +
+          '<div class="npc-desc">' + esc(n.desc || '') + '</div>' +
+          '<div class="npc-aff">好感度 <span class="npc-aff-bar"><span style="width:' + Math.min(100, aff) + '%"></span></span> <b>' + aff + '</b></div>' +
+          '<div class="npc-actions"><button class="npc-visit" ' + (cooling ? 'disabled' : '') + ' onclick="event.stopPropagation();visitNpc(' + n.id + ')">' + (cooling ? '⏳ 奇遇冷却中' : '拜访（奇遇）') + '</button>' +
+          '<button class="npc-del" onclick="event.stopPropagation();delNpc(' + n.id + ')">删除</button></div></div>';
+      }).join('');
+    }
+    function renderNpc() {
+      const typeOpts = ['all'].concat(NPC_TYPES);
+      const filterHtml = typeOpts.map(t => '<option value="' + t + '"' + (npcFilter === t ? ' selected' : '') + '>' + (t === 'all' ? '全部类型' : t) + '</option>').join('');
+      return '<div class="section-title">🧝 江湖 NPC <span class="game-tag">墨渊人物档案</span></div>' +
+        '<div class="npc-toolbar">' +
+          '<input class="input" id="npcSearch" placeholder="搜索名字 / 人设 / 州" value="' + esc(npcSearch) + '" oninput="npcSearch=this.value;const g=document.getElementById(\'npcGrid\');if(g)g.innerHTML=npcCardsHtml();">' +
+          '<select class="input" id="npcTypeFilter" onchange="npcFilter=this.value;const g=document.getElementById(\'npcGrid\');if(g)g.innerHTML=npcCardsHtml();">' + filterHtml + '</select>' +
+        '</div>' +
+        '<div class="npc-grid" id="npcGrid">' + npcCardsHtml() + '</div>' +
+        '<div class="section-title" style="margin-top:18px">＋ 新增 NPC</div>' +
+        '<div class="npc-form">' +
+          '<input class="input" id="npcName" placeholder="名字（必填）">' +
+          '<select class="input" id="npcType"><option value="家人">家人</option><option value="同窗">同窗</option><option value="挚友">挚友</option><option value="助手">助手</option><option value="其他">其他</option></select>' +
+          '<input class="input" id="npcRegion" placeholder="所属州（如 豫西灵宝州）">' +
+          '<input class="input" id="npcX" type="number" placeholder="地图X(40-620)">' +
+          '<input class="input" id="npcY" type="number" placeholder="地图Y(60-460)">' +
+          '<input class="input" id="npcDesc" placeholder="一句话人设">' +
+          '<button class="btn primary" onclick="addNpc()">建卡</button>' +
+        '</div>';
+    }
+    function openNpcDetail(id) {
+      const n = npcsArr().find(x => x.id === id); if (!n) return;
+      const meta = getNpcMeta(n);
+      const aff = Number(meta.affinity) || 0;
+      const log = meta.visitLog || [];
+      const logHtml = log.length ? log.map(l => '<div class="log-row"><span class="log-ts">' + esc(l.date || '') + '</span><span class="log-item">' + esc(l.note || '') + '</span></div>').join('')
+        : '<div class="game-empty">尚无奇遇记录</div>';
+      const box = document.createElement('div');
+      box.className = 'realm-modal';
+      box.innerHTML = '<div class="realm-modal-box npc-detail">' +
+        '<h3>🧝 ' + esc(n.name || '') + '</h3>' +
+        '<div class="npc-detail-meta">' + esc(n.type || '其他') + ' · ' + esc(n.region || '未知州') + ' · 状态 <b>' + esc(n.status || '未遇') + '</b></div>' +
+        '<div class="npc-detail-desc">' + esc(n.desc || '（无简介）') + '</div>' +
+        '<div class="npc-aff">好感度 <span class="npc-aff-bar"><span style="width:' + Math.min(100, aff) + '%"></span></span> <b>' + aff + '</b></div>' +
+        '<div style="font-size:13px;font-weight:600;margin:10px 0 4px">奇遇记录</div>' +
+        '<div style="max-height:40vh;overflow:auto">' + logHtml + '</div>' +
+        '<button class="realm-cult-btn" style="margin-top:10px;background:var(--panel2);color:var(--text)" onclick="closeRealm()">关闭</button></div>';
+      box.onclick = (e) => { if (e.target === box) box.remove(); };
+      document.body.appendChild(box);
+    }
+    async function visitNpc(id) {
+      const n = npcsArr().find(x => x.id === id); if (!n) return;
+      const meta = getNpcMeta(n);
+      const lastTs = Number(meta.lastVisitTs) || 0;
+      if (lastTs && (Date.now() - lastTs) < 24 * 3600 * 1000) { toast('奇遇冷却中（24h），明日再来', 'warn'); return; }
+      const next = n.status === '未遇' ? '已遇' : (n.status === '已遇' ? '熟识' : (n.status || '熟识'));
+      const aff = (Number(meta.affinity) || 0) + 5;
+      const log = (meta.visitLog || []); log.unshift({ date: todayCST(), note: '拜访奇遇 · 状态→' + next });
+      const newMeta = Object.assign({}, meta, { affinity: aff, lastVisit: todayCST(), lastVisitTs: Date.now(), visitLog: log.slice(0, 30) });
+      try {
+        const j = await fetch('/api/reward', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ willpower: 3, source: 'NPC奇遇', text: n.name }) });
+        const r = await j.json();
+        const newP = r.player || {};
+        const j2 = await (await fetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'npcs', id: id, fields: { status: next, meta: JSON.stringify(newMeta) } }) })).json();
+        if (r.ok && newP.willpower != null) { DATA.player.willpower = newP.willpower; renderResbar(); }
+        if (j2.ok) toast('🤝 拜访 ' + n.name + '：奇遇 +3 愿力，好感度 ' + aff, 'good');
+        else toast('拜访记录失败：' + (j2.error || ''), 'warn');
+        await loadData(); go('npc'); openNpcDetail(id);
+      } catch (e) { toast('奇遇失败：' + e.message, 'warn'); }
+    }
+    function addNpc() {
+      const gv = id => (document.getElementById(id) || {}).value || '';
+      const name = gv('npcName');
+      if (!name.trim()) { toast('名字必填', 'warn'); return; }
+      const fields = {
+        name: name.trim(),
+        type: gv('npcType') || '其他',
+        region: gv('npcRegion') || '',
+        x: Number(gv('npcX')) || 0,
+        y: Number(gv('npcY')) || 0,
+        desc: gv('npcDesc') || '',
+        status: '未遇',
+        meta: '{}',
+        created_at: new Date().toISOString()
+      };
+      fetch('/api/insert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'npcs', fields }) })
+        .then(r => r.json()).then(j => {
+          if (j.ok) { toast('🪪 已建卡：' + fields.name, 'good'); loadData().then(() => go('npc')); }
+          else toast('建卡失败：' + (j.error || ''), 'warn');
+        }).catch(e => toast('建卡失败：' + e.message, 'warn'));
+    }
+    async function delNpc(id) {
+      showConfirm('⚠ 删除 NPC', '确定删除该人物档案？此操作不可恢复。', async function () {
+        try {
+          const j = await fetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'npcs', id: id }) });
+          const r = await j.json();
+          if (r.ok) { toast('已删除', 'warn'); await loadData(); go('npc'); }
+          else toast('删除失败：' + (r.error || ''), 'warn');
+        } catch (e) { toast('删除失败：' + e.message, 'warn'); }
+      });
+    }
+
+    function renderSuccubus() {
   const sc = (DATA && DATA.succubus) || {};
   if (!sc || !sc.weekKey) return renderPlaceholder('魅魔', '暂无魅魔状态（player.succubus 为空）。');
   return `<div class="section-title">🌹 魅魔</div>
