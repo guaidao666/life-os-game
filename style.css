@@ -231,3 +231,25 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .map-legend-box{margin-top:14px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px 14px}
 .map-legend-box summary{cursor:pointer;font-weight:700;color:var(--text)}
 .map-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted);margin-top:8px}
+/* 心法 */
+.hf-buff-sum{font-size:13px;color:var(--lp);background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--lp);border-radius:10px;padding:8px 12px;margin:10px 0 12px}
+.hf-tabs{display:flex;gap:8px;margin-bottom:12px}
+.hf-tab{font-size:13px;padding:7px 14px;border-radius:10px;cursor:pointer;border:1px solid var(--border);color:var(--muted);background:var(--panel2);transition:.15s}
+.hf-tab.active{background:var(--lp);color:#fff;border-color:var(--lp)}
+.hf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.hf-card{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow);transition:.15s}
+.hf-card.active{border-color:var(--lp);box-shadow:0 0 0 2px var(--lp) inset}
+.hf-card.locked{opacity:.55;filter:grayscale(.4)}
+.hf-lock{position:absolute;top:10px;right:10px;font-size:11px;color:var(--muted);background:var(--panel2);padding:2px 7px;border-radius:8px;border:1px solid var(--border)}
+.hf-head{display:flex;align-items:center;justify-content:space-between}
+.hf-name{font-weight:700;font-size:15px}
+.hf-fav{border:none;background:transparent;font-size:17px;cursor:pointer;color:var(--wp);line-height:1}
+.hf-fav.on{color:#E0B040}
+.hf-effect{font-size:13px;font-weight:600;color:var(--lp)}
+.hf-desc{font-size:12px;color:var(--muted);line-height:1.5;min-height:34px}
+.hf-act{margin-top:4px;border:1px solid var(--border);border-radius:8px;padding:7px;font-size:12px;cursor:pointer;background:var(--panel2);color:var(--text);font-family:inherit;transition:.15s}
+.hf-act.on{background:var(--lp);color:#fff;border-color:var(--lp)}
+.hf-del{border:none;background:transparent;color:#A32D2D;font-size:12px;cursor:pointer;text-align:left;padding:2px 0;font-family:inherit}
+.hf-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;align-items:end}
+.hf-form .input{width:100%}
+.hf-form .btn{grid-column:1/-1;justify-self:start}

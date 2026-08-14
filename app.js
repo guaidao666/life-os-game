@@ -150,6 +150,7 @@ function renderMain(id) {
     case 'realm':     html = renderRealm(); break;
     case 'npc':       html = renderNpc(); break;
     case 'map':       html = renderMap(); break;
+    case 'heart':     html = renderHeart(); break;
     case 'succubus':  html = renderSuccubus(); break;
     default: html = renderPlaceholder(mod.name, '该模块数据接口将在二期接入，本期仅占位。');
   }
@@ -883,6 +884,101 @@ async function cultivateRealm(key) {
         '<div class="map-regions">' + regionCards + '</div>' +
         mapSvg +
         '<details class="map-legend-box"><summary>图例</summary><div class="map-legend"><span>■ 界碑（传送）</span><span>● NPC（点击唤访）</span><span>🔴 魅魔（野首·点击前往）</span><span>🛡 镇守</span></div></details>';
+    }
+
+    /* ---------- 心法（二期 v11.0，移植主站逻辑，Tab分组 + 被动buff + 自定义 + 收藏，localStorage 持久化） ---------- */
+    let heartTabName = 'basic';
+    const HEART_DEFS = [
+      { id: 'shouxin',  tab: 'basic', name: '守心诀', effect: '心魔抵抗 +5%',  desc: '每日副本对心魔造成的伤害提升 5%，拖延复苏更慢。', buff: { xinmoResist: 5 }, unlock: null },
+      { id: 'jingxin',  tab: 'basic', name: '静心咒', effect: '魅魔抵抗 +5%',  desc: '魅魔沉沦度增速降低 5%，诱惑更难得逞。', buff: { meimoResist: 5 }, unlock: null },
+      { id: 'qinjian',  tab: 'basic', name: '勤勉录', effect: '任务愿力 +3%',  desc: '所有每日秘境愿力产出 +3%。', buff: { taskBonus: 3 }, unlock: null },
+      { id: 'taishang', tab: 'adv',   name: '太上忘情', effect: '心魔抵抗 +12%', desc: '心魔抵抗大幅提升，需「功德法」参悟≥3 层。', buff: { xinmoResist: 12 }, unlock: { realm: '功德法', layer: 3, text: '需功德法≥3层' } },
+      { id: 'mingjing', tab: 'adv',   name: '明镜台', effect: '任务愿力 +8%',  desc: '愿力产出更丰，需「万卷书」参悟≥3 层。', buff: { taskBonus: 8 }, unlock: { realm: '万卷书', layer: 3, text: '需万卷书≥3层' } },
+      { id: 'qianji',   tab: 'adv',   name: '千机变', effect: '魅魔抵抗 +12%', desc: '魅魔抵抗大幅提升，需「千面法」参悟≥3 层。', buff: { meimoResist: 12 }, unlock: { realm: '千面法', layer: 3, text: '需千面法≥3层' } }
+    ];
+    function heartCustom() { try { return JSON.parse(localStorage.getItem('lifeos_heartCustom') || '[]'); } catch (e) { return []; } }
+    function heartActive() { try { return JSON.parse(localStorage.getItem('lifeos_heartActive') || '[]'); } catch (e) { return []; } }
+    function heartFav() { try { return JSON.parse(localStorage.getItem('lifeos_heartFav') || '[]'); } catch (e) { return []; } }
+    function heartUnlocked(def) { if (!def.unlock) return true; return realmLayer(def.unlock.realm) >= def.unlock.layer; }
+    function heartBuffSum(type) {
+      let s = 0;
+      HEART_DEFS.forEach(d => { if (heartActive().includes(d.id) && d.buff && d.buff[type]) s += d.buff[type]; });
+      heartCustom().forEach(c => { if (heartActive().includes('c_' + c.id) && c.buff && c.buff[type]) s += Number(c.buff[type]) || 0; });
+      return s;
+    }
+    function heartTab(name) { heartTabName = name; renderMain('heart'); }
+    function toggleHeartActive(id) {
+      const a = heartActive(); const i = a.indexOf(id);
+      if (i >= 0) a.splice(i, 1); else a.push(id);
+      localStorage.setItem('lifeos_heartActive', JSON.stringify(a));
+      toast(a.includes(id) ? '🧠 心法已激活' : '心法已停用', a.includes(id) ? 'good' : '');
+      renderMain('heart');
+    }
+    function toggleHeartFav(id) {
+      const f = heartFav(); const i = f.indexOf(id);
+      if (i >= 0) f.splice(i, 1); else f.push(id);
+      localStorage.setItem('lifeos_heartFav', JSON.stringify(f));
+      renderMain('heart');
+    }
+    function parseBuffText(t) {
+      const m = String(t || '').match(/([+\-]\d+)\s*%/);
+      if (/心魔/.test(t)) return { xinmoResist: Number(m && m[1]) || 0 };
+      if (/魅魔/.test(t)) return { meimoResist: Number(m && m[1]) || 0 };
+      return { taskBonus: Number(m && m[1]) || 0 };
+    }
+    function addHeartCustom() {
+      const gv = id => (document.getElementById(id) || {}).value || '';
+      const name = gv('hfName');
+      if (!name.trim()) { toast('心法名必填', 'warn'); return; }
+      const custom = heartCustom();
+      const id = Date.now();
+      custom.push({ id: id, name: name.trim(), effect: gv('hfEffect'), desc: gv('hfDesc'), buff: parseBuffText(gv('hfEffect')) });
+      localStorage.setItem('lifeos_heartCustom', JSON.stringify(custom));
+      toast('🧠 已录入自创心法', 'good');
+      renderMain('heart');
+    }
+    function delHeartCustom(id) {
+      showConfirm('⚠ 删除自创心法', '确定删除该自创心法？', function () {
+        localStorage.setItem('lifeos_heartCustom', JSON.stringify(heartCustom().filter(c => c.id !== id)));
+        localStorage.setItem('lifeos_heartActive', JSON.stringify(heartActive().filter(x => x !== 'c_' + id)));
+        localStorage.setItem('lifeos_heartFav', JSON.stringify(heartFav().filter(x => x !== 'c_' + id)));
+        renderMain('heart');
+      });
+    }
+    function renderHeart() {
+      const active = heartActive(), fav = heartFav(), custom = heartCustom();
+      const all = [];
+      HEART_DEFS.forEach(d => all.push(Object.assign({ _custom: false }, d)));
+      custom.forEach(c => all.push({ _custom: true, id: 'c_' + c.id, tab: 'custom', name: c.name, effect: c.effect || '', desc: c.desc || '', buff: c.buff || {}, unlock: null }));
+      all.sort((a, b) => (fav.includes(b.id) ? 1 : 0) - (fav.includes(a.id) ? 1 : 0));
+      const tabs = [['basic', '基础心法'], ['adv', '进阶心法'], ['custom', '自定义心法']];
+      const tabHtml = tabs.map(t => '<div class="hf-tab' + (heartTabName === t[0] ? ' active' : '') + '" onclick="heartTab(\'' + t[0] + '\')">' + t[1] + '</div>').join('');
+      const list = all.filter(d => d.tab === heartTabName);
+      const cards = list.length ? list.map(d => {
+        const unlocked = heartUnlocked(d);
+        const isActive = active.includes(d.id);
+        const isFav = fav.includes(d.id);
+        const cls = 'hf-card' + (unlocked ? '' : ' locked') + (isActive ? ' active' : '');
+        return '<div class="' + cls + '" title="' + esc(d.desc || '') + '">' +
+          (unlocked ? '' : '<div class="hf-lock">🔒 ' + esc(d.unlock ? d.unlock.text : '未解锁') + '</div>') +
+          '<div class="hf-head"><div class="hf-name">' + esc(d.name) + '</div>' +
+          '<button class="hf-fav' + (isFav ? ' on' : '') + '" title="收藏置顶" onclick="toggleHeartFav(\'' + d.id + '\')">' + (isFav ? '★' : '☆') + '</button></div>' +
+          '<div class="hf-effect">' + (esc(d.effect) || '—') + '</div>' +
+          '<div class="hf-desc">' + esc(d.desc || '') + '</div>' +
+          (unlocked ? '<button class="hf-act' + (isActive ? ' on' : '') + '" onclick="toggleHeartActive(\'' + d.id + '\')">' + (isActive ? '已激活 · 点击停用' : '激活（生效被动）') + '</button>' : '') +
+          (d._custom ? '<button class="hf-del" onclick="delHeartCustom(' + d.id.replace('c_', '') + ')">删除</button>' : '') +
+          '</div>';
+      }).join('') : '<div class="empty">暂无此类心法</div>';
+      const buffSummary = '心魔抵抗 +' + heartBuffSum('xinmoResist') + '%　·　魅魔抵抗 +' + heartBuffSum('meimoResist') + '%　·　任务愿力 +' + heartBuffSum('taskBonus') + '%';
+      const customForm = heartTabName === 'custom' ? '<div class="hf-form"><div class="section-title" style="margin-top:14px">＋ 自创心法</div>' +
+        '<input class="input" id="hfName" placeholder="心法名（必填）">' +
+        '<input class="input" id="hfEffect" placeholder="效果标签，如 心魔抵抗 +5%">' +
+        '<input class="input" id="hfDesc" placeholder="心法释义（hover 可见）">' +
+        '<button class="btn primary" onclick="addHeartCustom()">录入</button></div>' : '';
+      return '<div class="section-title">🧠 心法 · 被动 buff <span class="game-tag">激活后全局生效</span></div>' +
+        '<div class="hf-buff-sum">当前生效：' + buffSummary + '</div>' +
+        '<div class="hf-tabs">' + tabHtml + '</div>' +
+        '<div class="hf-grid">' + cards + '</div>' + customForm;
     }
 
     function renderSuccubus() {
