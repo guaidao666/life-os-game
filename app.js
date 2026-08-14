@@ -350,6 +350,16 @@ function showCookReward(gains, dish) {
   if (gains.dp) res.push('+' + gains.dp + ' 天命');
   if (res.length) toast(res.join(' · '), 'res');
   if (!gains.activated && !gains.note && !res.length) toast('记录已保存', '');
+  if (gains.leveledUp) showLevelUp(gains.level || 1);
+}
+function showLevelUp(lv) {
+  const el = document.createElement('div');
+  el.className = 'levelup-pop';
+  el.innerHTML = '<div class="lu-badge">⬆ 升级！</div><div class="lu-sub">菜谱升至 Lv.' + lv + '</div>';
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => el.classList.remove('show'), 1800);
+  setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 2300);
 }
 function toast(msg, kind) {
   const wrap = document.getElementById('toastWrap');
