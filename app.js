@@ -167,12 +167,82 @@ function renderCook() {
     const lv = num(r.level, 1), prof = num(r.proficiency, 0);
     const q = QUA[r.quality] || QUA[1];
     const pct = Math.max(0, Math.min(100, Math.round(prof / 10 * 100)));
-    return `<div class="card"><span class="tag">${q.label} ${stars(r.quality)}</span>
+    return `<div class="card cook-card"><span class="tag">${q.label} ${stars(r.quality)}</span>
       <h3>${esc(r.name)}</h3>
       <div class="meta">Lv.${lv} · 熟练度 ${prof}/10${r.activated ? '' : ' · 未激活'}</div>
-      <div class="bar"><i style="width:${pct}%"></i></div></div>`;
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      <button class="btn primary sm" onclick="cookDish(${r.id})">🍳 做一道</button>
+    </div>`;
   }).join('');
-  return `<div class="section-title">🍳 烹饪 · 菜谱 ${recipes.length} 道</div><div class="cards">${cards}</div>`;
+  return `<div class="mod-toolbar"><div class="section-title">🍳 烹饪 · 菜谱 ${recipes.length} 道</div>
+    <button class="btn primary" onclick="openCookModal()">🍳 记录做菜</button></div>
+    <div class="cards">${cards}</div>`;
+}
+
+/* ---------- 烹饪交互 ---------- */
+let cookRatingVal = 3;
+function todayStr() { const d = new Date(); const p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
+function openCookModal() {
+  const sel = document.getElementById('cookRecipe');
+  if (sel) sel.innerHTML = '<option value="">（不关联菜谱）</option>' + (food().recipes || []).map(r => '<option value="' + r.id + '">' + esc(r.name) + '</option>').join('');
+  const dish = document.getElementById('cookDish'); if (dish) dish.value = '';
+  const feel = document.getElementById('cookFeeling'); if (feel) feel.value = '';
+  setCookRating(3);
+  const m = document.getElementById('cookModal'); if (m) m.classList.add('open');
+}
+function closeCookModal() { const m = document.getElementById('cookModal'); if (m) m.classList.remove('open'); }
+function setCookRating(v) {
+  cookRatingVal = v;
+  document.querySelectorAll('#cookRating button').forEach(b => b.classList.toggle('on', +b.dataset.v === v));
+}
+function cookDish(id) {
+  openCookModal();
+  const sel = document.getElementById('cookRecipe');
+  if (sel) sel.value = id || '';
+  const r = (food().recipes || []).find(x => x.id === id);
+  const dish = document.getElementById('cookDish');
+  if (dish && r) dish.value = r.name;
+}
+async function saveCookPost() {
+  const dish = document.getElementById('cookDish').value.trim();
+  if (!dish) { toast('菜名不能为空', 'warn'); return; }
+  const recipeId = parseInt(document.getElementById('cookRecipe').value) || null;
+  const rating = cookRatingVal;
+  const feeling = document.getElementById('cookFeeling').value.trim();
+  if (recipeId && DATA) {
+    try {
+      const res = await fetch('/api/cook', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dish, date: todayStr(), rating, feeling, recipeId, images: [] }) });
+      const j = await res.json();
+      if (j.ok) {
+        closeCookModal();
+        await loadData();   // 重新拉真数据，刷新资源条+菜谱进度+背包
+        showCookReward(j.gains, dish);
+        return;
+      } else { toast('做菜结算失败：' + (j.error || '未知错误'), 'warn'); }
+    } catch (e) { toast('请求失败：' + e.message, 'warn'); }
+  }
+  toast('已记录（未关联菜谱，不参与结算）', '');
+  closeCookModal();
+}
+function showCookReward(gains, dish) {
+  if (!gains) return;
+  if (gains.activated) toast('🎉 习得新菜 · ' + (dish || ''), 'good');
+  else if (gains.note) toast(gains.note, 'good');
+  const res = [];
+  if (gains.wp) res.push('+' + gains.wp + ' 愿力');
+  if (gains.lp) res.push('+' + gains.lp + ' 幸运');
+  if (gains.dp) res.push('+' + gains.dp + ' 天命');
+  if (res.length) toast(res.join(' · '), 'res');
+  if (!gains.activated && !gains.note && !res.length) toast('记录已保存', '');
+}
+function toast(msg, kind) {
+  const wrap = document.getElementById('toastWrap');
+  if (!wrap) return;
+  const el = document.createElement('div');
+  el.className = 'toast ' + (kind || '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 2400);
 }
 
 function renderBag() {

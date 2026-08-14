@@ -59,6 +59,33 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .toast-wrap{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:10px;z-index:40}
 .toast{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--accent);padding:10px 16px;border-radius:10px;box-shadow:var(--shadow);font-size:13px;animation:tin .3s ease}
 @keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* 按钮 / 模态 / 烹饪交互 */
+.btn{cursor:pointer;border:1px solid var(--border);background:var(--panel2);color:var(--text);padding:9px 16px;border-radius:10px;font-size:14px;font-weight:600;transition:.18s;font-family:inherit}
+.btn:hover{filter:brightness(.97);transform:translateY(-1px)}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent}
+.btn.ghost{background:transparent}
+.btn.sm{padding:6px 12px;font-size:13px}
+.mod-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.mod-toolbar .section-title{margin:6px 0}
+.cook-card{display:flex;flex-direction:column}
+.cook-card .btn{margin-top:12px;align-self:flex-start}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+.modal.open{display:flex}
+.modal-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:22px;width:100%;max-width:420px;box-shadow:var(--shadow);animation:tin .25s ease}
+.modal-title{font-size:18px;font-weight:800;margin-bottom:16px}
+.form{display:flex;flex-direction:column;gap:2px}
+.form label{font-size:13px;color:var(--muted);margin-top:10px}
+.input{width:100%;padding:9px 12px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit}
+.input:focus{outline:2px solid var(--accent)}
+.rate{display:flex;gap:4px;margin-top:4px}
+.rate button{background:none;border:none;cursor:pointer;color:var(--border);font-size:22px;line-height:1;padding:0;transition:.15s}
+.rate button.on{color:var(--wp)}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.toast.good{border-left-color:var(--lp)}
+.toast.res{border-left-color:var(--wp);font-weight:700}
+.toast.warn{border-left-color:#c0392b}
+.toast.out{opacity:0;transform:translateY(-8px);transition:.4s}
 @media(max-width:780px){
   .layout{grid-template-columns:1fr}
   .nav{position:static;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
