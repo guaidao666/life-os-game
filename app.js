@@ -149,6 +149,7 @@ function renderMain(id) {
     case 'skill':     html = renderSkill(); break;
     case 'realm':     html = renderRealm(); break;
     case 'npc':       html = renderNpc(); break;
+    case 'map':       html = renderMap(); break;
     case 'succubus':  html = renderSuccubus(); break;
     default: html = renderPlaceholder(mod.name, '该模块数据接口将在二期接入，本期仅占位。');
   }
@@ -807,6 +808,81 @@ async function cultivateRealm(key) {
           else toast('删除失败：' + (r.error || ''), 'warn');
         } catch (e) { toast('删除失败：' + e.message, 'warn'); }
       });
+    }
+
+    /* ---------- 位置地图（二期 v10.0，移植主站逻辑，SVG 江湖图 + 州详情 + 探索度） ---------- */
+    const REGION_COLORS = { '豫西灵宝州': '#BA7517', '江淮六安州': '#0F6E56', '关外盘锦州': '#993556', '云中AI界': '#534AB7', '衡阳': '#185FA5', '魔渊': '#A32D2D' };
+    const MAP_REGIONS = [
+      { n: '豫西·灵宝州', r: '豫西灵宝州', x: 40, y: 68, w: 280, h: 118, town: '家责' },
+      { n: '江淮·六安州', r: '江淮六安州', x: 350, y: 68, w: 280, h: 118, town: '安居' },
+      { n: '关外·盘锦州', r: '关外盘锦州', x: 40, y: 208, w: 280, h: 118, town: '暧昧' },
+      { n: '云中·AI界', r: '云中AI界', x: 350, y: 208, w: 280, h: 118, town: '记忆' },
+      { n: '衡阳·本阵', r: '衡阳', x: 40, y: 348, w: 280, h: 118, town: '玩家 · 凯' },
+      { n: '魔渊', r: '魔渊', x: 350, y: 348, w: 280, h: 118, town: '野外首领' }
+    ];
+    const MAP_TARGET = { '豫西灵宝州': 3, '江淮六安州': 3, '关外盘锦州': 3, '云中AI界': 3, '衡阳': 1, '魔渊': 0 };
+    function mapCountIn(rg) { return npcsArr().filter(n => (n.region || '') === rg && (n.type || '') !== '野外首领').length; }
+    function mapExplPct(rg) { return MAP_TARGET[rg] ? Math.min(100, Math.round(mapCountIn(rg) / MAP_TARGET[rg] * 100)) : 100; }
+    function openRegionDetail(rg) {
+      const npcs = npcsArr().filter(n => (n.region || '') === rg && (n.type || '') !== '野外首领');
+      const meta = { '豫西灵宝州': '家责', '江淮六安州': '安居', '关外盘锦州': '暧昧', '云中AI界': '记忆', '衡阳': '玩家 · 凯' };
+      const targetOf = MAP_TARGET;
+      const pct = targetOf[rg] ? Math.min(100, Math.round(npcs.length / targetOf[rg] * 100)) : 100;
+      const listHtml = npcs.length ? npcs.map(n => '<div class="log-row" style="cursor:pointer" onclick="closeRealm();openNpcDetail(' + n.id + ')"><span class="log-item">' + esc(n.name || '') + '</span><span class="log-amt">' + esc(n.status || '未遇') + '</span></div>').join('') : '<div class="game-empty">此州尚无 NPC</div>';
+      const box = document.createElement('div');
+      box.className = 'realm-modal';
+      box.innerHTML = '<div class="realm-modal-box"><h3>🗺️ ' + esc(rg) + '</h3>' +
+        '<div class="map-region-sub">镇守：' + esc(meta[rg] || '—') + '</div>' +
+        '<div class="map-expl-bar" style="margin:8px 0"><span style="width:' + pct + '%"></span></div>' +
+        '<div class="map-expl-pct">探索度 ' + pct + '%　·　NPC ' + npcs.length + '</div>' +
+        '<div style="font-size:13px;font-weight:600;margin:10px 0 4px">境内人物</div>' +
+        '<div style="max-height:40vh;overflow:auto">' + listHtml + '</div>' +
+        '<button class="realm-cult-btn" style="margin-top:10px;background:var(--panel2);color:var(--text)" onclick="closeRealm()">关闭</button></div>';
+      box.onclick = (e) => { if (e.target === box) box.remove(); };
+      document.body.appendChild(box);
+    }
+    function renderMap() {
+      const npcs = npcsArr();
+      const countIn = (rg) => npcs.filter(n => (n.region || '') === rg && (n.type || '') !== '野外首领').length;
+      const explPct = (rg) => MAP_TARGET[rg] ? Math.min(100, Math.round(countIn(rg) / MAP_TARGET[rg] * 100)) : 100;
+      const statNpcs = npcs.filter(n => (n.type || '') !== '野外首领').length;
+      const explRegions = MAP_REGIONS.filter(r => MAP_TARGET[r.r] > 0);
+      const statExpl = explRegions.length ? Math.round(explRegions.reduce((s, r) => s + explPct(r.r), 0) / explRegions.length) : 0;
+      const regionCards = MAP_REGIONS.map(rg => {
+        if (rg.r === '魔渊') return '<div class="map-region danger" onclick="go(\'demon\')"><div class="map-region-name">🔴 ' + rg.n + '</div><div class="map-region-sub">野外首领 · 点击前往魔障</div></div>';
+        const pct = explPct(rg.r);
+        return '<div class="map-region" onclick="openRegionDetail(\'' + rg.r + '\')"><div class="map-region-name">' + rg.n + '</div>' +
+          '<div class="map-region-sub">镇守：' + rg.town + ' · NPC ' + countIn(rg.r) + '</div>' +
+          '<div class="map-expl-bar"><span style="width:' + pct + '%"></span></div>' +
+          '<div class="map-expl-pct">探索度 ' + pct + '%</div></div>';
+      }).join('');
+      const dots = npcs.map(n => {
+        const col = REGION_COLORS[n.region] || '#5F5E5A';
+        const cx = Number(n.x) || 0, cy = Number(n.y) || 0;
+        if ((n.type || '') === '野外首领') {
+          return '<g style="cursor:pointer" onclick="go(\'demon\')"><circle cx="' + cx + '" cy="' + cy + '" r="16" fill="#FCEBEB" stroke="#A32D2D"/>' +
+            '<path d="M' + (cx - 12) + ' ' + (cy - 12) + ' L' + (cx - 16) + ' ' + (cy - 20) + ' L' + (cx - 6) + ' ' + (cy - 14) + ' Z" fill="#A32D2D"/>' +
+            '<path d="M' + (cx + 12) + ' ' + (cy - 12) + ' L' + (cx + 16) + ' ' + (cy - 20) + ' L' + (cx + 6) + ' ' + (cy - 14) + ' Z" fill="#A32D2D"/>' +
+            '<text x="' + cx + '" y="' + (cy + 32) + '" text-anchor="middle" font-size="12" fill="#A32D2D">魅魔</text></g>';
+        }
+        return '<g style="cursor:pointer" onclick="openNpcDetail(' + n.id + ')"><circle cx="' + cx + '" cy="' + cy + '" r="13" fill="#fff" stroke="' + col + '"/><text x="' + cx + '" y="' + (cy + 4) + '" text-anchor="middle" font-size="12" fill="' + col + '">' + esc((n.name || '?').slice(0, 1)) + '</text></g>';
+      }).join('');
+      const regSvg = MAP_REGIONS.map(rg => {
+        const col = REGION_COLORS[rg.r] || '#5F5E5A';
+        return '<g><rect x="' + rg.x + '" y="' + rg.y + '" width="' + rg.w + '" height="' + rg.h + '" rx="12" fill="#fff" stroke="' + col + '" stroke-width="0.5"/>' +
+          '<text x="' + (rg.x + 16) + '" y="' + (rg.y + 22) + '" font-size="14" font-weight="500" fill="' + col + '">' + rg.n + '</text>' +
+          '<text x="' + (rg.x + 16) + '" y="' + (rg.y + 40) + '" font-size="12" fill="var(--muted)">镇守：' + rg.town + '</text>' +
+          '<g transform="translate(' + (rg.x + rg.w - 22) + ',' + (rg.y + 14) + ')"><rect x="0" y="0" width="8" height="18" rx="2" fill="' + col + '"/><path d="M0 0 L4 -6 L8 0 Z" fill="' + col + '"/></g></g>';
+      }).join('');
+      const mapSvg = '<svg class="world-map" viewBox="0 0 680 490" width="100%">' +
+        '<text x="40" y="34" font-size="14" font-weight="500" fill="var(--text)">江湖图志 · 燕云风</text>' +
+        '<text x="40" y="52" font-size="12" fill="var(--muted)">界碑传送 · 天涯客解锁 · 镇守据点 · 点击图标唤访 / 前往</text>' +
+        regSvg + dots + '</svg>';
+      return '<div class="section-title">🗺️ 位置地图 <span class="game-tag">世界探索</span></div>' +
+        '<div class="map-overview">江湖 NPC <b>' + statNpcs + '</b> · 已解锁州 <b>' + (MAP_REGIONS.length - 1) + '</b> · 平均探索度 <b>' + statExpl + '%</b></div>' +
+        '<div class="map-regions">' + regionCards + '</div>' +
+        mapSvg +
+        '<details class="map-legend-box"><summary>图例</summary><div class="map-legend"><span>■ 界碑（传送）</span><span>● NPC（点击唤访）</span><span>🔴 魅魔（野首·点击前往）</span><span>🛡 镇守</span></div></details>';
     }
 
     function renderSuccubus() {

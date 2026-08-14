@@ -213,3 +213,21 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .log-row{display:flex;gap:10px;font-size:13px;padding:6px 0;border-bottom:1px dashed var(--border)}
 .log-ts{color:var(--muted);flex:0 0 auto;font-variant-numeric:tabular-nums}
 .log-item{color:var(--text)}
+.log-amt{color:var(--muted);flex:0 0 auto;font-size:12px}
+/* 位置地图 */
+.map-overview{font-size:14px;color:var(--text);background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:6px}
+.map-overview b{color:var(--dp);font-weight:800}
+.map-regions{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--gap);margin-bottom:16px}
+.map-region{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);cursor:pointer;transition:.15s}
+.map-region:hover{transform:translateY(-2px);border-color:var(--accent)}
+.map-region.danger{border-color:#A32D2D;background:rgba(163,45,45,.06)}
+.map-region.danger:hover{border-color:#A32D2D}
+.map-region-name{font-size:15px;font-weight:700;margin-bottom:4px}
+.map-region-sub{font-size:12px;color:var(--muted);margin-bottom:8px}
+.map-expl-bar{height:8px;border-radius:6px;background:var(--panel2);overflow:hidden;margin-bottom:4px}
+.map-expl-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--lp),var(--dp))}
+.map-expl-pct{font-size:12px;color:var(--muted)}
+.world-map{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-top:8px;display:block}
+.map-legend-box{margin-top:14px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px 14px}
+.map-legend-box summary{cursor:pointer;font-weight:700;color:var(--text)}
+.map-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted);margin-top:8px}
