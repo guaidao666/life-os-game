@@ -1041,15 +1041,63 @@ async function cultivateRealm(key) {
     }
 
     function renderSuccubus() {
-  const sc = (DATA && DATA.succubus) || {};
-  if (!sc || !sc.weekKey) return renderPlaceholder('魅魔', '暂无魅魔状态（player.succubus 为空）。');
-  return `<div class="section-title">🌹 魅魔</div>
-  <div class="cards"><div class="card"><span class="tag">状态机</span>
-    <div class="kv"><span>周期</span><b>${esc(sc.weekKey)}</b></div>
-    <div class="kv"><span> seductions</span><b>${num(sc.seductions, 0)}</b></div>
-    <div class="kv"><span>沉沦 sunk</span><b>${sc.sunk ? '是' : '否'}</b></div>
-  </div></div>`;
-}
+      const sc = (DATA && DATA.succubus) || {};
+      if (!sc || !sc.weekKey) return renderPlaceholder('魅魔', '暂无魅魔状态（player.succubus 为空）。');
+      const sed = Number(sc.seductions) || 0;
+      const sunk = !!sc.sunk;
+      let form = '初诱（新手护盾）';
+      if (sunk) form = '终焉 · 沉沦';
+      else if (sed >= 2) form = '噬心（刺客形态）';
+      else if (sed === 1) form = '缠丝';
+      const sinkPct = Math.max(0, Math.min(100, sed / 3 * 100));
+      const stateCard = '<div class="card succ-state"><div class="dc-head"><span class="dc-icon">🦑</span><div><div class="tag">魅魔 · 状态机</div><h3>' + esc(form) + '</h3></div></div>' +
+        '<div class="meta">周期 ' + esc(sc.weekKey) + '</div>' +
+        '<div class="meta">已诱惑 ' + sed + ' / 3</div>' +
+        (sunk ? '<div class="meta">⚠️ 已沉沦：本周每次愿力收益减半（周一解除）</div>' : '') +
+        '<div class="bar"><i style="width:' + sinkPct + '%"></i></div>';
+      const action = sunk
+        ? '<button class="btn primary sm" disabled>本周已沉沦，无法再抵抗</button><div class="meta">沉沦效果：本周每次愿力收益减半，周一自动解除。</div>'
+        : '<button class="btn primary" onclick="openSuccubusModal()">🌹 遭遇魅魔诱惑</button><div class="meta">每次遭遇先判定：抵御成功 +1 愿力点；抵御失败计入次数（第1次免费，第2次耗1幸运点/拆天命点，第3次沉沦）。</div>';
+      return '<div class="section-title">🌹 魅魔 <span class="game-tag">每周计数 · 周一重置</span></div>' + stateCard + action;
+    }
+    function openSuccubusModal() {
+      const sc = (DATA && DATA.succubus) || {};
+      if (sc.sunk) { toast('你已沉沦于魔渊，本周无法再抵抗。', 'warn'); return; }
+      const sed = Number(sc.seductions) || 0;
+      let ctx = '';
+      if (sed === 0) ctx = '第1次抵御失败：新手护盾触发，免费挣脱。';
+      else if (sed === 1) ctx = '第2次抵御失败：消耗 1 幸运点（不足自动拆解 1 天命点）。';
+      else if (sed === 2) ctx = '第3次抵御失败：本周彻底沉沦。';
+      const box = document.createElement('div');
+      box.className = 'realm-modal';
+      box.innerHTML = '<div class="realm-modal-box succ-modal">' +
+        '<h3>🌹 遭遇魅魔诱惑</h3>' +
+        '<div class="succ-ctx">' + esc(ctx) + ' 抵御成功则 +1 愿力点。</div>' +
+        '<div class="succ-btns">' +
+          '<button class="succ-btn succ-success" onclick="chooseSuccubusResult(\'success\')">🛡️ 抵御成功<br><small>+1 愿力点</small></button>' +
+          '<button class="succ-btn succ-fail" onclick="chooseSuccubusResult(\'failure\')">💔 抵御失败<br><small>计入一次</small></button>' +
+        '</div></div>';
+      box.onclick = (e) => { if (e.target === box) box.remove(); };
+      document.body.appendChild(box);
+    }
+    function closeSuccubusModal() { document.querySelectorAll('.realm-modal').forEach(m => { if (m.querySelector('.succ-modal')) m.remove(); }); }
+    function chooseSuccubusResult(result) {
+      closeSuccubusModal();
+      if (result !== 'success' && result !== 'failure') return;
+      encounterSuccubus(result);
+    }
+    async function encounterSuccubus(result) {
+      try {
+        const j = await (await fetch('/api/succubus', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'encounter', result }) })).json();
+        if (j.ok) {
+          DATA.succubus = j.succubus;
+          if (DATA.player) { DATA.player.willpower = j.willpower; DATA.player.lucky = j.lucky; DATA.player.destiny = j.destiny; }
+          renderResbar();
+          toast(j.msg + '（愿力 ' + j.willpower + ' · 幸运 ' + j.lucky + ' · 天命 ' + j.destiny + '）', result === 'success' ? 'good' : 'warn');
+          renderMain('succubus');
+        } else toast('失败：' + (j.error || ''), 'warn');
+      } catch (e) { toast('遭遇失败：' + e.message, 'warn'); }
+    }
 
 function renderPlaceholder(title, msg) {
   return `<div class="section-title">${esc(title)}</div>

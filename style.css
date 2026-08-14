@@ -283,3 +283,14 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .gs-buff{font-size:13px;margin-top:6px}
 .gs-buff b{color:var(--text)}
 .gs-buff-sub{font-size:12px;color:var(--lp);margin-top:4px}
+/* 魅魔 */
+.succ-state .dc-icon{font-size:30px}
+.succ-ctx{font-size:13px;color:var(--text);margin:10px 2px 14px;line-height:1.6}
+.succ-btns{display:flex;gap:12px}
+.succ-btn{cursor:pointer;font-family:inherit;font-size:15px;font-weight:700;padding:14px 10px;border-radius:12px;border:1px solid var(--border);background:var(--panel2);color:var(--text);flex:1;line-height:1.4;transition:.15s}
+.succ-btn small{font-size:11px;font-weight:500;opacity:.75}
+.succ-btn:hover{transform:translateY(-2px)}
+.succ-success{border-color:var(--lp);color:var(--lp)}
+.succ-success:hover{background:rgba(63,156,109,.12)}
+.succ-fail{border-color:#c0392b;color:#c0392b}
+.succ-fail:hover{background:rgba(192,57,43,.1)}
