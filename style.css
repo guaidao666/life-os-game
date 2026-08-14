@@ -122,6 +122,21 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .modal-msg{white-space:pre-line;font-size:14px;color:var(--text);line-height:1.7;padding:4px 2px 14px;font-family:inherit}
 .btn.danger{background:#c0392b;border-color:transparent;color:#fff}
 .btn.danger:hover{filter:brightness(1.05)}
+/* 魔障 */
+.demon-avatars-title{font-size:13px;color:var(--muted);margin:14px 0 8px}
+.demon-avatars{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.demon-avatar{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;border-radius:14px;background:var(--panel);border:1px solid var(--border);position:relative}
+.demon-avatar.primary{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+.da-icon{font-size:30px}
+.da-name{font-size:13px;font-weight:700}
+.da-tag{position:absolute;top:-8px;right:-8px;font-size:10px;background:var(--accent);color:#fff;padding:2px 7px;border-radius:10px}
+.dc-head{display:flex;gap:12px;align-items:center;margin-bottom:8px}
+.dc-icon{font-size:30px}
+.demon-card.danger{border-color:#e0b4ad}
+.demon-card.danger .bar i{background:#c0392b}
+.demon-rules{margin-top:18px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px 14px}
+.demon-rules summary{cursor:pointer;font-weight:700;color:var(--text)}
+.demon-rules-body{font-size:13px;color:var(--muted);line-height:1.7;margin-top:8px}
 @media(max-width:780px){
   .layout{grid-template-columns:1fr}
   .nav{position:static;display:flex;flex-wrap:wrap;gap:6px;align-items:center}

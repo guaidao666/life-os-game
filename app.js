@@ -129,18 +129,48 @@ function renderDashboard() {
   return hero + `<div class="section-title">📊 修行概览</div>` + cards;
 }
 
+function demonDanger(d) {
+  if (d.key === 'meimo') { const sed = Number((DATA.succubus || {}).seductions) || 0; return Math.max(0, Math.min(1, sed / 3)); }
+  const mx = d.key === 'xinmo' ? 100 : (Number(d.max_hp) || 1); return mx > 0 ? Math.max(0, Math.min(1, (Number(d.hp) || 0) / mx)) : 0;
+}
 function renderDemon() {
   const ds = demons();
   if (!ds.length) return renderPlaceholder('魔障', '暂无魔障数据。');
+  let primaryKey = '';
+  if (ds.length) { let best = -1; ds.forEach(d => { const dg = demonDanger(d) * (Number(d.threat) || 1); if (dg > best) { best = dg; primaryKey = d.key; } }); }
+  const iconOf = k => k === 'xinmo' ? '👹' : (k === 'meimo' ? '🦑' : '👾');
+  const avatars = ds.map(d => `<div class="demon-avatar${d.key === primaryKey ? ' primary' : ''}"><div class="da-icon">${iconOf(d.key)}</div><div class="da-name">${esc(d.name || '魔')}</div>${d.key === primaryKey ? '<div class="da-tag">主威胁</div>' : ''}</div>`).join('');
   const cards = ds.map(d => {
-    const hp = num(d.hp, 0), max = num(d.max_hp, 1) || 1;
+    const hp = num(d.hp, 0), max = d.key === 'xinmo' ? 100 : (num(d.max_hp, 1) || 1);
     const pct = Math.max(0, Math.min(100, Math.round(hp / max * 100)));
-    return `<div class="card"><span class="tag">${esc(d.kind || '魔障')} · ${esc(d.cycle || 'daily')}</span>
-      <h3>${esc(d.name)}</h3>
-      <div class="meta">HP ${hp}/${max} · 威胁 ${num(d.threat, 0)}</div>
-      <div class="bar"><i style="width:${pct}%"></i></div></div>`;
+    const dg = demonDanger(d);
+    const danger = dg >= 0.66;
+    let extra = '';
+    if (d.key === 'xinmo') {
+      extra = `<div class="meta">每完成一个每日秘境副本对其造成伤害（每日 0 点复苏）。${hp <= 0 ? '🎉 已击破！' : '未除则降低副本愿力产出。'}</div>`;
+    } else if (d.key === 'meimo') {
+      const suc = DATA.succubus || {};
+      const sed = Number(suc.seductions) || 0;
+      const sunk = !!suc.sunk;
+      let form = '初诱'; if (sunk) form = '终焉·沉沦'; else if (sed >= 2) form = '噬心'; else if (sed === 1) form = '缠丝';
+      extra = `<div class="meta">本周诱惑 ${sed}/3 · 形态：${form}${sunk ? '（收益减半，周一解除）' : ''}</div>`;
+    } else if (d.extra && d.extra.note) {
+      extra = `<div class="meta">${esc(d.extra.note)}</div>`;
+    }
+    return `<div class="card demon-card${danger ? ' danger' : ''}">
+      <div class="dc-head"><span class="dc-icon">${iconOf(d.key)}</span><div><div class="tag">${esc(d.kind || '魔障')} · ${esc(d.cycle || 'daily')}</div><h3>${esc(d.name)}</h3></div></div>
+      <div class="meta">HP ${hp}/${max} · 威胁 ${num(d.threat, 0)}${danger ? ' · ⚠️ 高危' : ''}</div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      ${extra}
+    </div>`;
   }).join('');
-  return `<div class="section-title">🩸 魔障 · 共 ${ds.length} 道</div><div class="cards">${cards}</div>`;
+  return `<div class="section-title">🩸 魔障 · 共 ${ds.length} 道</div>
+  <div class="demon-avatars-title">主威胁高亮</div>
+  <div class="demon-avatars">${avatars}</div>
+  <div class="cards">${cards}</div>
+  <details class="demon-rules"><summary>规则说明</summary>
+    <div class="demon-rules-body">· <b>心魔·拖延</b>：完成每日秘境副本对其造成伤害，HP 归零即击破；每日 0 点复苏，未除则降低副本愿力产出。<br>· <b>魅魔·诱惑</b>：每周计数 0/3，周一 0 点重置；抵御成功 +1 愿力，失败按梯度处理，沉沦后短期收益减半。（魅魔交互在二期接入）</div>
+  </details>`;
 }
 
 /* ---------- 通用确认弹窗（不可逆操作二次确认） ---------- */
