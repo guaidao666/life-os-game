@@ -137,6 +137,8 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .demon-rules{margin-top:18px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px 14px}
 .demon-rules summary{cursor:pointer;font-weight:700;color:var(--text)}
 .demon-rules-body{font-size:13px;color:var(--muted);line-height:1.7;margin-top:8px}
+.dungeon-card.cleared{border-color:var(--lp);opacity:.92}
+.dungeon-card.cleared .dc-icon{filter:grayscale(0)}
 @media(max-width:780px){
   .layout{grid-template-columns:1fr}
   .nav{position:static;display:flex;flex-wrap:wrap;gap:6px;align-items:center}

@@ -96,7 +96,7 @@ function renderMain(id) {
     case 'dashboard': html = renderDashboard(); break;
     case 'demon':     html = renderDemon(); break;
     case 'altar':     html = renderAltar(); break;
-    case 'dungeon':   html = renderPlaceholder('每日秘境', '每日副本机制将在二期接入真实进度数据，本期仅占位。'); break;
+    case 'dungeon':   html = renderDungeon(); break;
     case 'cook':      html = renderCook(); break;
     case 'bag':       html = renderBag(); break;
     case 'skill':     html = renderSkill(); break;
@@ -219,6 +219,61 @@ async function condenseFate() {
       } catch (e) { toast('凝结失败：' + e.message, 'warn'); }
     }, '仍要凝结');
   }, '凝结');
+}
+
+/* ---------- 每日秘境（每日副本，通关削减心魔 HP） ---------- */
+const DAILY_DUNGEONS = [
+  { id: 'morning', name: '🌅 晨间仪式', desc: '早起 + 整理床铺' },
+  { id: 'exercise', name: '🏃 运动打卡', desc: '运动 ≥ 30 分钟' },
+  { id: 'read', name: '📚 读书', desc: '静心阅读 ≥ 30 分钟' },
+  { id: 'finance', name: '💰 记账', desc: '记录今日收支' },
+  { id: 'cook', name: '🍳 烟火', desc: '亲自做一顿饭' },
+  { id: 'diary', name: '📝 日记', desc: '写今日日记' },
+];
+function todayKey() { return new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }).replace(/\//g, '-'); }
+function dungeonFlag(id) { return 'game_dungeon_' + todayKey() + '_' + id; }
+function dungeonDone(id) { try { return localStorage.getItem(dungeonFlag(id)) === '1'; } catch (e) { return false; } }
+function xinmoHpFromDungeons() { const done = DAILY_DUNGEONS.filter(d => dungeonDone(d.id)).length; return Math.max(0, 100 - Math.round(done / DAILY_DUNGEONS.length * 100)); }
+function renderDungeon() {
+  const done = DAILY_DUNGEONS.filter(d => dungeonDone(d.id)).length;
+  const total = DAILY_DUNGEONS.length;
+  const hp = xinmoHpFromDungeons();
+  const all = done === total;
+  const cards = DAILY_DUNGEONS.map(d => {
+    const ok = dungeonDone(d.id);
+    return `<div class="card dungeon-card${ok ? ' cleared' : ''}">
+      <div class="dc-head"><span class="dc-icon">${ok ? '✅' : '⚔️'}</span><div><div class="tag">${ok ? '已通关' : '副本'}</div><h3>${esc(d.name)}</h3></div></div>
+      <div class="meta">${esc(d.desc)}</div>
+      ${ok ? '<div class="meta">🎉 已通关</div>' : '<button class="btn primary" onclick="clearDungeon(\'' + d.id + '\')">通关</button>'}
+    </div>`;
+  }).join('');
+  return `<div class="section-title">🗺️ 每日秘境 · ${done}/${total}</div>
+  <div class="demon-avatars-title">心魔·拖延 HP（每通关一个副本削减 ${Math.round(100 / total)}）</div>
+  <div class="bar" style="height:14px"><i style="width:${hp}%;${hp <= 0 ? 'background:#6fcf97' : ''}"></i></div>
+  <div class="meta" style="margin:6px 0 14px">当前 HP ${hp}/100${hp <= 0 ? ' · 🎉 心魔已被击破！' : ''}</div>
+  <div class="cards">${cards}</div>
+  <div class="meta" style="margin-top:12px">完成全部 ${total} 个副本即击破心魔，获得 📜 契约点 +1（每日限一次，走 /api/reward 持久化）。</div>`;
+}
+async function clearDungeon(id) {
+  try { localStorage.setItem(dungeonFlag(id), '1'); } catch (e) {}
+  const xm = (demons() || []).find(d => d.key === 'xinmo');
+  if (xm) xm.hp = xinmoHpFromDungeons();
+  const done = DAILY_DUNGEONS.filter(d => dungeonDone(d.id)).length;
+  if (done === DAILY_DUNGEONS.length) {
+    const f = 'game_defeated_' + todayKey();
+    if (!localStorage.getItem(f)) {
+      localStorage.setItem(f, '1');
+      try {
+        const j = await fetch('/api/reward', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contract: 1, source: '心魔击败', text: '每日秘境全通关' }) });
+        const r = await j.json();
+        if (r.ok && r.player) { DATA.player.contract = r.player.contract; renderResbar(); }
+        toast('🎉 心魔已被击破！契约点 +1', 'good');
+      } catch (e) { toast('击破记录失败：' + e.message, 'warn'); }
+    } else { toast('心魔已击破（今日已领取）', 'good'); }
+  } else {
+    toast('副本通关，心魔 HP -' + Math.round(100 / DAILY_DUNGEONS.length), 'good');
+  }
+  renderMain('dungeon');
 }
 
 function renderCook() {
