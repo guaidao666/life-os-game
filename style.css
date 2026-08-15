@@ -328,6 +328,18 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .weekly-dungeon .dungeon-title{color:var(--wp)}
 .weekly-cards{margin-top:6px}
 .weekly-token.locked{opacity:.55;filter:grayscale(.3)}
+/* 周本管理 */
+.wk-mng-box{max-width:580px}
+.wk-mng-list{max-height:40vh;overflow:auto;margin:8px 0}
+.wk-mng-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.wk-mng-ic{font-size:24px;min-width:30px;text-align:center}
+.wk-mng-info{flex:1}
+.wk-mng-gname{font-weight:700;font-size:14px}
+.wk-mng-name{font-weight:400;color:var(--muted);font-size:12px;margin-left:4px}
+.wk-mng-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.wk-mng-fixed{font-size:12px;color:var(--wp);border:1px solid var(--accent);border-radius:8px;padding:2px 8px;white-space:nowrap}
+.wk-mng-add{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.wk-mng-add .input{flex:1;min-width:160px}
 .game-card-title{font-size:14px;font-weight:700;margin:4px 0}
 .input{width:100%;border:1px solid var(--border);background:var(--panel);color:var(--text);padding:8px 11px;border-radius:9px;font-size:13px;font-family:inherit;transition:.15s}
 .input:focus{outline:none;border-color:var(--accent)}

@@ -156,6 +156,7 @@ function renderMain(id) {
     case 'char':      html = renderChar(); break;
     case 'succubus':  html = renderSuccubus(); break;
     case 'trial':     html = renderTrial(); break;
+    case 'weekly':    html = renderWeekly(); break;
     default: html = renderPlaceholder(mod.name, '该模块数据接口将在二期接入，本期仅占位。');
   }
   main.innerHTML = html;
@@ -1204,10 +1205,101 @@ function weeklyCardsHtml() {
 function renderTrial() {
   return '<div class="section-title">⚡ 周天试炼 <span class="game-tag">一周一轮回 · 七日一炼心</span></div>' +
     '<div class="dungeon weekly-dungeon">' +
-      '<div class="dungeon-header"><div><div class="dungeon-title">周 天 试 炼</div><div class="dungeon-sub">完成周级副本，炼心得愿力</div></div></div>' +
+      '<div class="dungeon-header"><div><div class="dungeon-title">周 天 试 炼</div><div class="dungeon-sub">完成周级副本，炼心得愿力</div></div>' +
+        '<div class="dungeon-head-right"><button class="dg-btn" style="width:auto;padding:6px 14px" onclick="openWeeklyManage()">⚙️ 管理周本</button></div>' +
+      '</div>' +
       '<div class="dungeon-cards weekly-cards">' + weeklyCardsHtml() + '</div>' +
       '<div class="dungeon-reset-note">🗓️ 每周一 0 点（中国时区）重置周本进度，未领取的奖励将失效。</div>' +
     '</div>';
+}
+function openWeeklyManage() {
+  const defs = weeklyDefs();
+  const rowHtml = (d) => {
+    const isC = d.fixed;
+    return '<div class="wk-mng-row">' +
+      '<div class="wk-mng-ic">' + esc(d.icon || '❖') + '</div>' +
+      '<div class="wk-mng-info"><div class="wk-mng-gname">' + esc(d.gname || '') + '<span class="wk-mng-name">' + esc(d.name || '') + '</span></div>' +
+      '<div class="wk-mng-sub">匹配：' + (d.tasks || []).map(esc).join(' / ') + '　·　需求 ' + d.need + '　·　奖励 +' + d.reward + (d.unlock ? ('　·　' + esc(d.unlock.text)) : '') + '</div></div>' +
+      (isC ? '<span class="wk-mng-fixed">默认</span>' : '<button type="button" class="tb-del-btn" onclick="delWeeklyDef(' + d.id + ')">✕</button>') +
+      '</div>';
+  };
+  const box = document.createElement('div');
+  box.className = 'realm-modal';
+  box.id = 'weeklyManageModal';
+  box.innerHTML = '<div class="realm-modal-box wk-mng-box">' +
+    '<h3>⚙️ 管理周本</h3>' +
+    '<div class="wk-mng-list">' + defs.map(rowHtml).join('') + '</div>' +
+    '<div class="wk-mng-add">' +
+      '<div class="game-card-title" style="margin:10px 0 4px">＋ 新增自定义周本</div>' +
+      '<input class="input" id="wkName" placeholder="名称（如 沐浴养心）">' +
+      '<input class="input" id="wkGname" placeholder="古风名（如 沐身涤尘）">' +
+      '<input class="input" id="wkIcon" placeholder="图标 emoji（如 🛁）" style="max-width:130px">' +
+      '<input class="input" id="wkTasks" placeholder="匹配任务文本，逗号分隔（如 洗澡,沐浴）">' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+        '<input class="input" id="wkNeed" type="number" placeholder="需求次数" style="max-width:130px">' +
+        '<input class="input" id="wkReward" type="number" placeholder="奖励愿力" style="max-width:130px">' +
+      '</div>' +
+      '<button class="btn btn-green" onclick="addWeeklyDef()">新增</button>' +
+    '</div>' +
+    '<button class="dg-btn" style="margin-top:14px;background:var(--bg);color:var(--text-secondary)" onclick="closeRealm()">关闭</button>' +
+  '</div>';
+  box.onclick = (e) => { if (e.target === box) box.remove(); };
+  document.body.appendChild(box);
+}
+function addWeeklyDef() {
+  const name = (document.getElementById('wkName') || {}).value || '';
+  const gname = (document.getElementById('wkGname') || {}).value || name;
+  const icon = (document.getElementById('wkIcon') || {}).value || '❖';
+  const tasks = (document.getElementById('wkTasks') || {}).value.split(/[,，]/).map(s => s.trim()).filter(Boolean);
+  const need = parseInt((document.getElementById('wkNeed') || {}).value) || tasks.length || 1;
+  const reward = parseInt((document.getElementById('wkReward') || {}).value) || 5;
+  if (!tasks.length) { toast('请填写匹配任务文本', 'warn'); return; }
+  let custom = [];
+  try { custom = JSON.parse(localStorage.getItem('lifeos_weeklyDefs') || '[]'); } catch (e) { custom = []; }
+  custom.push({ id: Date.now(), name: name.trim(), gname: gname.trim(), icon: icon, tasks: tasks, need: need, reward: reward, unlock: null, fixed: false });
+  try { localStorage.setItem('lifeos_weeklyDefs', JSON.stringify(custom)); } catch (e) {}
+  toast('🗡️ 已新增周本', 'good');
+  const m = document.getElementById('weeklyManageModal'); if (m) m.remove();
+  renderMain(CUR);
+}
+function delWeeklyDef(id) {
+  showConfirm('删除周本', '确定删除这个自定义周本？', function () {
+    let custom = [];
+    try { custom = JSON.parse(localStorage.getItem('lifeos_weeklyDefs') || '[]'); } catch (e) { custom = []; }
+    custom = custom.filter(d => d.id !== id);
+    try { localStorage.setItem('lifeos_weeklyDefs', JSON.stringify(custom)); } catch (e) {}
+    toast('已删除自定义周本');
+    const m = document.getElementById('weeklyManageModal'); if (m) m.remove();
+    renderMain(CUR);
+  });
+}
+function renderWeekly() {
+  const defs = weeklyDefs();
+  const rowHtml = (d) => {
+    const isC = d.fixed;
+    return '<div class="wk-mng-row">' +
+      '<div class="wk-mng-ic">' + esc(d.icon || '❖') + '</div>' +
+      '<div class="wk-mng-info"><div class="wk-mng-gname">' + esc(d.gname || '') + '<span class="wk-mng-name">' + esc(d.name || '') + '</span></div>' +
+      '<div class="wk-mng-sub">匹配：' + (d.tasks || []).map(esc).join(' / ') + '　·　需求 ' + d.need + '　·　奖励 +' + d.reward + (d.unlock ? ('　·　' + esc(d.unlock.text)) : '') + '</div></div>' +
+      (isC ? '<span class="wk-mng-fixed">默认</span>' : '<button type="button" class="tb-del-btn" onclick="delWeeklyDef(' + d.id + ')">✕</button>') +
+      '</div>';
+  };
+  return '<div class="section-title">📅 周本管理 <span class="game-tag">自定义周级修行副本</span></div>' +
+    '<div class="dungeon weekly-dungeon"><div class="dungeon-cards" style="padding:0">' +
+      '<div class="wk-mng-list" style="max-height:none">' + defs.map(rowHtml).join('') + '</div>' +
+    '</div>' +
+    '<div class="wk-mng-add" style="margin-top:14px">' +
+      '<div class="game-card-title" style="margin:4px 0">＋ 新增自定义周本</div>' +
+      '<input class="input" id="wkName" placeholder="名称（如 沐浴养心）">' +
+      '<input class="input" id="wkGname" placeholder="古风名（如 沐身涤尘）">' +
+      '<input class="input" id="wkIcon" placeholder="图标 emoji（如 🛁）" style="max-width:130px">' +
+      '<input class="input" id="wkTasks" placeholder="匹配任务文本，逗号分隔（如 洗澡,沐浴）">' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+        '<input class="input" id="wkNeed" type="number" placeholder="需求次数" style="max-width:130px">' +
+        '<input class="input" id="wkReward" type="number" placeholder="奖励愿力" style="max-width:130px">' +
+      '</div>' +
+      '<button class="btn btn-green" onclick="addWeeklyDef()">新增</button>' +
+    '</div></div>';
 }
 
 function renderPlaceholder(title, msg) {
