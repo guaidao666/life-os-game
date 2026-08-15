@@ -324,7 +324,7 @@ function diaryCalendarHtml() {
   let cnt = 0;
   for (let d = 1; d <= daysInMonth; d++) { const ds = diaryCalYear + '-' + String(diaryCalMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0'); if (byDate[ds]) cnt++; }
   return '<div class="diary-cal-nav"><button class="btn ghost" onclick="diaryPrevMonth()">‹</button>' +
-    '<span class="diary-cal-title">' + diaryCalYear + '年' + (diaryCalMonth + 1) + '月</span>' +
+    '<span class="diary-cal-title" onclick="diaryOpenYm()">' + diaryCalYear + '年' + (diaryCalMonth + 1) + '月</span>' +
     '<button class="btn ghost" onclick="diaryNextMonth()">›</button>' +
     '<button class="btn btn-blue" onclick="diaryGoToday()">今天</button></div>' +
     '<div class="diary-cal-head"><div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div></div>' +
@@ -334,6 +334,30 @@ function diaryCalendarHtml() {
 function diaryPrevMonth() { diaryCalMonth--; if (diaryCalMonth < 0) { diaryCalMonth = 11; diaryCalYear--; } renderMain('diary'); }
 function diaryNextMonth() { diaryCalMonth++; if (diaryCalMonth > 11) { diaryCalMonth = 0; diaryCalYear++; } renderMain('diary'); }
 function diaryGoToday() { const n = new Date(); diaryCalYear = n.getFullYear(); diaryCalMonth = n.getMonth(); diarySelDate = todayKey(); renderMain('diary'); }
+function diaryOpenYm() {
+  const curYear = diaryCalYear, curMonth = diaryCalMonth + 1;
+  const years = []; for (let y = 2022; y <= new Date().getFullYear() + 1; y++) years.push(y);
+  const months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  const pick = document.createElement('div');
+  pick.className = 'realm-modal';
+  pick.id = 'diaryYmPicker';
+  pick.innerHTML = '<div class="diary-ym-picker" onclick="event.stopPropagation()">' +
+    '<div class="ym-years">' + years.map(y => '<div class="ym-year' + (y === curYear ? ' on' : '') + '" onclick="diaryYmSelYear(' + y + ')">' + y + '年</div>').join('') + '</div>' +
+    '<div class="ym-months">' + months.map(m => '<div class="ym-month' + (m === curMonth ? ' on' : '') + '" onclick="diaryYmSelMonth(' + m + ')">' + m + '月</div>').join('') + '</div>' +
+    '</div>';
+  pick.onclick = () => pick.remove();
+  document.body.appendChild(pick);
+}
+function diaryYmSelYear(y) {
+  diaryCalYear = y;
+  const p = document.getElementById('diaryYmPicker'); if (!p) return;
+  p.querySelectorAll('.ym-year').forEach(e => e.classList.toggle('on', Number(e.textContent.replace('年', '')) === y));
+}
+function diaryYmSelMonth(m) {
+  diaryCalMonth = m - 1;
+  const p = document.getElementById('diaryYmPicker'); if (p) p.remove();
+  renderMain('diary');
+}
 function clickDiaryDate(ds, has) {
   diarySelDate = ds;
   const d = (DATA.diary || []).find(x => x.date === ds);
@@ -471,6 +495,153 @@ async function delDiary(id) {
   } catch (e) { alert('删除失败：' + e.message); }
 }
 
+/* ---------- 通用管理面板（每个模块顶部 🛠 管理，支持增删改） ---------- */
+let EDIT = {};
+const MGMT = {
+  diary:   { store:'api', table:'diary', dataKey:'diary', nameF:d=>d.title||d.date,
+    fields:[{k:'date',label:'日期',type:'date'},{k:'title',label:'标题',type:'text'},{k:'mood',label:'心情',type:'text'},{k:'content',label:'内容',type:'textarea'}] },
+  weight:  { store:'api', table:'weight', dataKey:'weight', nameF:d=>(d.date||'')+' '+(d.weight||''),
+    fields:[{k:'date',label:'日期',type:'date'},{k:'weight',label:'体重',type:'number'},{k:'note',label:'备注',type:'text'}] },
+  npcs:    { store:'api', table:'npcs', dataKey:'npcs', nameF:d=>d.name||('NPC'+d.id),
+    fields:[{k:'name',label:'名字',type:'text'},{k:'type',label:'类型',type:'select',opts:['家人','恋慕','朋友']},{k:'region',label:'所属州',type:'text'},{k:'desc',label:'人设',type:'text'},{k:'x',label:'地图X',type:'number'},{k:'y',label:'地图Y',type:'number'}] },
+  dungeon: { store:'api', table:'taskboard', dataKey:'taskboard', nameF:d=>d.text||('任务'+d.id),
+    fields:[{k:'grp',label:'分组',type:'text'},{k:'text',label:'内容',type:'text'},{k:'points',label:'愿力',type:'number'},{k:'depth',label:'层级',type:'number'}] },
+  cook:    { store:'api', table:'recipes', dataKey:'food', dataSub:'recipes', nameF:d=>d.name||('菜谱'+d.id),
+    fields:[{k:'name',label:'菜名',type:'text'},{k:'category',label:'分类',type:'text'},{k:'difficulty',label:'难度',type:'number'},{k:'cost',label:'成本',type:'text'},{k:'time',label:'时长(分)',type:'number'},{k:'ingredients',label:'食材(JSON)',type:'text'},{k:'steps',label:'步骤',type:'textarea'}] },
+  fun:     { store:'local', localKey:'game_fun_log', nameF:d=>d.title||d.name||('记录'+d.id),
+    fields:[{k:'title',label:'标题',type:'text'},{k:'type',label:'类型',type:'select',opts:['电视剧','电影','动漫','漫画','书','游戏','歌曲']},{k:'rating',label:'评分',type:'number'},{k:'note',label:'笔记',type:'textarea'}] },
+  economist:{ store:'econ', nameF:(d,i)=>(d.date||'')+' 学习 '+(d.min||0)+'分',
+    fields:[{k:'date',label:'日期',type:'date'},{k:'min',label:'分钟',type:'number'},{k:'subjects',label:'科目(逗号分隔)',type:'text'}] },
+  sleep:   { store:'local', localKey:'game_sleep_log', nameF:d=>(d.date||'')+' '+(d.bed||''),
+    fields:[{k:'date',label:'日期',type:'date'},{k:'bed',label:'就寝时间',type:'time'},{k:'tier',label:'档位',type:'select',opts:['early','ontime','late']}] },
+  skill:   { store:'player', playerField:'skills', isObj:true, nameF:d=>d.name||d.id,
+    fields:[{k:'name',label:'技能名(即key)',type:'text'},{k:'level',label:'等级',type:'number'}] },
+  realm:   { store:'player', playerField:'realms', isObj:true, nameF:d=>d.name||d.id,
+    fields:[{k:'name',label:'境界key',type:'text'},{k:'layer',label:'层',type:'number'},{k:'xp',label:'经验',type:'number'},{k:'round',label:'轮回',type:'number'}] },
+  bag:     { store:'player', playerField:'inventory', nameF:d=>d.name||('物品'+d.id),
+    fields:[{k:'name',label:'名称',type:'text'},{k:'type',label:'类型',type:'text'},{k:'location',label:'位置',type:'select',opts:['bag','warehouse']},{k:'count',label:'数量',type:'number'}] },
+  heart:   { store:'heart', nameF:d=>d.name||d.id,
+    fields:[{k:'name',label:'心法名',type:'text'},{k:'effect',label:'效果标签',type:'text'},{k:'desc',label:'释义',type:'textarea'}] },
+  demon:   { store:'readonly', note:'魔障为种子数据，需在主站/后端维护，不在本页增删。' },
+  trial:   { store:'readonly', note:'周天试炼为关卡定义，不是用户数据，无需增删。' },
+  map:     { store:'readonly', note:'地图由 NPC 所属州派生，去「江湖 NPC」管理即可。' }
+};
+function mgmtBtnHtml(id) {
+  if (!MGMT[id]) return '';
+  const on = EDIT[id];
+  return '<div class="mgmt-bar"><button class="btn ' + (on ? 'primary' : '') + ' sm" onclick="mgmtToggle(\'' + id + '\')">🛠 ' + (on ? '管理中' : '管理') + '</button>' +
+    (on ? '<button class="btn sm" onclick="mgmtPanel(\'' + id + '\')">列表管理</button>' : '') + '</div>';
+}
+function mgmtToggle(id) { EDIT[id] = !EDIT[id]; renderMain(id); }
+function mgmtList(kind) {
+  const c = MGMT[kind]; if (!c) return [];
+  if (c.store === 'api') { const arr = c.dataSub ? (((DATA[c.dataKey] || {})[c.dataSub]) || []) : (DATA[c.dataKey] || []); return arr.slice(); }
+  if (c.store === 'local') { try { return JSON.parse(localStorage.getItem(c.localKey) || '[]'); } catch (e) { return []; } }
+  if (c.store === 'econ') { return econLoad().map((x, i) => Object.assign({ id: String(i) }, x)); }
+  if (c.store === 'player') { const p = player(); if (c.isObj) { const o = p[c.playerField] || {}; return Object.keys(o).map(k => Object.assign({ id: k, name: k }, o[k])); } return (p[c.playerField] || []).slice(); }
+  if (c.store === 'heart') { return heartCustom().slice(); }
+  return [];
+}
+function modName(id) { const m = MODULES.find(x => x.id === id); return m ? m.name : id; }
+function mgmtPanel(kind) {
+  const c = MGMT[kind]; if (!c) return;
+  let body;
+  if (c.store === 'readonly') body = '<div class="meta">' + esc(c.note || '该模块为只读，不可在本页增删。') + '</div>';
+  else {
+    const items = mgmtList(kind);
+    const rows = items.length ? items.map(it => {
+      const nm = c.nameF ? c.nameF(it) : (it.name || it.id || '');
+      const idv = (it.id != null) ? it.id : (it.date || '');
+      return '<div class="mgmt-row"><span class="mgmt-name">' + esc(String(nm)) + '</span>' +
+        '<span class="mgmt-acts"><button class="btn sm" onclick="mgmtModal(\'' + kind + '\',\'' + encodeURIComponent(idv) + '\')">✏️</button>' +
+        '<button class="btn sm danger" onclick="mgmtDel(\'' + kind + '\',\'' + encodeURIComponent(idv) + '\')">🗑️</button></span></div>';
+    }).join('') : '<div class="game-empty">暂无数据</div>';
+    body = rows + '<button class="btn primary" style="margin-top:8px" onclick="mgmtModal(\'' + kind + '\',\'\')">＋ 新增</button>';
+  }
+  const box = document.createElement('div'); box.className = 'realm-modal';
+  box.innerHTML = '<div class="realm-modal-box"><h3>🛠 管理 · ' + esc(modName(kind)) + '</h3><div class="mgmt-list">' + body + '</div>' +
+    '<button class="realm-cult-btn" style="margin-top:10px;background:var(--panel2);color:var(--text)" onclick="closeRealm()">关闭</button></div>';
+  box.onclick = e => { if (e.target === box) box.remove(); };
+  document.body.appendChild(box);
+}
+function mgmtModal(kind, idEnc) {
+  const c = MGMT[kind]; const id = idEnc ? decodeURIComponent(idEnc) : '';
+  const items = mgmtList(kind);
+  const it = id !== '' ? items.find(x => (x.id != null ? String(x.id) : (x.date || '')) === id) : null;
+  const fieldsHtml = (c.fields || []).map(f => {
+    const val = it ? (it[f.k] != null ? it[f.k] : '') : '';
+    if (f.type === 'textarea') return '<label class="mgmt-fld"><span>' + esc(f.label) + '</span><textarea class="input" id="mgmt_' + f.k + '">' + esc(val) + '</textarea></label>';
+    if (f.type === 'select') return '<label class="mgmt-fld"><span>' + esc(f.label) + '</span><select class="input" id="mgmt_' + f.k + '">' + f.opts.map(o => '<option' + (o == val ? ' selected' : '') + '>' + o + '</option>').join('') + '</select></label>';
+    return '<label class="mgmt-fld"><span>' + esc(f.label) + '</span><input class="input" id="mgmt_' + f.k + '" type="' + (f.type === 'number' ? 'number' : f.type) + '" value="' + esc(val) + '"></label>';
+  }).join('');
+  const box = document.createElement('div'); box.className = 'realm-modal';
+  box.innerHTML = '<div class="realm-modal-box"><h3>' + (id ? '✏️ 编辑' : '＋ 新增') + '</h3><div class="mgmt-form">' + (fieldsHtml || '<div class="meta">该模块暂不支持表单编辑</div>') + '</div>' +
+    '<div style="display:flex;gap:10px;margin-top:10px"><button class="btn primary" onclick="mgmtSave(\'' + kind + '\',\'' + encodeURIComponent(id) + '\')">保存</button><button class="btn" onclick="closeRealm()">取消</button></div></div>';
+  box.onclick = e => { if (e.target === box) box.remove(); };
+  document.body.appendChild(box);
+}
+function stripName(f) { const g = Object.assign({}, f); delete g.name; return g; }
+async function mgmtSave(kind, idEnc) {
+  const c = MGMT[kind]; const id = idEnc ? decodeURIComponent(idEnc) : '';
+  const fields = {};
+  (c.fields || []).forEach(f => { const v = document.getElementById('mgmt_' + f.k); if (!v) return; let val = v.value; if (f.type === 'number') val = val === '' ? '' : Number(val); fields[f.k] = val; });
+  await mgmtUpsert(kind, id, fields);
+}
+async function mgmtUpsert(kind, id, fields) {
+  const c = MGMT[kind];
+  try {
+    if (c.store === 'api') {
+      if (id !== '') { const j = await fetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: c.table, id: Number(id), fields }) }); const r = await j.json(); if (!r.ok) { toast('更新失败：' + (r.error || ''), 'warn'); return; } }
+      else { const j = await fetch('/api/insert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: c.table, fields }) }); const r = await j.json(); if (!r.ok) { toast('新增失败：' + (r.error || ''), 'warn'); return; } }
+      await loadData();
+    } else if (c.store === 'local') {
+      const arr = JSON.parse(localStorage.getItem(c.localKey) || '[]');
+      if (id !== '') { const idx = arr.findIndex(x => (x.id != null ? String(x.id) : '') === id); if (idx >= 0) arr[idx] = Object.assign({}, arr[idx], fields); }
+      else { fields.id = Date.now(); arr.push(fields); }
+      localStorage.setItem(c.localKey, JSON.stringify(arr));
+    } else if (c.store === 'econ') {
+      const arr = econLoad();
+      const entry = { date: fields.date || todayKey(), min: Number(fields.min || 0), subjects: (fields.subjects || '').split(',').map(s => s.trim()).filter(Boolean) };
+      if (id !== '') { const idx = arr.findIndex((x, i) => String(i) === id); if (idx >= 0) arr[idx] = entry; } else arr.unshift(entry);
+      econSave(arr.slice(0, 200));
+    } else if (c.store === 'player') {
+      const p = player(); let cur = p[c.playerField]; cur = c.isObj ? (cur || {}) : (cur || []);
+      if (c.isObj) {
+        if (id !== '') cur[id] = Object.assign({}, cur[id] || {}, stripName(fields));
+        else { const key = fields.name; if (!key) { toast('需填名称', 'warn'); return; } cur[key] = stripName(fields); }
+      } else {
+        if (id !== '') { const idx = cur.findIndex(x => (x.id != null ? String(x.id) : '') === id); if (idx >= 0) cur[idx] = Object.assign({}, cur[idx], fields); }
+        else { fields.id = Date.now(); cur.push(fields); }
+      }
+      const obj = {}; obj[c.playerField] = cur;
+      if (c.playerField === 'inventory') {
+        const j = await fetch('/api/inventory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set', inventory: cur }) });
+        const r = await j.json(); if (!r.ok) { toast('保存失败：' + (r.error || ''), 'warn'); return; } if (r.inventory) DATA.player.inventory = r.inventory;
+      } else {
+        const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: obj }) });
+        const r = await j.json(); if (!r.ok) { toast('保存失败：' + (r.error || ''), 'warn'); return; } await loadData();
+      }
+    } else if (c.store === 'heart') {
+      if (id !== '') { const cid = Number(String(id).replace('c_', '')); const arr = heartCustom(); const idx = arr.findIndex(x => x.id === cid); if (idx >= 0) { arr[idx] = Object.assign({}, arr[idx], { name: fields.name || arr[idx].name, effect: fields.effect || arr[idx].effect, desc: fields.desc || arr[idx].desc }); try { localStorage.setItem('lifeos_heartCustom', JSON.stringify(arr)); } catch (e) {} } }
+      else { if (!fields.name) { toast('需填心法名', 'warn'); return; } const arr = heartCustom(); arr.push({ id: Date.now(), name: fields.name, effect: fields.effect || '', desc: fields.desc || '', buff: {} }); try { localStorage.setItem('lifeos_heartCustom', JSON.stringify(arr)); } catch (e) {} }
+    } else { toast('该模块暂不支持保存', 'warn'); return; }
+    toast('已保存 ✓', 'good'); closeRealm(); renderMain(kind);
+  } catch (e) { toast('保存失败：' + e.message, 'warn'); }
+}
+async function mgmtDel(kind, id) {
+  const c = MGMT[kind];
+  if (!confirm('确定删除该条目？')) return;
+  try {
+    if (c.store === 'api') { const j = await fetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: c.table, id: Number(id) }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } await loadData(); }
+    else if (c.store === 'local') { const arr = JSON.parse(localStorage.getItem(c.localKey) || '[]'); const idx = arr.findIndex(x => (x.id != null ? String(x.id) : '') === id); if (idx >= 0) arr.splice(idx, 1); localStorage.setItem(c.localKey, JSON.stringify(arr)); }
+    else if (c.store === 'econ') { const arr = econLoad(); const idx = arr.findIndex((x, i) => String(i) === id); if (idx >= 0) arr.splice(idx, 1); econSave(arr); }
+    else if (c.store === 'player') { const p = player(); let cur = p[c.playerField]; if (c.isObj) { cur = Object.assign({}, cur || {}); delete cur[id]; } else { cur = (cur || []).filter(x => (x.id != null ? String(x.id) : '') !== id); } if (c.playerField === 'inventory') { const j = await fetch('/api/inventory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set', inventory: cur }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } if (r.inventory) DATA.player.inventory = r.inventory; } else { const obj = {}; obj[c.playerField] = cur; const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: obj }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } await loadData(); } }
+    else if (c.store === 'heart') { delHeartCustom(Number(String(id).replace('c_', ''))); return; }
+    else { toast('该模块不可删除', 'warn'); return; }
+    toast('已删除', 'good'); closeRealm(); renderMain(kind);
+  } catch (e) { toast('删除失败：' + e.message, 'warn'); }
+}
+
 /* ---------- 渲染：主内容 ---------- */
 function renderMain(id) {
   const main = document.getElementById('main');
@@ -497,7 +668,7 @@ function renderMain(id) {
     case 'trial':     html = renderTrial(); break;
     default: html = renderPlaceholder(mod.name, '该模块数据接口将在二期接入，本期仅占位。');
   }
-  main.innerHTML = html;
+  main.innerHTML = mgmtBtnHtml(id) + html;
 }
 
 const DASH_TOP5 = [
@@ -738,6 +909,7 @@ const DAILY_DUNGEONS = [
   { id: 'dinner_cucumber', name: '🥒 晚餐自律', desc: '晚餐不吃饭 / 只吃黄瓜', realm: null }
 ];
 function todayKey() { return new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }).replace(/\//g, '-'); }
+function yesterdayKey() { const d = new Date(); d.setDate(d.getDate() - 1); const p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
 function dungeonFlag(id) { return 'game_dungeon_' + todayKey() + '_' + id; }
 function dungeonDone(id) { try { return localStorage.getItem(dungeonFlag(id)) === '1'; } catch (e) { return false; } }
 function xinmoHpFromDungeons() { const done = DAILY_DUNGEONS.filter(d => dungeonDone(d.id)).length; return Math.max(0, 100 - Math.round(done / DAILY_DUNGEONS.length * 100)); }
@@ -1013,29 +1185,32 @@ function renderSleep() {
   const log = sleepLoad();
   const latest = log.length ? log.reduce((a, b) => a.date > b.date ? a : b) : null;
   const restTotal = log.reduce((s, x) => s + (x.rest ? 1 : 0), 0);
-  const todayEntry = log.find(x => x.date === todayKey());
+  const yKey = yesterdayKey();
+  const yEntry = log.find(x => x.date === yKey);
   const stageTip = { early: '早睡 ≤23:00 · +2 愿力 · 休养 +1', ontime: '按时 23–24 · +1 愿力', late: '熬夜 >24 · 0 愿力（注意身体）' };
-  return '<div class="section-title">🌙 睡眠 <span class="game-tag">作息修行</span></div>' +
+  return '<div class="section-title">🌙 睡眠 <span class="game-tag">作息修行（记昨晚的觉）</span></div>' +
     '<div class="wt-head"><div class="wt-latest"><div class="wt-num">' + (latest ? esc(latest.bed) : '—') + '</div><div class="wt-sub">最近就寝 · ' + (latest ? latest.date : '未记录') + '</div></div>' +
     '<div class="wt-stat"><div class="wt-stat-num">' + sleepStreak() + '</div><div class="wt-stat-lbl">🌙 连续早睡</div></div>' +
     '<div class="wt-stat"><div class="wt-stat-num">' + restTotal + '</div><div class="wt-stat-lbl">💤 休养值</div></div></div>' +
-    '<div class="wf-form"><input class="input" id="slBed" type="time" value="' + (latest ? latest.bed : '23:00') + '">' +
+    '<div class="wf-form"><input class="input" id="slDate" type="date" style="max-width:170px;" value="' + yKey + '">' +
+    '<input class="input" id="slBed" type="time" value="' + (yEntry ? yEntry.bed : (latest ? latest.bed : '23:00')) + '">' +
     '<button class="btn primary" onclick="saveSleep()">🌙 记录就寝时间</button></div>' +
-    '<div class="sl-tiers">' + Object.keys(stageTip).map(k => '<span class="sl-tier sl-' + k + (todayEntry && todayEntry.tier === k ? ' on' : '') + '">' + stageTip[k] + '</span>').join('') + '</div>' +
-    (todayEntry ? '<div class="meta" style="margin:6px 0">✅ 今日已记录：' + esc(todayEntry.bed) + '（' + stageTip[todayEntry.tier] + '）</div>' : '') +
-    '<div class="meta" style="margin-top:8px">每晚记录就寝时间，早睡养肝、连续打卡攒「连续早睡」与「休养值」。</div>';
+    '<div class="sl-tiers">' + Object.keys(stageTip).map(k => '<span class="sl-tier sl-' + k + (yEntry && yEntry.tier === k ? ' on' : '') + '">' + stageTip[k] + '</span>').join('') + '</div>' +
+    (yEntry ? '<div class="meta" style="margin:6px 0">✅ 已记录（' + esc(yEntry.date) + '）：' + esc(yEntry.bed) + '（' + stageTip[yEntry.tier] + '）<button class="btn" style="margin-left:8px;padding:2px 10px" onclick="cancelSleep()">取消记录</button></div>'
+             : '<div class="meta" style="margin:6px 0">昨晚（' + yKey + '）尚未记录，选好时间点「记录就寝时间」</div>') +
+    '<div class="meta" style="margin-top:8px">睡眠是昨晚的行为，默认记到「昨天」。可改日期补记任意一天；点「取消记录」会扣回对应愿力点。</div>';
 }
 async function saveSleep() {
-  const el = document.getElementById('slBed');
-  const bed = el ? el.value : '';
+  const dateEl = document.getElementById('slDate'), bedEl = document.getElementById('slBed');
+  const date = dateEl ? dateEl.value : yesterdayKey();
+  const bed = bedEl ? bedEl.value : '';
   const tier = sleepTier(bed);
   if (!tier) { toast('请选择有效时间', 'warn'); return; }
-  const t = todayKey();
   const log = sleepLoad();
-  const idx = log.findIndex(x => x.date === t);
+  const idx = log.findIndex(x => x.date === date);
   const isNew = idx < 0;
   const rest = tier === 'early' ? 1 : 0;
-  if (isNew) log.push({ date: t, bed: bed, tier: tier, rest: rest }); else { log[idx].bed = bed; log[idx].tier = tier; log[idx].rest = rest; }
+  if (isNew) log.push({ date: date, bed: bed, tier: tier, rest: rest }); else { log[idx].bed = bed; log[idx].tier = tier; log[idx].rest = rest; }
   sleepSave(log);
   let msg = '';
   if (isNew) {
@@ -1044,8 +1219,23 @@ async function saveSleep() {
     else { msg = '🌙 熬夜了… 0 愿力，早点休息护身体 💤'; }
     toast(msg, tier === 'late' ? 'warn' : 'good');
   } else {
-    toast('🌙 已更新今日就寝 ' + bed, 'good');
+    toast('🌙 已更新 ' + date + ' 就寝 ' + bed, 'good');
   }
+  renderMain('sleep');
+}
+async function cancelSleep() {
+  const dateEl = document.getElementById('slDate');
+  const date = dateEl ? dateEl.value : yesterdayKey();
+  const log = sleepLoad();
+  const idx = log.findIndex(x => x.date === date);
+  if (idx < 0) { toast('该日无睡眠记录', 'warn'); return; }
+  const rec = log[idx];
+  if (!confirm('取消 ' + date + ' 的睡眠记录？将扣回对应愿力点（' + (rec.tier === 'early' ? '-2' : rec.tier === 'ontime' ? '-1' : '0') + '）')) return;
+  log.splice(idx, 1);
+  sleepSave(log);
+  if (rec.tier === 'early') { try { await grantWP(-2, '休养', '取消早睡'); } catch (e) {} }
+  else if (rec.tier === 'ontime') { try { await grantWP(-1, '休养', '取消按时睡'); } catch (e) {} }
+  toast('已取消 ' + date + ' 记录，愿力已回退', 'good');
   renderMain('sleep');
 }
 
@@ -1094,19 +1284,30 @@ async function saveFun() {
   renderMain('fun');
 }
 
+let cookTab = 'cook';
+let cookWheelPick = null;
 function renderCook() {
   const recipes = food().recipes || [];
+  const tabs = [['cook', '🍳 做一道菜'], ['recipes', '📚 菜谱库'], ['wheel', '🎲 今天吃什么'], ['log', '📝 饮食日志']];
+  const tabBar = '<div class="cook-tabs">' + tabs.map(t => '<div class="cook-tab' + (cookTab === t[0] ? ' on' : '') + '" onclick="cookTab=\'' + t[0] + '\';renderMain(\'cook\')">' + t[1] + '</div>').join('') + '</div>';
+  let body = '';
+  if (cookTab === 'recipes') body = cookRecipesHtml(recipes);
+  else if (cookTab === 'wheel') body = cookWheelHtml(recipes);
+  else if (cookTab === 'log') body = cookLogHtml();
+  else body = cookCookHtml(recipes);
+  return tabBar + body;
+}
+function cookCookHtml(recipes) {
   if (!recipes.length) return renderPlaceholder('烹饪', '暂无菜谱数据。');
   const cards = recipes.map(r => {
     const lv = num(r.level, 1), prof = num(r.proficiency, 0);
     const q = QUA[r.quality] || QUA[1];
     const pct = Math.max(0, Math.min(100, Math.round(prof / 10 * 100)));
-    return `<div class="card cook-card"><span class="tag">${q.label} ${stars(r.quality)}</span>
-      <h3>${esc(r.name)}</h3>
-      <div class="meta">Lv.${lv} · 熟练度 ${prof}/10${r.activated ? '' : ' · 未激活'}</div>
-      <div class="bar"><i style="width:${pct}%"></i></div>
-      <button class="btn primary sm" onclick="cookDish(${r.id})">🍳 做一道</button>
-    </div>`;
+    return '<div class="card cook-card"><span class="tag">' + q.label + ' ' + stars(r.quality) + '</span>' +
+      '<h3>' + esc(r.name) + '</h3>' +
+      '<div class="meta">Lv.' + lv + ' · 熟练度 ' + prof + '/10' + (r.activated ? '' : ' · 未激活') + '</div>' +
+      '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
+      '<button class="btn primary sm" onclick="cookDish(' + r.id + ')">🍳 做一道</button></div>';
   }).join('');
   const meals = (DATA.meals || []).slice(0, 15);
   const hist = meals.length ? meals.map(m => {
@@ -1116,11 +1317,29 @@ function renderCook() {
       (m.rating ? '<span class="ch-rate">' + '★'.repeat(m.rating) + '</span>' : '') +
       '<button class="ch-undo" onclick="undoCook(' + m.id + ')">撤销</button></div>';
   }).join('') : '<div class="game-empty">还没有做菜记录</div>';
-  return `<div class="mod-toolbar"><div class="section-title">🍳 烹饪 · 菜谱 ${recipes.length} 道</div>
-    <button class="btn primary" onclick="openCookModal()">🍳 记录做菜</button></div>
-    <div class="cards">${cards}</div>
-    <div class="section-title" style="margin-top:18px">📜 我做菜记录 <span class="game-tag">点「撤销」回退奖励与境界经验</span></div>
-    <div class="cook-hist">${hist}</div>`;
+  return '<div class="mod-toolbar"><div class="section-title">🍳 烹饪 · 菜谱 ' + recipes.length + ' 道</div>' +
+    '<button class="btn primary" onclick="openCookModal()">🍳 记录做菜</button></div>' +
+    '<div class="cards">' + cards + '</div>' +
+    '<div class="section-title" style="margin-top:18px">📜 我做菜记录 <span class="game-tag">点「撤销」回退奖励与境界经验</span></div>' +
+    '<div class="cook-hist">' + hist + '</div>';
+}
+function cookRecipesHtml(recipes) {
+  if (!recipes.length) return renderPlaceholder('菜谱库', '暂无菜谱。去主站烟火食记加菜谱会同步过来。');
+  const rows = recipes.map(r => '<div class="cook-recipe-row"><div class="cr-info"><b>' + esc(r.name) + '</b><span class="cr-meta">' + esc(r.category || '') + ' · 难度 ' + (r.difficulty || '?') + (r.activated ? ' · 已激活' : '') + '</span></div><button class="btn sm" onclick="cookDish(' + r.id + ')">做一道</button></div>').join('');
+  return '<div class="section-title">📚 菜谱库 · 共 ' + recipes.length + ' 道</div><div class="cook-recipe-list">' + rows + '</div>';
+}
+function cookWheelHtml(recipes) {
+  if (!recipes.length) return renderPlaceholder('今天吃什么', '暂无菜谱可抽。');
+  const pick = cookWheelPick ? (recipes.find(x => x.id === cookWheelPick) || null) : null;
+  const card = pick ? '<div class="cook-wheel-pick"><h2>' + esc(pick.name) + '</h2><div class="meta">' + esc(pick.category || '') + ' · 难度 ' + (pick.difficulty || '?') + '</div><button class="btn primary" onclick="cookDish(' + pick.id + ')">🍳 就做这道</button></div>' : '<div class="cook-wheel-empty">点击下方按钮，让命运替你决定今晚吃什么 🎲</div>';
+  return '<div class="section-title">🎲 今天吃什么</div><div class="cook-wheel">' + card + '<button class="btn primary" onclick="cookWheelSpin()">🎲 帮我选一道</button></div>';
+}
+function cookWheelSpin() { const rs = food().recipes || []; if (!rs.length) return; cookWheelPick = rs[Math.floor(Math.random() * rs.length)].id; renderMain('cook'); }
+function cookLogHtml() {
+  const meals = (DATA.meals || []);
+  if (!meals.length) return renderPlaceholder('饮食日志', '还没有做菜记录。');
+  const rows = meals.slice().sort((a, b) => (a.date < b.date ? 1 : -1)).map(m => '<div class="cook-hist-row"><span class="ch-date">' + esc(m.date || '') + '</span><span class="ch-name">' + esc(m.name || '(未关联菜谱)') + '</span>' + (m.rating ? '<span class="ch-rate">' + '★'.repeat(m.rating) + '</span>' : '') + '<button class="ch-undo" onclick="undoCook(' + m.id + ')">撤销</button></div>').join('');
+  return '<div class="section-title">📝 饮食日志 · 共 ' + meals.length + ' 次</div><div class="cook-hist">' + rows + '</div>';
 }
 
 /* ---------- 烹饪交互 ---------- */
@@ -1583,19 +1802,19 @@ function closeRealm() { document.querySelectorAll('.realm-modal').forEach(m => m
         return '<div class="npc-rule-line"><b class="npc-rel-' + esc(rel) + '">' + esc(rel) + '线 · ' + esc(cfg.title) + '</b>' +
           '<div class="npc-rule-steps">' + esc(steps) + '</div></div>';
       }).join('');
-      return '<details class="npc-rules" open><summary>📖 关系规则（三条线 · 等级与升级阈值）</summary>' + lines +
+      return '<details class="npc-rules"><summary>📖 关系规则（三条线 · 等级与升级阈值 · 点击展开）</summary>' + lines +
         '<div class="npc-rule-note">互动好感与愿力同梯度：聊天 +1 / 打电话 +2 / 视频 +3 / 线下 +5。好感满 ' + REL_RANKS['家人'].thr[REL_RANKS['家人'].thr.length - 1] + ' 登顶当前线。</div></details>';
     }
     function renderNpc() {
       const typeOpts = ['all'].concat(NPC_TYPES);
       const filterHtml = typeOpts.map(t => '<option value="' + t + '"' + (npcFilter === t ? ' selected' : '') + '>' + (t === 'all' ? '全部类型' : t) + '</option>').join('');
       return '<div class="section-title">🧝 江湖 NPC <span class="game-tag">墨渊人物档案</span></div>' +
-        npcRulesHtml() +
         '<div class="npc-toolbar">' +
           '<input class="input" id="npcSearch" placeholder="搜索名字 / 人设 / 州" value="' + esc(npcSearch) + '" oninput="npcSearch=this.value;const g=document.getElementById(\'npcGrid\');if(g)g.innerHTML=npcCardsHtml();">' +
           '<select class="input" id="npcTypeFilter" onchange="npcFilter=this.value;const g=document.getElementById(\'npcGrid\');if(g)g.innerHTML=npcCardsHtml();">' + filterHtml + '</select>' +
         '</div>' +
         '<div class="npc-grid" id="npcGrid">' + npcCardsHtml() + '</div>' +
+        npcRulesHtml() +
         '<div class="section-title" style="margin-top:18px">＋ 新增 NPC</div>' +
         '<div class="npc-form">' +
           '<input class="input" id="npcName" placeholder="名字（必填）">' +

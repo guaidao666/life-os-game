@@ -529,13 +529,24 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 
 /* ===== 日记模块 ===== */
 .card-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px}
-.diary-layout{display:grid;grid-template-columns:2fr 1fr;gap:18px;align-items:start}
+.diary-layout{display:grid;grid-template-columns:2fr 1fr;gap:18px;align-items:stretch}
 @media(max-width:760px){.diary-layout{grid-template-columns:1fr}}
 .diary-mood-pick{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;padding:0 8px;border:1px solid var(--border);border-radius:20px;background:var(--panel2);color:var(--muted);cursor:pointer;font-size:16px}
 .diary-mood-pick.selected{border-color:var(--accent);color:var(--accent);background:var(--panel)}
 .diary-mood-pick:hover{border-color:var(--accent)}
 .diary-cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.diary-cal-title{flex:1;text-align:center;font-weight:700;color:var(--text)}
+.diary-cal-title{flex:1;text-align:center;font-weight:700;color:var(--text);cursor:pointer;border-radius:8px;padding:2px 6px}
+.diary-cal-title:hover{background:var(--panel2);color:var(--accent)}
+.diary-cal-title::after{content:' ▾';font-size:11px;color:var(--muted)}
+.diary-ym-picker{position:fixed;z-index:200;background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:12px;display:flex;gap:12px;width:300px}
+.diary-ym-picker .ym-years{height:220px;overflow-y:auto;width:90px;border-right:1px solid var(--border);padding-right:8px}
+.diary-ym-picker .ym-year{text-align:center;padding:6px 0;cursor:pointer;border-radius:6px;color:var(--muted)}
+.diary-ym-picker .ym-year.on{background:var(--accent);color:#fff;font-weight:700}
+.diary-ym-picker .ym-year:hover{background:var(--panel2)}
+.diary-ym-picker .ym-months{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:1}
+.diary-ym-picker .ym-month{padding:10px 0;text-align:center;cursor:pointer;border-radius:8px;background:var(--panel2);color:var(--text);font-size:13px}
+.diary-ym-picker .ym-month.on{background:var(--accent);color:#fff;font-weight:700}
+.diary-ym-picker .ym-month:hover{background:var(--accent);color:#fff}
 .diary-cal-head{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:11px;color:var(--muted);margin-bottom:4px}
 .diary-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
 .diary-cell{position:relative;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text);border-radius:8px;background:var(--panel2);cursor:pointer}
@@ -552,7 +563,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .diary-mood-mini{font-size:13px}
 .diary-title{flex:1;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .diary-snippet{margin-top:4px;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.diary-detail-modal{max-width:640px}
+.diary-detail-modal{max-width:640px;max-height:86vh;overflow-y:auto}
 .dd-actions{margin-bottom:8px}
 .dd-paper{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:18px 20px}
 .dd-paper-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px;border-bottom:1px dashed var(--border);padding-bottom:8px}
@@ -582,4 +593,35 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .wt-unit-toggle{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:12px}
 .wt-unit-toggle button{border:0;padding:4px 12px;background:transparent;color:var(--muted);cursor:pointer}
 .wt-unit-toggle button.on{background:var(--accent);color:#fff}
+
+/* ===== 通用管理面板 ===== */
+.mgmt-bar{display:flex;gap:8px;margin-bottom:10px}
+.mgmt-bar .btn.sm{padding:4px 12px;font-size:12px}
+.btn.sm{padding:4px 12px;font-size:12px;line-height:1.6}
+.btn.danger{background:#ff453a;color:#fff;border-color:#ff453a}
+.btn.danger:hover{opacity:.9}
+.mgmt-list{max-height:60vh;overflow:auto}
+.mgmt-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 4px;border-bottom:1px solid var(--border)}
+.mgmt-row:hover{background:var(--panel2)}
+.mgmt-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.mgmt-acts{display:flex;gap:6px;flex-shrink:0}
+.mgmt-form{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.mgmt-fld{display:flex;flex-direction:column;gap:4px}
+.mgmt-fld>span{font-size:12px;color:var(--muted)}
+.mgmt-fld .input{width:100%}
+
+/* ===== 烹饪二级 Tab ===== */
+.cook-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.cook-tab{padding:7px 14px;border:1px solid var(--border);border-radius:20px;background:var(--panel2);color:var(--muted);cursor:pointer;font-size:13px}
+.cook-tab:hover{border-color:var(--accent)}
+.cook-tab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.cook-recipe-list{display:flex;flex-direction:column;gap:8px}
+.cook-recipe-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:var(--panel);border:1px solid var(--border);border-radius:10px}
+.cook-recipe-row:hover{border-color:var(--accent)}
+.cr-info{display:flex;flex-direction:column;gap:2px}
+.cr-meta{font-size:12px;color:var(--muted)}
+.cook-wheel{display:flex;flex-direction:column;align-items:center;gap:16px;padding:24px 0}
+.cook-wheel-pick{text-align:center;background:var(--panel);border:1px solid var(--accent);border-radius:14px;padding:20px 32px;box-shadow:var(--shadow)}
+.cook-wheel-pick h2{font-size:26px;margin-bottom:6px;color:var(--accent)}
+.cook-wheel-empty{color:var(--muted);font-size:14px}
 
