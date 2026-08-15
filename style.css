@@ -345,3 +345,32 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .input:focus{outline:none;border-color:var(--accent)}
 .tb-del-btn{cursor:pointer;border:1px solid var(--border);background:var(--panel2);color:var(--muted);width:28px;height:28px;border-radius:8px;font-size:14px;flex:none;transition:.15s}
 .tb-del-btn:hover{border-color:#c0392b;color:#c0392b}
+
+/* ===== v17 新增样式 ===== */
+/* 每日秘境：境界经验标签 */
+.dc-realm{margin-left:auto;font-size:11px;color:var(--wp);background:var(--panel2);border:1px solid var(--accent);border-radius:8px;padding:2px 8px;white-space:nowrap}
+/* 今日任务清单 */
+.dungeon-tasks{margin-top:6px;display:flex;flex-direction:column;gap:6px}
+.task-row{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:8px 11px;cursor:pointer;font-size:13px}
+.task-row input{width:16px;height:16px;accent-color:var(--wp);flex:none}
+.task-text.done{text-decoration:line-through;color:var(--muted)}
+/* 境界：轮回光环 + buff 概览 */
+.realm-round{font-size:11px;color:#fff;background:linear-gradient(90deg,#d4a017,#b8860b);border-radius:8px;padding:1px 7px;margin-left:6px;font-weight:600}
+.realm-buffs{font-size:12px;color:var(--wp);background:var(--panel2);border:1px solid var(--accent);border-radius:9px;padding:7px 11px;margin:10px 0}
+/* NPC 关系标签 */
+.npc-rel{font-size:11px;border-radius:8px;padding:2px 8px;font-weight:600;white-space:nowrap}
+.npc-rel-家人{color:#b5691f;background:rgba(181,105,31,.14);border:1px solid rgba(181,105,31,.4)}
+.npc-rel-恋慕{color:#c0397e;background:rgba(192,57,126,.14);border:1px solid rgba(192,57,126,.4)}
+.npc-rel-朋友{color:#2f7fb0;background:rgba(47,127,176,.14);border:1px solid rgba(47,127,176,.4)}
+.npc-rel-title{font-size:12px;color:var(--muted)}
+/* 背包：食用按钮 */
+.bi-btn.eat{color:#d4790f;background:rgba(212,121,15,.12);border:1px solid rgba(212,121,15,.4)}
+.bi-btn.eat:hover{background:rgba(212,121,15,.22)}
+/* 中级经济师备考 */
+.econ-overview{font-size:13px;background:var(--panel2);border:1px solid var(--accent);border-radius:9px;padding:9px 12px}
+.econ-add{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.econ-add .input{flex:1;min-width:120px}
+.econ-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.econ-col{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:12px}
+.econ-sub{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px dashed var(--border)}
+@media(max-width:640px){.econ-cols{grid-template-columns:1fr}}

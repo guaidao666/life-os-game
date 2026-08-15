@@ -3,22 +3,21 @@
 
 const MODULES = [
   { id: 'dashboard', name: '仪表盘', icon: '🏠', group: '首页' },
-  { id: 'demon',     name: '魔障',   icon: '🩸', group: '修行' },
-  { id: 'altar',     name: '命愿祈铺', icon: '🔮', group: '修行' },
   { id: 'dungeon',   name: '每日秘境', icon: '🗺️', group: '修行' },
+  { id: 'trial',     name: '周天试炼', icon: '⚡', group: '修行' },
+  { id: 'altar',     name: '命愿祈铺', icon: '🔮', group: '修行' },
+  { id: 'demon',     name: '魔障',   icon: '🩸', group: '修行' },
   { id: 'cook',      name: '烹饪',   icon: '🍳', group: '生活' },
   { id: 'bag',       name: '背包仓库', icon: '🎒', group: '生活' },
   { id: 'skill',     name: '技能',   icon: '⚔️', group: '成长' },
   { id: 'realm',     name: '境界',   icon: '🌟', group: '成长' },
   { id: 'npc',       name: '江湖NPC', icon: '🧝', group: '成长' },
   { id: 'map',       name: '地图',   icon: '🌐', group: '成长' },
+  { id: 'economist', name: '中级经济师', icon: '📚', group: '备考' },
   { id: 'heart',     name: '心法',   icon: '📜', group: '其他' },
   { id: 'char',      name: '角色',   icon: '👤', group: '其他' },
-  { id: 'succubus',  name: '魅魔',   icon: '🌹', group: '其他' },
-  { id: 'trial',     name: '周天试炼', icon: '⚡', group: '其他' },
-  { id: 'weekly',    name: '周本',   icon: '📅', group: '其他' },
 ];
-const GROUPS = ['首页', '修行', '生活', '成长', '其他'];
+const GROUPS = ['首页', '修行', '生活', '成长', '备考', '其他'];
 const QUA = { 1: { label: '普通', star: 1 }, 2: { label: '美味', star: 2 }, 3: { label: '珍稀', star: 3 }, 4: { label: '完美', star: 4 } };
 const BAG_CAP = 40;        // 背包固定 40 格
 const WAREHOUSE_CAP = 60;  // 仓库默认 60 格（一期只读，扩容逻辑二期）
@@ -44,30 +43,80 @@ function skillTotalLevel() {
   const s = player().skills || {};
   return Object.keys(SKILL_DEFS).reduce((sum, k) => sum + (Number(s[k]) || 0), 0);
 }
+const REALM_XP_NEEDED = 7;     // 每层需 7 经验（约 1 周/层，约 2 月首次圆满）
+const REALM_STAGES = 9;        // 单轮阶数（满 9 层 = 一次圆满，进入轮回继续攀升）
 const REALM_DEFS = {
-  '炼体法': { group:'body', story:'以八段锦为基，淬炼筋骨气血，乃修行之根。', effect:'每参悟一层，每日副本「运动打卡」愿力产出 +5%。', baseCost:50, costStep:30, maxLayer:9, minDungeons:0,
-    layers:['散炼境','凝筋境','易骨境','锻脏境','换血境','通脉境','洗髓境','伐毛境','大圆满'] },
-  '万卷书': { group:'mind', story:'读万卷书，明事理、开智慧。', effect:'每参悟一层，每日副本「写日记 / 学英语」愿力产出 +5%。', baseCost:50, costStep:30, maxLayer:9, minDungeons:0,
-    layers:['百卷境','三百卷','五百卷','八百卷','千卷境','千五卷','两千卷','三千卷','大圆满'] },
-  '万里路': { group:'mind', story:'行万里路，见天地、阔眼界。', effect:'参悟圆满可提升心魔抵抗。', baseCost:50, costStep:30, maxLayer:9, minDungeons:2,
-    layers:['初行境','百里境','千里境','万里境','遍历境','通达境','洞明境','无界境','大圆满'] },
-  '功德法': { group:'heart', story:'渡人渡己，积功德于无形。', effect:'参悟圆满可提升魅魔抵抗。', baseCost:50, costStep:30, maxLayer:9, minDungeons:3,
-    layers:['初善境','行善境','积善境','圆满境','广济境','普度境','无量境','慈悲境','大圆满'] },
-  '千面法': { group:'heart', story:'理智与感性并存，千人千面。', effect:'每参悟一层，每日全副本愿力产出 +3%。', baseCost:50, costStep:30, maxLayer:9, minDungeons:4,
-    layers:['初面境','双面境','多面境','洞悉境','无相境','随心境','通明境','自在境','大圆满'] }
+  '炼体法': { group:'body', icon:'🏋️', story:'以八段锦、五禽戏、运动为基，淬炼筋骨气血，乃修行之根。', effect:'每层 +3% 副本愿力产出。', buff:{ type:'taskBonus', per:3 },
+    stages:['散炼境','凝筋境','易骨境','锻脏境','换血境','通脉境','洗髓境','伐毛境','大圆满'] },
+  '万卷书': { group:'mind', icon:'📖', story:'读万卷书，明事理、开智慧。', effect:'每层 +3% 副本愿力产出。', buff:{ type:'taskBonus', per:3 },
+    stages:['百卷境','三百卷','五百卷','八百卷','千卷境','千五卷','两千卷','三千卷','大圆满'] },
+  '万里路': { group:'mind', icon:'🥾', story:'行万里路，见天地、阔眼界。偶发游历（点亮城市 / 风景）记经验，平时静默。', effect:'每圆满 +8% 心魔抵抗。', buff:{ type:'xinmoResist', per:8, onRound:true },
+    stages:['初行境','百里境','千里境','万里境','遍历境','通达境','洞明境','无界境','大圆满'] },
+  '功德法': { group:'heart', icon:'🤲', story:'渡人渡己，积功德于无形。日行一善即记经验。', effect:'每圆满 +8% 魅魔抵抗。', buff:{ type:'meimoResist', per:8, onRound:true },
+    stages:['初善境','行善境','积善境','圆满境','广济境','普度境','无量境','慈悲境','大圆满'] },
+  '千面法': { group:'heart', icon:'🎭', story:'理智与感性并存，千人千面。每日「心境觉察」内省一种面向即记经验。', effect:'每层 +2% 全副本愿力产出。', buff:{ type:'taskBonus', per:2 },
+    stages:['初面境','双面境','多面境','洞悉境','无相境','随心境','通明境','自在境','大圆满'] },
+  '灶神录': { group:'life', icon:'🍳', story:'烟火人间，灶下修心。新菜 +5 经验、重复做 +1 经验。', effect:'每层 +2% 副本愿力产出。', buff:{ type:'taskBonus', per:2 },
+    stages:['炊烟境','调羹境','五味境','火候境','庖丁境','食神境','飨宴境','至味境','大圆满'] },
+  '岁笺录': { group:'life', icon:'📜', story:'岁岁笺墨，日记修心。每写一篇日记 +1 经验。', effect:'每层 +2% 副本愿力产出。', buff:{ type:'taskBonus', per:2 },
+    stages:['起笔境','记微境','叙事境','省身境','明智境','通慧境','自得境','圆满境','大圆满'] }
 };
-function realmCost(def, layer) { return def.baseCost + def.costStep * layer; }
-function realmLayer(key) {
-  const v = (player().realms || {})[key];
-  if (typeof v === 'number') return v;
-  const m = String(v || '').match(/第(\d+)层/);
-  return m ? parseInt(m[1], 10) : 0;
+function realmState(key) {
+  const raw = (player().realms || {})[key];
+  const s = { layer: 0, xp: 0, round: 0 };
+  if (raw == null) return s;
+  if (typeof raw === 'number') { s.layer = raw; return s; }
+  if (typeof raw === 'string') {
+    const m = String(raw).match(/第(\d+)层/);
+    if (m) s.layer = parseInt(m[1], 10);
+    else if (/^\d+$/.test(raw.trim())) s.layer = parseInt(raw, 10);
+    return s;
+  }
+  if (typeof raw === 'object') {
+    s.layer = Number(raw.layer) || 0; s.xp = Number(raw.xp) || 0; s.round = Number(raw.round) || 0;
+  }
+  return s;
 }
-function realmTotalLayers() { return Object.keys(REALM_DEFS).reduce((s, k) => s + realmLayer(k), 0); }
-function realmMaxTotal() { return Object.keys(REALM_DEFS).reduce((s, k) => s + REALM_DEFS[k].maxLayer, 0); }
-function realmUnlocked(def) {
-  if (!def.minDungeons) return true;
-  return DAILY_DUNGEONS.filter(d => dungeonDone(d.id)).length >= def.minDungeons;
+function realmLayer(key) { return realmState(key).layer; }   // 轮内层数（供心法解锁判断）
+function realmStageName(key) {
+  const s = realmState(key), def = REALM_DEFS[key];
+  const idx = (((s.layer % REALM_STAGES) + REALM_STAGES) % REALM_STAGES);
+  return (s.round > 0 ? ('轮回' + s.round + '·') : '') + def.stages[idx];
+}
+function realmTotalLayers() { return Object.keys(REALM_DEFS).reduce((s, k) => { const r = realmState(k); return s + r.layer + r.round * REALM_STAGES; }, 0); }
+function realmBuffSum(type) {
+  let s = 0;
+  Object.keys(REALM_DEFS).forEach(k => {
+    const def = REALM_DEFS[k], st = realmState(k);
+    if (def.buff && def.buff.type === type) s += (def.buff.per || 0) * (def.buff.onRound ? st.round : st.layer);
+  });
+  return s;
+}
+function realmXpTodayKey() { return 'game_realmxp_' + todayKey(); }
+function realmXpGrantedToday() { try { return JSON.parse(localStorage.getItem(realmXpTodayKey()) || '[]'); } catch (e) { return []; } }
+function markRealmXpToday(key) { const a = realmXpGrantedToday(); if (!a.includes(key)) { a.push(key); try { localStorage.setItem(realmXpTodayKey(), JSON.stringify(a)); } catch (e) {} } }
+async function grantRealmXp(key, amount, opts) {
+  opts = opts || {};
+  if (!REALM_DEFS[key]) return;
+  if (opts.oncePerDay) {
+    if (realmXpGrantedToday().includes(key)) return;   // 每日副本每境每天最多一次
+    markRealmXpToday(key);
+  }
+  const realms = Object.assign({}, player().realms || {});
+  const s = realmState(key);
+  s.xp += amount;
+  let leveled = false, rounded = false;
+  while (s.xp >= REALM_XP_NEEDED) { s.xp -= REALM_XP_NEEDED; s.layer += 1; leveled = true; if (s.layer % REALM_STAGES === 0) { s.round += 1; rounded = true; } }
+  realms[key] = s;
+  try {
+    const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { realms: JSON.stringify(realms) } }) });
+    const r = await j.json();
+    if (r.ok && r.player) DATA.player = r.player; else DATA.player.realms = realms;
+    renderResbar();
+    if (rounded) toast('🏆 ' + key + ' 一次圆满！永久光环 +' + s.round + '（轮回第 ' + s.round + ' 世）', 'good');
+    else if (leveled) toast('🌟 ' + key + ' 参悟至 ' + realmStageName(key), 'good');
+    else toast('✨ ' + key + ' +' + amount + ' 经验（' + s.xp + '/' + REALM_XP_NEEDED + '）', 'good');
+  } catch (e) { toast('境界记录失败：' + e.message, 'warn'); }
 }
 
 let DATA = null;
@@ -82,6 +131,7 @@ function food() { return (DATA && DATA.food) || {}; }
 function demons() { return (DATA && DATA.demons) || []; }
 function inv() { return player().inventory || []; }
 function stars(q) { const s = (QUA[q] || QUA[1]).star; return '★'.repeat(s) + '☆'.repeat(4 - s); }
+function safeParse(s, d) { try { return JSON.parse(s); } catch (e) { return d; } }
 
 /* ---------- 数据加载 ---------- */
 async function loadData() {
@@ -131,9 +181,55 @@ function renderNav() {
 let CUR = 'dashboard';   // 当前视图 id（供交互后局部重渲染）
 function go(id) {
   CUR = id;
+  try { localStorage.setItem('gameLastView', id); } catch (e) {}
   document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('hot', a.dataset.id === id));
   renderMain(id);
   window.scrollTo(0, 0);
+}
+
+/* ---------- 备考：中级经济师（localStorage 进度追踪） ---------- */
+const ECON_KEY = 'lifeos_econ_log';
+function econLoad() { try { return JSON.parse(localStorage.getItem(ECON_KEY) || '[]'); } catch (e) { return []; } }
+function econSave(a) { try { localStorage.setItem(ECON_KEY, JSON.stringify(a)); } catch (e) {} }
+function econStats() {
+  const log = econLoad();
+  const totalMin = log.reduce((s, x) => s + (Number(x.min) || 0), 0);
+  const days = new Set(log.map(x => x.date)).size;
+  const subjects = {};
+  log.forEach(x => { (x.subjects || []).forEach(su => { subjects[su] = (subjects[su] || 0) + (Number(x.min) || 0); }); });
+  return { log, totalMin, days, subjects, count: log.length };
+}
+function renderEconomist() {
+  const st = econStats();
+  const today = todayCST();
+  const subjects = ['经济学基础', '中级微观', '中级宏观', '财政税收', '货币金融', '统计', '会计', '法律'];
+  const subOpts = subjects.map(s => '<option value="' + s + '">' + s + '</option>').join('');
+  const recent = st.log.slice(0, 8).map(x => '<div class="log-row"><span class="log-ts">' + esc(x.date) + '</span><span class="log-item">' + esc((x.subjects || []).join('/') || '学习') + ' · ' + (x.min || 0) + ' 分钟</span></div>').join('') || '<div class="game-empty">还没有学习记录，记录第一次备考吧</div>';
+  const subStats = Object.keys(st.subjects).map(s => '<div class="econ-sub"><span>' + esc(s) + '</span><b>' + st.subjects[s] + ' 分</b></div>').join('') || '<div class="game-empty">暂无科目统计</div>';
+  return '<div class="section-title">📚 中级经济师备考 <span class="game-tag">自律修行 · 本地记录</span></div>' +
+    '<div class="econ-overview">累计学习 <b>' + st.totalMin + '</b> 分钟　·　打卡 <b>' + st.days + '</b> 天　·　记录 <b>' + st.count + '</b> 次</div>' +
+    '<div class="econ-add">' +
+      '<input class="input" id="econDate" type="date" value="' + today + '">' +
+      '<select class="input" id="econSubject">' + subOpts + '</select>' +
+      '<input class="input" id="econMin" type="number" placeholder="分钟" style="max-width:110px">' +
+      '<button class="btn primary" onclick="addEconLog()">＋ 记录学习</button>' +
+    '</div>' +
+    '<div class="econ-cols">' +
+      '<div class="econ-col"><div class="game-card-title">科目投入</div>' + subStats + '</div>' +
+      '<div class="econ-col"><div class="game-card-title">近期记录</div>' + recent + '</div>' +
+    '</div>' +
+    '<div class="meta" style="margin-top:12px">进度存于本机浏览器（localStorage），不影响主站数据；换设备不互通。</div>';
+}
+function addEconLog() {
+  const date = (document.getElementById('econDate') || {}).value || todayCST();
+  const subject = (document.getElementById('econSubject') || {}).value || '经济学基础';
+  const min = Math.max(1, parseInt((document.getElementById('econMin') || {}).value) || 0);
+  if (!min) { toast('请填写学习分钟数', 'warn'); return; }
+  const log = econLoad();
+  log.unshift({ date, subjects: [subject], min });
+  econSave(log.slice(0, 200));
+  toast('📚 已记录 ' + subject + ' ' + min + ' 分钟', 'good');
+  renderMain('economist');
 }
 
 /* ---------- 渲染：主内容 ---------- */
@@ -154,9 +250,8 @@ function renderMain(id) {
     case 'map':       html = renderMap(); break;
     case 'heart':     html = renderHeart(); break;
     case 'char':      html = renderChar(); break;
-    case 'succubus':  html = renderSuccubus(); break;
+    case 'economist': html = renderEconomist(); break;
     case 'trial':     html = renderTrial(); break;
-    case 'weekly':    html = renderWeekly(); break;
     default: html = renderPlaceholder(mod.name, '该模块数据接口将在二期接入，本期仅占位。');
   }
   main.innerHTML = html;
@@ -196,6 +291,10 @@ function renderDemon() {
   if (ds.length) { let best = -1; ds.forEach(d => { const dg = demonDanger(d) * (Number(d.threat) || 1); if (dg > best) { best = dg; primaryKey = d.key; } }); }
   const iconOf = k => k === 'xinmo' ? '👹' : (k === 'meimo' ? '🦑' : '👾');
   const avatars = ds.map(d => `<div class="demon-avatar${d.key === primaryKey ? ' primary' : ''}"><div class="da-icon">${iconOf(d.key)}</div><div class="da-name">${esc(d.name || '魔')}</div>${d.key === primaryKey ? '<div class="da-tag">主威胁</div>' : ''}</div>`).join('');
+  const suc = DATA.succubus || {};
+  const sed = Number(suc.seductions) || 0;
+  const sunk = !!suc.sunk;
+  let meimoForm = '初诱（新手护盾）'; if (sunk) meimoForm = '终焉 · 沉沦'; else if (sed >= 2) meimoForm = '噬心'; else if (sed === 1) meimoForm = '缠丝';
   const cards = ds.map(d => {
     const hp = num(d.hp, 0), max = d.key === 'xinmo' ? 100 : (num(d.max_hp, 1) || 1);
     const pct = Math.max(0, Math.min(100, Math.round(hp / max * 100)));
@@ -205,27 +304,31 @@ function renderDemon() {
     if (d.key === 'xinmo') {
       extra = `<div class="meta">每完成一个每日秘境副本对其造成伤害（每日 0 点复苏）。${hp <= 0 ? '🎉 已击破！' : '未除则降低副本愿力产出。'}</div>`;
     } else if (d.key === 'meimo') {
-      const suc = DATA.succubus || {};
-      const sed = Number(suc.seductions) || 0;
-      const sunk = !!suc.sunk;
-      let form = '初诱'; if (sunk) form = '终焉·沉沦'; else if (sed >= 2) form = '噬心'; else if (sed === 1) form = '缠丝';
-      extra = `<div class="meta">本周诱惑 ${sed}/3 · 形态：${form}${sunk ? '（收益减半，周一解除）' : ''}</div>`;
+      extra = `<div class="meta">本周诱惑 ${sed}/3 · 形态：${esc(meimoForm)}${sunk ? '（收益减半，周一解除）' : ''}</div>`;
     } else if (d.extra && d.extra.note) {
       extra = `<div class="meta">${esc(d.extra.note)}</div>`;
+    }
+    let action = '';
+    if (d.key === 'meimo') {
+      action = sunk
+        ? '<button class="btn primary sm" disabled>本周已沉沦，无法再抵抗</button>'
+        : '<button class="btn primary sm" onclick="openSuccubusModal()">🌹 遭遇魅魔诱惑</button>';
     }
     return `<div class="card demon-card${danger ? ' danger' : ''}">
       <div class="dc-head"><span class="dc-icon">${iconOf(d.key)}</span><div><div class="tag">${esc(d.kind || '魔障')} · ${esc(d.cycle || 'daily')}</div><h3>${esc(d.name)}</h3></div></div>
       <div class="meta">HP ${hp}/${max} · 威胁 ${num(d.threat, 0)}${danger ? ' · ⚠️ 高危' : ''}</div>
       <div class="bar"><i style="width:${pct}%"></i></div>
       ${extra}
+      ${action}
     </div>`;
   }).join('');
-  return `<div class="section-title">🩸 魔障 · 共 ${ds.length} 道</div>
+  return `<div class="section-title">🩸 魔障 · 共 ${ds.length} 道魔杖</div>
+  <div class="meta" style="margin-bottom:8px">魔渊之中的怪统称「魔杖」，分 <b>心魔</b> 与 <b>魅魔</b> 两类（日后可续增）。</div>
   <div class="demon-avatars-title">主威胁高亮</div>
   <div class="demon-avatars">${avatars}</div>
   <div class="cards">${cards}</div>
   <details class="demon-rules"><summary>规则说明</summary>
-    <div class="demon-rules-body">· <b>心魔·拖延</b>：完成每日秘境副本对其造成伤害，HP 归零即击破；每日 0 点复苏，未除则降低副本愿力产出。<br>· <b>魅魔·诱惑</b>：每周计数 0/3，周一 0 点重置；抵御成功 +1 愿力，失败按梯度处理，沉沦后短期收益减半。（魅魔交互在二期接入）</div>
+    <div class="demon-rules-body">· <b>心魔·拖延</b>：完成每日秘境副本对其造成伤害，HP 归零即击破；每日 0 点复苏，未除则降低副本愿力产出。<br>· <b>魅魔·诱惑</b>：每周计数 0/3，周一 0 点重置；抵御成功 +1 愿力，失败按梯度处理（第1次免费 / 第2次耗幸运点 / 第3次沉沦，收益减半）。点击魅魔卡「遭遇魅魔诱惑」进行判定。</div>
   </details>`;
 }
 
@@ -279,12 +382,17 @@ async function condenseFate() {
 
 /* ---------- 每日秘境（每日副本，通关削减心魔 HP） ---------- */
 const DAILY_DUNGEONS = [
-  { id: 'morning', name: '🌅 晨间仪式', desc: '早起 + 整理床铺' },
-  { id: 'exercise', name: '🏃 运动打卡', desc: '运动 ≥ 30 分钟' },
-  { id: 'read', name: '📚 读书', desc: '静心阅读 ≥ 30 分钟' },
-  { id: 'finance', name: '💰 记账', desc: '记录今日收支' },
-  { id: 'cook', name: '🍳 烟火', desc: '亲自做一顿饭' },
-  { id: 'diary', name: '📝 日记', desc: '写今日日记' },
+  { id: 'morning',   name: '🌅 晨间仪式', desc: '早起 + 整理床铺', realm: null },
+  { id: 'exercise',  name: '🏃 运动打卡', desc: '运动 ≥ 30 分钟', realm: '炼体法' },
+  { id: 'baduanjin', name: '🧘 八段锦', desc: '习练八段锦一遍', realm: '炼体法' },
+  { id: 'wuqinxi',   name: '🐯 五禽戏', desc: '习练五禽戏一遍', realm: '炼体法' },
+  { id: 'read',      name: '📚 读书', desc: '静心阅读 ≥ 30 分钟', realm: '万卷书' },
+  { id: 'finance',   name: '💰 记账', desc: '记录今日收支', realm: null },
+  { id: 'cook',      name: '🍳 烟火', desc: '亲自做一顿饭', realm: null },
+  { id: 'diary',     name: '📝 日记', desc: '写今日日记', realm: '岁笺录' },
+  { id: 'gooddeed',  name: '🤲 日行一善', desc: '行一件善事（捐步 / 助人）', realm: '功德法' },
+  { id: 'xinjing',   name: '🌿 心境觉察', desc: '内省今日一种面向（乐观 / 内向 / 理性 / 感性 / 外向）', realm: '千面法' },
+  { id: 'econ',      name: '📖 经济师学习', desc: '备考中级经济师', realm: null }
 ];
 function todayKey() { return new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }).replace(/\//g, '-'); }
 function dungeonFlag(id) { return 'game_dungeon_' + todayKey() + '_' + id; }
@@ -297,8 +405,9 @@ function renderDungeon() {
   const all = done === total;
   const cards = DAILY_DUNGEONS.map(d => {
     const ok = dungeonDone(d.id);
+    const relTag = d.realm ? `<span class="dc-realm">${esc(d.realm)} +1</span>` : '';
     return `<div class="card dungeon-card${ok ? ' cleared' : ''}">
-      <div class="dc-head"><span class="dc-icon">${ok ? '✅' : '⚔️'}</span><div><div class="tag">${ok ? '已通关' : '副本'}</div><h3>${esc(d.name)}</h3></div></div>
+      <div class="dc-head"><span class="dc-icon">${ok ? '✅' : '⚔️'}</span><div><div class="tag">${ok ? '已通关' : '副本'}</div><h3>${esc(d.name)}</h3></div>${relTag}</div>
       <div class="meta">${esc(d.desc)}</div>
       ${ok ? '<div class="meta">🎉 已通关</div>' : '<button class="btn primary" onclick="clearDungeon(\'' + d.id + '\')">通关</button>'}
     </div>`;
@@ -308,22 +417,44 @@ function renderDungeon() {
   <div class="bar" style="height:14px"><i style="width:${hp}%;${hp <= 0 ? 'background:#6fcf97' : ''}"></i></div>
   <div class="meta" style="margin:6px 0 14px">当前 HP ${hp}/100${hp <= 0 ? ' · 🎉 心魔已被击破！' : ''}</div>
   <div class="cards">${cards}</div>
-  <div class="meta" style="margin-top:12px">完成全部 ${total} 个副本即击破心魔，获得 📜 契约点 +1（每日限一次，走 /api/reward 持久化）。</div>`;
+  <div class="meta" style="margin-top:12px">完成全部 ${total} 个副本即击破心魔，获得 📜 契约点 +1${realmBuffSum('taskBonus') > 0 ? ' · 愿力 +' + (5 + Math.min(20, realmBuffSum('taskBonus'))) + '（境界加成）' : ''}（每日限一次）。带「境界名 +1」的副本通关为该境界记经验。</div>
+  ${dailyTasksHtml()}`;
+}
+function dailyTasksHtml() {
+  const tb = (DATA.taskboard || []).filter(t => /日级/.test(t.grp || ''));
+  if (!tb.length) return '';
+  const rows = tb.map(t => `<label class="task-row"><input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTaskDone(${t.id}, this.checked)"> <span class="task-text${t.done ? ' done' : ''}">${esc(t.text || '')}</span></label>`).join('');
+  return `<div class="section-title" style="margin-top:18px">📋 今日任务（勾选写回任务板）</div>
+  <div class="dungeon-tasks">${rows}</div>
+  <div class="meta" style="margin-top:6px">勾选完成任务将写回主站任务板；若任务文本含某 NPC 名字，自动为该 NPC 加好感 +5（每天每 NPC 一次）。</div>`;
+}
+async function toggleTaskDone(id, done) {
+  try {
+    const j = await fetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'taskboard', id: id, fields: { done: done ? 1 : 0 } }) });
+    const r = await j.json();
+    if (!r.ok) { toast('任务更新失败：' + (r.error || ''), 'warn'); return; }
+    const t = (DATA.taskboard || []).find(x => x.id === id); if (t) t.done = done ? 1 : 0;
+    if (done) await grantNpcAffinityByText(t ? (t.text || '') : '');
+    renderMain('dungeon');
+  } catch (e) { toast('任务更新失败：' + e.message, 'warn'); }
 }
 async function clearDungeon(id) {
   try { localStorage.setItem(dungeonFlag(id), '1'); } catch (e) {}
   const xm = (demons() || []).find(d => d.key === 'xinmo');
   if (xm) xm.hp = xinmoHpFromDungeons();
+  const def = DAILY_DUNGEONS.find(d => d.id === id);
+  if (def && def.realm) await grantRealmXp(def.realm, 1, { oncePerDay: true });
   const done = DAILY_DUNGEONS.filter(d => dungeonDone(d.id)).length;
   if (done === DAILY_DUNGEONS.length) {
     const f = 'game_defeated_' + todayKey();
     if (!localStorage.getItem(f)) {
       localStorage.setItem(f, '1');
       try {
-        const j = await fetch('/api/reward', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contract: 1, source: '心魔击败', text: '每日秘境全通关' }) });
+        const bonus = 5 + Math.min(20, realmBuffSum('taskBonus'));
+        const j = await fetch('/api/reward', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contract: 1, willpower: bonus, source: '心魔击败', text: '每日秘境全通关' }) });
         const r = await j.json();
-        if (r.ok && r.player) { DATA.player.contract = r.player.contract; renderResbar(); }
-        toast('🎉 心魔已被击破！契约点 +1', 'good');
+        if (r.ok && r.player) { DATA.player.contract = r.player.contract; if (r.player.willpower != null) DATA.player.willpower = r.player.willpower; renderResbar(); }
+        toast('🎉 心魔已被击破！契约点 +1' + (bonus ? ' · 愿力 +' + bonus : ''), 'good');
       } catch (e) { toast('击破记录失败：' + e.message, 'warn'); }
     } else { toast('心魔已击破（今日已领取）', 'good'); }
   } else {
@@ -389,6 +520,11 @@ async function saveCookPost() {
         closeCookModal();
         await loadData();   // 重新拉真数据，刷新资源条+菜谱进度+背包
         showCookReward(j.gains, dish);
+        // 灶神录：新菜 +5 经验、重复做 +1 经验（不耗愿力，直接记境界）
+        if (j.gains && typeof j.gains.activated === 'boolean') {
+          await grantRealmXp('灶神录', j.gains.activated ? 5 : 1, {});
+        }
+        renderMain('cook');
         return;
       } else { toast('做菜结算失败：' + (j.error || '未知错误'), 'warn'); }
     } catch (e) { toast('请求失败：' + e.message, 'warn'); }
@@ -429,7 +565,11 @@ function toast(msg, kind) {
 
 /* ---------- 背包仓库交互（接 /api/inventory） ---------- */
 let bagView = 'bag';     // 'bag' | 'warehouse'
+try { const _bv = localStorage.getItem('gameBagView'); if (_bv === 'bag' || _bv === 'warehouse') bagView = _bv; } catch (e) {}
 let bagSub = 'all';      // 'all' | 'fridge'（仅 warehouse 下）
+try { const _bs = localStorage.getItem('gameBagSub'); if (_bs === 'all' || _bs === 'fridge') bagSub = _bs; } catch (e) {}
+function setBagView(v) { bagView = v; try { localStorage.setItem('gameBagView', v); } catch (e) {} renderMain('bag'); }
+function setBagSub(v) { bagSub = v; try { localStorage.setItem('gameBagSub', v); } catch (e) {} renderMain('bag'); }
 function invIcon_(type) { return type === 'ingredient' ? '🥬' : (type === 'dish' ? '🍲' : (type === 'item' ? '🔮' : '📦')); }
 const RARITY_INFO = { 1:{label:'普通',c:'#9aa0a6'}, 2:{label:'良好',c:'#73b888'}, 3:{label:'稀有',c:'#5b8def'}, 4:{label:'史诗',c:'#a855f7'}, 5:{label:'传说',c:'#c9a227'} };
 function getWhCap() {
@@ -501,6 +641,18 @@ async function saveBagAdd() {
   renderBag();
   toast('已入库：' + name + ' ×' + qty, 'good');
 }
+async function eatInvItem(type, key, loc, zone) {
+  const k = String(key);
+  let arr = inv().slice();
+  const idx = arr.findIndex(x => x.item_type === type && String(x.item_key) === k && (x.location || 'bag') === loc && (x.zone || null) === (zone || null));
+  if (idx < 0) return;
+  const it = arr[idx];
+  const qty = (Number(it.qty) || 1) - 1;
+  if (qty <= 0) arr.splice(idx, 1);
+  else arr[idx] = Object.assign({}, it, { qty });
+  const res = await invSet(arr);
+  if (res) { renderBag(); toast('🍽️ 享用了 ' + it.name + (qty > 0 ? '（剩 ' + qty + '）' : '，已吃完'), 'good'); }
+}
 function bagItemHtml(it) {
   const ri = RARITY_INFO[it.rarity] || RARITY_INFO[3];
   const loc = it.location || 'bag';
@@ -517,6 +669,7 @@ function bagItemHtml(it) {
       (it.note && it.item_type !== 'meta' ? '<div class="bi-note">' + esc(it.note) + '</div>' : '') +
     '</div>' +
     '<div class="bi-acts">' +
+      (it.item_type === 'dish' ? '<button class="bi-btn eat" onclick="eatInvItem(\'' + it.item_type + '\',\'' + key + '\',\'' + loc + '\',' + (zone ? '\'' + zone + '\'' : 'null') + ')">🍽️ 食用</button>' : '') +
       '<button class="bi-btn" onclick="moveInvItem(\'' + it.item_type + '\',\'' + key + '\',\'' + loc + '\',' + (zone ? '\'' + zone + '\'' : 'null') + ',\'' + moveTo[0] + '\',' + (moveTo[1] ? '\'' + moveTo[1] + '\'' : 'null') + ')">' + moveLabel + '</button>' +
       (it.item_type !== 'meta' ? '<button class="bi-btn danger" onclick="delInvItem(\'' + it.item_type + '\',\'' + key + '\',\'' + loc + '\',' + (zone ? '\'' + zone + '\'' : 'null') + ')">丢弃</button>' : '') +
     '</div>' +
@@ -536,10 +689,10 @@ function renderBagHtml() {
   const full = curCount >= curCap;
   const tabs = [['bag','🎒 背包'],['warehouse','📦 仓库']];
   let html = '<div class="mod-toolbar"><div class="section-title">🎒 背包仓库</div><button class="btn primary" onclick="openBagAddModal()">➕ 添加物品</button></div>';
-  html += '<div class="bag-tabs">' + tabs.map(t => '<div class="bag-tab' + (bagView===t[0]?' active':'') + '" onclick="bagView=\'' + t[0] + '\';renderBag()">' + t[1] + '</div>').join('') + '</div>';
+  html += '<div class="bag-tabs">' + tabs.map(t => '<div class="bag-tab' + (bagView===t[0]?' active':'') + '" onclick="setBagView(\'' + t[0] + '\')">' + t[1] + '</div>').join('') + '</div>';
   if (bagView === 'warehouse') {
     const subs = [['all','🗃️ 全部仓库'],['fridge','🧊 冰箱区']];
-    html += '<div class="bag-subs">' + subs.map(s => '<div class="bag-sub' + (bagSub===s[0]?' active':'') + '" onclick="bagSub=\'' + s[0] + '\';renderBag()">' + s[1] + '</div>').join('') + '</div>';
+    html += '<div class="bag-subs">' + subs.map(s => '<div class="bag-sub' + (bagSub===s[0]?' active':'') + '" onclick="setBagSub(\'' + s[0] + '\')">' + s[1] + '</div>').join('') + '</div>';
   }
   html += '<div class="bag-cap' + (full?' full':'') + '">容量 ' + curCount + ' / ' + curCap + (bagView==='warehouse' ? ' <button class="bi-btn" style="margin-left:8px;" onclick="expandWarehouse()">＋扩容(+20，50愿力)</button>' : '') + '</div>';
   if (!items.length) html += '<div class="empty">这里还空空如也' + (bagView==='warehouse' ? '，去「烹饪」做菜会产出料理，或点「添加物品」入库' : '，做菜会自动产出料理到背包') + '</div>';
@@ -608,94 +761,105 @@ function skillAchievePopup(name, lv) {
 }
 
 function renderRealm() {
-  const rm = player().realms || {};
-  const totalLayer = realmTotalLayers(), maxLayer = realmMaxTotal();
+  const totalLayer = realmTotalLayers();
   const doneCount = DAILY_DUNGEONS.filter(d => dungeonDone(d.id)).length;
+  const tb = realmBuffSum('taskBonus'), xr = realmBuffSum('xinmoResist'), mr = realmBuffSum('meimoResist');
   const cards = Object.keys(REALM_DEFS).map(k => {
     const def = REALM_DEFS[k];
-    const layer = realmLayer(k);
-    const maxed = layer >= def.maxLayer;
-    const unlocked = realmUnlocked(def);
-    const cls = 'card realm-card' + (maxed ? ' maxed' : '') + (unlocked ? '' : ' locked');
-    const stage = def.layers[Math.min(layer, def.layers.length - 1)];
-    const seg = unlocked ? '' : '<div class="realm-lock">🔒 需完成 ' + def.minDungeons + ' 个每日秘境</div>';
-    return `<div class="${cls}">
-      ${seg}
-      <div class="dc-head"><div><span class="tag">${esc(def.group)}</span><h3>${esc(k)}</h3></div></div>
-      <div class="meta">${maxed ? '已圆满' : ('第' + layer + '/' + def.maxLayer + '层')} · ${esc(stage)}</div>
+    const s = realmState(k);
+    const pct = Math.max(0, Math.min(100, Math.round(s.xp / REALM_XP_NEEDED * 100)));
+    const stage = realmStageName(k);
+    const roundTag = s.round > 0 ? '<span class="realm-round">轮回第' + s.round + '世·光环+' + s.round + '</span>' : '';
+    return `<div class="card realm-card" onclick="openRealm('${k}')">
+      <div class="dc-head"><span class="dc-icon">${def.icon}</span><div><div class="tag">${esc(def.group)}</div><h3>${esc(k)} ${roundTag}</h3></div></div>
+      <div class="meta">${esc(stage)}　·　经验 ${s.xp}/${REALM_XP_NEEDED}</div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
       <div class="meta">${esc(def.effect)}</div>
-      ${unlocked ? '<button class="btn primary sm realm-cult-btn" ' + (maxed ? 'disabled' : '') + ' onclick="openRealm(\'' + k + '\')">' + (maxed ? '此境界已圆满' : '参悟一层') + '</button>' : ''}
     </div>`;
   }).join('');
-  return `<div class="section-title">🌟 境界参悟 <span class="game-tag">点击参悟</span></div>
-    <div class="realm-total">总参悟层数 <b>${totalLayer}</b> / ${maxLayer}　·　今日已通秘境 <b>${doneCount}/${DAILY_DUNGEONS.length}</b></div>
+  return `<div class="section-title">🌟 境界参悟 <span class="game-tag">经验制 · 圆满轮回永续</span></div>
+    <div class="realm-total">累计参悟层数 <b>${totalLayer}</b>　·　今日已通秘境 <b>${doneCount}/${DAILY_DUNGEONS.length}</b></div>
+    <div class="realm-buffs">当前修行 Buff：副本愿力 +${tb}%　·　心魔抵抗 +${xr}%　·　魅魔抵抗 +${mr}%</div>
     <div class="cards">${cards}</div>
-    <div class="meta" style="margin-top:12px">点击境界卡参悟一层，消耗愿力点；满层显示「此境界已圆满」。高阶境界需先完成一定数量的每日秘境（炼体法/万卷书联动见卡片效果）。</div>`;
+    <div class="meta" style="margin-top:12px">每日完成对应副本 / 活动即记经验（每层 7 点）。满 9 层 = 一次圆满，进入轮回继续攀升，永久光环 +1，永无止境。点击卡片看详情。</div>`;
 }
 function openRealm(key) {
   const def = REALM_DEFS[key];
   if (!def) return;
-  const layer = realmLayer(key);
-  const maxed = layer >= def.maxLayer;
-  const unlocked = realmUnlocked(def);
-  const cost = realmCost(def, layer);
-  const layerList = def.layers.map((nm, i) => {
-    const done = i < layer;
-    const cur = (i === layer) && !maxed;
+  const s = realmState(key);
+  const pct = Math.max(0, Math.min(100, Math.round(s.xp / REALM_XP_NEEDED * 100)));
+  const curStage = (s.layer % REALM_STAGES);
+  const layerList = def.stages.map((nm, i) => {
+    const done = i < curStage;
+    const cur = (i === curStage) && !done;
     const cls = (done || cur) ? ' cur' : ' locked-layer';
     const mark = done ? '✓' : (cur ? '◀ 当前' : '未达');
     return '<div class="realm-detail-layer' + cls + '"><span>' + (i + 1) + '. ' + esc(nm) + '</span><span>' + mark + '</span></div>';
   }).join('');
-  let foot;
-  if (!unlocked) foot = '<button class="realm-cult-btn" disabled style="opacity:.6">🔒 需先完成 ' + def.minDungeons + ' 个每日秘境</button>';
-  else if (maxed) foot = '<button class="realm-cult-btn" disabled>此境界已圆满</button>';
-  else foot = '<button class="realm-cult-btn" onclick="cultivateRealm(\'' + key + '\')">参悟一层（耗 ' + cost + ' 愿力）</button>';
   const box = document.createElement('div');
   box.className = 'realm-modal';
-  box.innerHTML = '<div class="realm-modal-box"><h3>🌟 ' + esc(key) + '</h3>' +
+  box.innerHTML = '<div class="realm-modal-box"><h3>' + def.icon + ' ' + esc(key) + (s.round > 0 ? ' · 轮回第' + s.round + '世' : '') + '</h3>' +
     '<p>' + esc(def.story) + '</p>' +
     '<div class="realm-card-effect" style="margin-bottom:8px"><b>境界效果：</b>' + esc(def.effect) + '</div>' +
-    '<div style="font-size:13px;font-weight:600;margin:6px 0 4px">参悟阶段（' + layer + '/' + def.maxLayer + '）</div>' +
-    layerList + foot +
+    '<div style="font-size:13px;font-weight:600;margin:6px 0 4px">当前经验 ' + s.xp + '/' + REALM_XP_NEEDED + '（满则自动参悟一层）</div>' +
+    '<div class="bar" style="height:12px;margin-bottom:8px"><i style="width:' + pct + '%"></i></div>' +
+    '<div style="font-size:13px;font-weight:600;margin:6px 0 4px">修阶（本轮第 ' + (curStage + 1) + ' 阶）</div>' +
+    layerList +
     '<button class="btn" style="margin-top:8px;background:var(--bg);color:var(--text-secondary)" onclick="closeRealm()">关闭</button></div>';
   box.onclick = (e) => { if (e.target === box) box.remove(); };
   document.body.appendChild(box);
 }
 function closeRealm() { document.querySelectorAll('.realm-modal').forEach(m => m.remove()); }
-async function cultivateRealm(key) {
-  const def = REALM_DEFS[key];
-  if (!def) return;
-  if (!realmUnlocked(def)) { toast('该境界尚未解锁', 'warn'); return; }
-  const p = player();
-  const wp = num(p.willpower, 0);
-  const layer = realmLayer(key);
-  if (layer >= def.maxLayer) { toast(key + ' 已圆满', ''); return; }
-  const cost = realmCost(def, layer);
-  if (wp < cost) { toast('愿力点不足，需 ' + cost + ' 点', 'warn'); return; }
-  const realms = Object.assign({}, p.realms || {});
-  const newLayer = layer + 1;
-  realms[key] = newLayer;
-  try {
-    const j = await fetch('/api/reward', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ willpower: -cost, source: '境界参悟', text: key }) });
-    const r = await j.json();
-    if (!r.ok) { toast('参悟失败：' + (r.error || ''), 'warn'); return; }
-    const newP = r.player || {};
-    const j2 = await (await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { realms: JSON.stringify(realms), willpower: newP.willpower, starwish: newP.starwish, contract: newP.contract, level: newP.level } }) })).json();
-    if (j2.ok && j2.player) DATA.player = j2.player;
-    else { DATA.player.realms = realms; if (newP.willpower != null) DATA.player.willpower = newP.willpower; }
-    closeRealm(); renderResbar(); renderMain('realm');
-    if (newLayer >= def.maxLayer) toast('🏆 ' + key + ' 已圆满！', 'good');
-    else toast('🎉 ' + key + ' 参悟至第 ' + newLayer + ' 层', 'good');
-      } catch (e) { toast('参悟失败：' + e.message, 'warn'); }
-    }
 
     /* ---------- 江湖 NPC（二期 v9.0，移植主站逻辑，接 /api/insert/update/delete + /api/reward） ---------- */
     let npcSearch = '';
     let npcFilter = 'all';
-    const NPC_TYPES = ['家人', '同窗', '挚友', '助手', '其他'];
+    const NPC_TYPES = ['家人', '恋慕', '朋友'];
+    const REL_RANKS = {
+      '家人': { title: '亲情值', stages: ['陌路', '家人初识', '血脉相连', '温情弥笃', '至亲挚爱'], thr: [0, 20, 50, 90, 150] },
+      '恋慕': { title: '情愫值', stages: ['初识', '心动', '暧昧', '依恋', '挚爱'], thr: [0, 20, 50, 90, 150] },
+      '朋友': { title: '好感值', stages: ['初识', '友善', '投缘', '知己', '至交'], thr: [0, 20, 50, 90, 150] }
+    };
     function npcsArr() { return (DATA && DATA.npcs) || []; }
-    function getNpcMeta(n) { return (n && n.meta && typeof n.meta === 'object') ? n.meta : {}; }
+    function getNpcMeta(n) { return (n && n.meta && typeof n.meta === 'object') ? n.meta : (typeof (n && n.meta) === 'string' ? safeParse(n.meta, {}) : {}); }
     function todayCST() { return new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }); }
+    function npcRel(n) { const m = getNpcMeta(n); return m.rel || (['家人', '恋慕', '朋友'].includes(n.type) ? n.type : '朋友'); }
+    function npcRankInfo(n) {
+      const rel = npcRel(n), cfg = REL_RANKS[rel] || REL_RANKS['朋友'];
+      const aff = Number(getNpcMeta(n).affinity) || 0;
+      let idx = 0; for (let i = 0; i < cfg.thr.length; i++) { if (aff >= cfg.thr[i]) idx = i; }
+      return { rel: rel, title: cfg.title, stage: cfg.stages[idx], aff: aff, pct: Math.min(100, Math.round(aff / 150 * 100)) };
+    }
+    function npcAffTodayKey() { return 'game_npcaff_' + todayKey(); }
+    function npcAffGrantedToday() { try { return JSON.parse(localStorage.getItem(npcAffTodayKey()) || '[]'); } catch (e) { return []; } }
+    function markNpcAffToday(id) { const a = npcAffGrantedToday(); if (!a.includes(id)) { a.push(id); try { localStorage.setItem(npcAffTodayKey(), JSON.stringify(a)); } catch (e) {} } }
+    async function grantNpcAffinityByText(text) {
+      if (!text) return;
+      for (const n of npcsArr()) {
+        if ((n.type || '') === '野外首领') continue;
+        const nm = (n.name || '');
+        if (!nm) continue;
+        const baseName = nm.split('(')[0].trim();
+        const pm = nm.match(/\(([^)]*)\)/);
+        const parenAliases = pm ? pm[1].split(/[、,，]/).map(s => s.trim()).filter(Boolean) : [];
+        const metaAliases = (getNpcMeta(n).aliases || []).filter(Boolean);
+        const names = [baseName].concat(parenAliases, metaAliases).filter(Boolean);
+        if (!names.some(nm2 => nm2 && text.indexOf(nm2) >= 0)) continue;
+        if (npcAffGrantedToday().includes(n.id)) return;
+        markNpcAffToday(n.id);
+        const meta = getNpcMeta(n);
+        const aff = (Number(meta.affinity) || 0) + 5;
+        const log = (meta.visitLog || []); log.unshift({ date: todayCST(), note: '任务勾选 · 好感+5' });
+        const newMeta = Object.assign({}, meta, { affinity: aff, visitLog: log.slice(0, 30) });
+        try {
+          const j = await fetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'npcs', id: n.id, fields: { meta: JSON.stringify(newMeta) } }) });
+          const r = await j.json();
+          if (r.ok) { await loadData(); toast('💗 ' + nm + ' 好感 +5（' + aff + '）', 'good'); }
+          else toast('好感更新失败：' + (r.error || ''), 'warn');
+        } catch (e) { toast('好感更新失败：' + e.message, 'warn'); }
+        return;
+      }
+    }
     function npcList() {
       const all = npcsArr().filter(n => (n.type || '') !== '野外首领');
       const kw = (npcSearch || '').trim().toLowerCase();
@@ -713,14 +877,16 @@ async function cultivateRealm(key) {
         const stCls = st === '熟识' ? 'known' : (st === '已遇' ? 'met' : '');
         const meta = getNpcMeta(n);
         const aff = Number(meta.affinity) || 0;
+        const ri = npcRankInfo(n);
         const lastTs = Number(meta.lastVisitTs) || 0;
         const cooling = lastTs && (Date.now() - lastTs) < 24 * 3600 * 1000;
         return '<div class="npc-card" onclick="openNpcDetail(' + n.id + ')">' +
           '<div class="npc-head"><div class="npc-avatar">' + esc((n.name || '?').slice(0, 1)) + '</div>' +
-          '<div class="npc-id"><div class="npc-name">' + esc(n.name || '') + '</div><div class="npc-sub">' + esc(n.type || '') + ' · ' + esc(n.region || '') + '</div></div>' +
-          '<span class="npc-status ' + stCls + '">' + esc(st) + '</span></div>' +
+          '<div class="npc-id"><div class="npc-name">' + esc(n.name || '') + '</div><div class="npc-sub">' + esc(n.region || '') + '</div></div>' +
+          '<span class="npc-rel npc-rel-' + esc(ri.rel) + '">' + esc(ri.rel) + '</span></div>' +
           '<div class="npc-desc">' + esc(n.desc || '') + '</div>' +
-          '<div class="npc-aff">好感度 <span class="npc-aff-bar"><span style="width:' + Math.min(100, aff) + '%"></span></span> <b>' + aff + '</b></div>' +
+          '<div class="npc-aff"><span class="npc-rel-title">' + esc(ri.title) + '</span> · <b>' + esc(ri.stage) + '</b>' +
+          '<span class="npc-aff-bar"><span style="width:' + ri.pct + '%"></span></span> <b>' + aff + '</b></div>' +
           '<div class="npc-actions"><button class="npc-visit" ' + (cooling ? 'disabled' : '') + ' onclick="event.stopPropagation();visitNpc(' + n.id + ')">' + (cooling ? '⏳ 奇遇冷却中' : '拜访（奇遇）') + '</button>' +
           '<button class="npc-del" onclick="event.stopPropagation();delNpc(' + n.id + ')">删除</button></div></div>';
       }).join('');
@@ -737,7 +903,7 @@ async function cultivateRealm(key) {
         '<div class="section-title" style="margin-top:18px">＋ 新增 NPC</div>' +
         '<div class="npc-form">' +
           '<input class="input" id="npcName" placeholder="名字（必填）">' +
-          '<select class="input" id="npcType"><option value="家人">家人</option><option value="同窗">同窗</option><option value="挚友">挚友</option><option value="助手">助手</option><option value="其他">其他</option></select>' +
+          '<select class="input" id="npcRel"><option value="家人">家人（亲情线）</option><option value="恋慕">恋慕（情愫线）</option><option value="朋友">朋友（好感线）</option></select>' +
           '<input class="input" id="npcRegion" placeholder="所属州（如 豫西灵宝州）">' +
           '<input class="input" id="npcX" type="number" placeholder="地图X(40-620)">' +
           '<input class="input" id="npcY" type="number" placeholder="地图Y(60-460)">' +
@@ -749,6 +915,7 @@ async function cultivateRealm(key) {
       const n = npcsArr().find(x => x.id === id); if (!n) return;
       const meta = getNpcMeta(n);
       const aff = Number(meta.affinity) || 0;
+      const ri = npcRankInfo(n);
       const log = meta.visitLog || [];
       const logHtml = log.length ? log.map(l => '<div class="log-row"><span class="log-ts">' + esc(l.date || '') + '</span><span class="log-item">' + esc(l.note || '') + '</span></div>').join('')
         : '<div class="game-empty">尚无奇遇记录</div>';
@@ -756,9 +923,9 @@ async function cultivateRealm(key) {
       box.className = 'realm-modal';
       box.innerHTML = '<div class="realm-modal-box npc-detail">' +
         '<h3>🧝 ' + esc(n.name || '') + '</h3>' +
-        '<div class="npc-detail-meta">' + esc(n.type || '其他') + ' · ' + esc(n.region || '未知州') + ' · 状态 <b>' + esc(n.status || '未遇') + '</b></div>' +
+        '<div class="npc-detail-meta">' + esc(ri.rel) + '（' + esc(REL_RANKS[ri.rel] ? REL_RANKS[ri.rel].title : '') + '） · ' + esc(n.region || '未知州') + ' · 状态 <b>' + esc(n.status || '未遇') + '</b> · 当前 <b>' + esc(ri.stage) + '</b></div>' +
         '<div class="npc-detail-desc">' + esc(n.desc || '（无简介）') + '</div>' +
-        '<div class="npc-aff">好感度 <span class="npc-aff-bar"><span style="width:' + Math.min(100, aff) + '%"></span></span> <b>' + aff + '</b></div>' +
+        '<div class="npc-aff">' + esc(ri.title) + ' <span class="npc-aff-bar"><span style="width:' + ri.pct + '%"></span></span> <b>' + aff + '</b></div>' +
         '<div style="font-size:13px;font-weight:600;margin:10px 0 4px">奇遇记录</div>' +
         '<div style="max-height:40vh;overflow:auto">' + logHtml + '</div>' +
         '<button class="realm-cult-btn" style="margin-top:10px;background:var(--panel2);color:var(--text)" onclick="closeRealm()">关闭</button></div>';
@@ -789,15 +956,16 @@ async function cultivateRealm(key) {
       const gv = id => (document.getElementById(id) || {}).value || '';
       const name = gv('npcName');
       if (!name.trim()) { toast('名字必填', 'warn'); return; }
+      const rel = gv('npcRel') || '朋友';
       const fields = {
         name: name.trim(),
-        type: gv('npcType') || '其他',
+        type: rel,
         region: gv('npcRegion') || '',
         x: Number(gv('npcX')) || 0,
         y: Number(gv('npcY')) || 0,
         desc: gv('npcDesc') || '',
         status: '未遇',
-        meta: '{}',
+        meta: JSON.stringify({ rel: rel, affinity: 0, visitLog: [] }),
         created_at: new Date().toISOString()
       };
       fetch('/api/insert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'npcs', fields }) })
@@ -856,7 +1024,7 @@ async function cultivateRealm(key) {
       const explRegions = MAP_REGIONS.filter(r => MAP_TARGET[r.r] > 0);
       const statExpl = explRegions.length ? Math.round(explRegions.reduce((s, r) => s + explPct(r.r), 0) / explRegions.length) : 0;
       const regionCards = MAP_REGIONS.map(rg => {
-        if (rg.r === '魔渊') return '<div class="map-region danger" onclick="go(\'demon\')"><div class="map-region-name">🔴 ' + rg.n + '</div><div class="map-region-sub">野外首领 · 点击前往魔障</div></div>';
+        if (rg.r === '魔渊') return '<div class="map-region danger" onclick="go(\'demon\')"><div class="map-region-name">🔴 ' + rg.n + '</div><div class="map-region-sub">魔杖巢穴 · 点击前往镇压魔障</div></div>';
         const pct = explPct(rg.r);
         return '<div class="map-region" onclick="openRegionDetail(\'' + rg.r + '\')"><div class="map-region-name">' + rg.n + '</div>' +
           '<div class="map-region-sub">镇守：' + rg.town + ' · NPC ' + countIn(rg.r) + '</div>' +
@@ -870,7 +1038,7 @@ async function cultivateRealm(key) {
           return '<g style="cursor:pointer" onclick="go(\'demon\')"><circle cx="' + cx + '" cy="' + cy + '" r="16" fill="#FCEBEB" stroke="#A32D2D"/>' +
             '<path d="M' + (cx - 12) + ' ' + (cy - 12) + ' L' + (cx - 16) + ' ' + (cy - 20) + ' L' + (cx - 6) + ' ' + (cy - 14) + ' Z" fill="#A32D2D"/>' +
             '<path d="M' + (cx + 12) + ' ' + (cy - 12) + ' L' + (cx + 16) + ' ' + (cy - 20) + ' L' + (cx + 6) + ' ' + (cy - 14) + ' Z" fill="#A32D2D"/>' +
-            '<text x="' + cx + '" y="' + (cy + 32) + '" text-anchor="middle" font-size="12" fill="#A32D2D">魅魔</text></g>';
+            '<text x="' + cx + '" y="' + (cy + 32) + '" text-anchor="middle" font-size="12" fill="#A32D2D">魔杖</text></g>';
         }
         return '<g style="cursor:pointer" onclick="openNpcDetail(' + n.id + ')"><circle cx="' + cx + '" cy="' + cy + '" r="13" fill="#fff" stroke="' + col + '"/><text x="' + cx + '" y="' + (cy + 4) + '" text-anchor="middle" font-size="12" fill="' + col + '">' + esc((n.name || '?').slice(0, 1)) + '</text></g>';
       }).join('');
@@ -889,7 +1057,7 @@ async function cultivateRealm(key) {
         '<div class="map-overview">江湖 NPC <b>' + statNpcs + '</b> · 已解锁州 <b>' + (MAP_REGIONS.length - 1) + '</b> · 平均探索度 <b>' + statExpl + '%</b></div>' +
         '<div class="map-regions">' + regionCards + '</div>' +
         mapSvg +
-        '<details class="map-legend-box"><summary>图例</summary><div class="map-legend"><span>■ 界碑（传送）</span><span>● NPC（点击唤访）</span><span>🔴 魅魔（野首·点击前往）</span><span>🛡 镇守</span></div></details>';
+        '<details class="map-legend-box"><summary>图例</summary><div class="map-legend"><span>■ 界碑（传送）</span><span>● NPC（点击唤访）</span><span>🔴 魔杖（野首·点击前往）</span><span>🛡 镇守</span></div></details>';
     }
 
     /* ---------- 心法（二期 v11.0，移植主站逻辑，Tab分组 + 被动buff + 自定义 + 收藏，localStorage 持久化） ---------- */
@@ -1029,7 +1197,7 @@ async function cultivateRealm(key) {
               '<div class="game-stat" title="契约点：心魔被击破等里程碑奖励，永久累积"><div class="game-stat-num">' + contract + '</div><div class="game-stat-lbl">📜 契约点</div></div>' +
               '<div class="game-stat" title="等级：愿力经验凝结升阶所得"><div class="game-stat-num">' + level + '</div><div class="game-stat-lbl">🏅 等级</div></div>' +
               '<div class="game-stat" title="总技能等级：七艺修炼之和，上限 70"><div class="game-stat-num">' + skillTotalLevel() + '</div><div class="game-stat-lbl">🛠️ 技能</div></div>' +
-              '<div class="game-stat" title="总参悟层数：五境累计，上限 45"><div class="game-stat-num">' + realmTotalLayers() + '</div><div class="game-stat-lbl">🗺️ 境界</div></div>' +
+              '<div class="game-stat" title="累计参悟层数：七境累计，圆满轮回永续"><div class="game-stat-num">' + realmTotalLayers() + '</div><div class="game-stat-lbl">🗺️ 境界</div></div>' +
             '</div>' +
           '</div>' +
           '<div class="game-card"><div class="game-card-title">🔋 今日精力 <span class="game-tag">疲劳·派生</span></div><div class="game-energy-num">' + energy + '<span class="game-energy-unit">/100</span></div><div class="game-bar"><span style="width:' + energy + '%"></span></div>' +
@@ -1098,7 +1266,7 @@ async function cultivateRealm(key) {
           if (DATA.player) { DATA.player.willpower = j.willpower; DATA.player.lucky = j.lucky; DATA.player.destiny = j.destiny; }
           renderResbar();
           toast(j.msg + '（愿力 ' + j.willpower + ' · 幸运 ' + j.lucky + ' · 天命 ' + j.destiny + '）', result === 'success' ? 'good' : 'warn');
-          renderMain('succubus');
+          renderMain('demon');
         } else toast('失败：' + (j.error || ''), 'warn');
       } catch (e) { toast('遭遇失败：' + e.message, 'warn'); }
     }
@@ -1310,7 +1478,9 @@ function renderPlaceholder(title, msg) {
 function render() {
   renderResbar();
   renderNav();
-  go('dashboard');
+  let last = 'dashboard';
+  try { last = localStorage.getItem('gameLastView') || 'dashboard'; } catch (e) {}
+  go(last);
 }
 
 /* ---------- 主题切换 ---------- */
