@@ -128,7 +128,9 @@ function renderNav() {
   });
 }
 
+let CUR = 'dashboard';   // 当前视图 id（供交互后局部重渲染）
 function go(id) {
+  CUR = id;
   document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('hot', a.dataset.id === id));
   renderMain(id);
   window.scrollTo(0, 0);
@@ -153,6 +155,7 @@ function renderMain(id) {
     case 'heart':     html = renderHeart(); break;
     case 'char':      html = renderChar(); break;
     case 'succubus':  html = renderSuccubus(); break;
+    case 'trial':     html = renderTrial(); break;
     default: html = renderPlaceholder(mod.name, '该模块数据接口将在二期接入，本期仅占位。');
   }
   main.innerHTML = html;
@@ -1098,6 +1101,114 @@ async function cultivateRealm(key) {
         } else toast('失败：' + (j.error || ''), 'warn');
       } catch (e) { toast('遭遇失败：' + e.message, 'warn'); }
     }
+
+/* ===== 周天试炼（周本 · 周级副本，数据共享 localStorage lifeos_weeklyDefs/Claimed） ===== */
+const WEEKLY_DEFAULTS = [
+  { id: 'clean', name: '洗澡', gname: '净身涤尘', icon: '🛁', tasks: ['洗澡'], need: 2, reward: 5, unlock: null, fixed: true },
+  { id: 'family', name: '亲情连线', gname: '亲缘连线', icon: '📞', tasks: ['爷爷通话', '家人发视频'], need: 1, reward: 5, unlock: null, fixed: true },
+  { id: 'laundry', name: '洗衣鞋', gname: '浣衣净履', icon: '👟', tasks: ['洗衣服和鞋'], need: 1, reward: 5, unlock: null, fixed: true },
+  { id: 'chest', name: '周俸宝箱', gname: '周俸宝箱', icon: '🎁', tasks: ['每周领奖励'], need: 1, reward: 10, unlock: { requireDone: 2, text: '需先完成 2 个周本' }, fixed: true }
+];
+function weeklyDefs() {
+  let custom = [];
+  try { custom = JSON.parse(localStorage.getItem('lifeos_weeklyDefs') || '[]'); } catch (e) { custom = []; }
+  return WEEKLY_DEFAULTS.concat(custom);
+}
+function yearWeekCST() {
+  const now = new Date();
+  const day = now.getDay();                 // 0=Sun..6=Sat
+  const diff = (day + 6) % 7;               // 距本周一的天数
+  const monday = new Date(now); monday.setDate(now.getDate() - diff);
+  const y = monday.getFullYear();
+  const firstThu = new Date(y, 0, 4);
+  const firstMon = new Date(firstThu); firstMon.setDate(firstThu.getDate() - ((firstThu.getDay() + 6) % 7));
+  const week = Math.ceil((((monday - firstMon) / 86400000) + 1) / 7);
+  return y + '-W' + String(week).padStart(2, '0');
+}
+function weeklyClaimed() {
+  try { return JSON.parse(localStorage.getItem('lifeos_weeklyClaimed') || '{}'); } catch (e) { return {}; }
+}
+/* 进度：从任务板「周级」任务实时计算（匹配文本 + 已完成）。
+   匹配规则：周本关键词 与 任务文本 任一方包含另一方即算命中
+   （如「洗澡」命中「周一洗澡」、「爷爷通话」命中「周五和爷爷通话」），兼容主站默认配置与真实任务命名。 */
+function weeklyProgress(def) {
+  const tb = (DATA.taskboard || []).filter(t => /周级/.test(t.grp || ''));
+  const hit = (sub, text) => {
+    const s = (sub || '').trim(), t = (text || '');
+    return s && t && (t.indexOf(s) >= 0 || s.indexOf(t) >= 0);
+  };
+  const done = def.tasks.reduce((s, sub) => s + tb.filter(t => t.done && hit(sub, t.text)).length, 0);
+  return Math.min(done, def.need);
+}
+function weeklyIsCleared(def) {
+  if (def.id === 'chest') { const c = weeklyClaimed()[yearWeekCST()]; return !!(c && c.chest); }
+  return weeklyProgress(def) >= def.need;
+}
+async function claimWeekly(id) {
+  const def = weeklyDefs().find(d => d.id === id);
+  if (!def) return;
+  const wk = yearWeekCST();
+  const claimed = weeklyClaimed();
+  if (claimed[wk] && claimed[wk][id]) { toast('本周已领取'); return; }
+  if (def.unlock) {
+    const doneCount = weeklyDefs().filter(d => d.id !== 'chest' && weeklyIsCleared(d)).length;
+    if (doneCount < (def.unlock.requireDone || 0)) { toast('🔒 ' + (def.unlock.text || '未解锁'), 'warn'); return; }
+  }
+  // 先标记已领取，防止快速重复点击造成双发
+  claimed[wk] = claimed[wk] || {}; claimed[wk][id] = true;
+  try { localStorage.setItem('lifeos_weeklyClaimed', JSON.stringify(claimed)); } catch (e) {}
+  renderMain(CUR);
+  try {
+    const r = await fetch('/api/reward', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ willpower: def.reward, source: '周天试炼', text: def.gname }) });
+    const j = await r.json();
+    if (j.ok && j.player) {
+      DATA.player = Object.assign({}, DATA.player, { willpower: j.player.willpower, level: j.player.level, lucky: j.player.lucky, destiny: j.player.destiny });
+      renderResbar();
+    }
+    toast('🎁 周天试炼「' + def.gname + '」领取成功，+' + def.reward + ' 愿力', 'good');
+    renderMain(CUR);
+  } catch (e) { toast('领取失败：' + e.message, 'warn'); renderMain(CUR); }
+}
+function weeklyCardsHtml() {
+  const defs = weeklyDefs();
+  const wk = yearWeekCST();
+  const claimed = weeklyClaimed()[wk] || {};
+  const doneCount = defs.filter(d => d.id !== 'chest' && weeklyIsCleared(d)).length;
+  return defs.map(d => {
+    const isChest = d.id === 'chest';
+    const cleared = weeklyIsCleared(d);
+    const prog = weeklyProgress(d);
+    const locked = !!(d.unlock && doneCount < (d.unlock.requireDone || 0));
+    const got = !!claimed[d.id];
+    let btn;
+    if (isChest) {
+      if (locked) btn = '<button class="dungeon-token-btn" disabled>🔒 ' + esc(d.unlock ? d.unlock.text : '未解锁') + '</button>';
+      else if (got) btn = '<button class="dungeon-token-btn done" disabled>✓ 已领取</button>';
+      else btn = '<button class="dungeon-token-btn" onclick="claimWeekly(\'' + d.id + '\')">🎁 领取 +' + d.reward + '</button>';
+    } else {
+      if (got) btn = '<button class="dungeon-token-btn done" disabled>✓ 已领取</button>';
+      else if (cleared) btn = '<button class="dungeon-token-btn" onclick="claimWeekly(\'' + d.id + '\')">🎁 领取 +' + d.reward + '</button>';
+      else btn = '<button class="dungeon-token-btn" disabled>' + prog + '/' + d.need + ' 进行中</button>';
+    }
+    const barPct = isChest ? (locked ? 0 : 100) : Math.min(Math.round(prog / d.need * 100), 100);
+    return '<div class="dungeon-token weekly-token' + (cleared ? ' done' : '') + (locked ? ' locked' : '') + '">' +
+      (cleared ? '<div class="dungeon-seal">通</div>' : '') +
+      '<div class="dungeon-token-icon">' + esc(d.icon || '❖') + '</div>' +
+      '<div class="dungeon-token-gname">' + esc(d.gname || '') + '</div>' +
+      '<div class="dungeon-token-name">' + esc(d.name || '') + '</div>' +
+      (isChest ? '' : '<div class="dungeon-progress"><div class="dungeon-progress-bar" style="width:' + barPct + '%"></div></div><div class="dungeon-progress-txt">' + prog + ' / ' + d.need + '</div>') +
+      btn +
+      '</div>';
+  }).join('');
+}
+function renderTrial() {
+  return '<div class="section-title">⚡ 周天试炼 <span class="game-tag">一周一轮回 · 七日一炼心</span></div>' +
+    '<div class="dungeon weekly-dungeon">' +
+      '<div class="dungeon-header"><div><div class="dungeon-title">周 天 试 炼</div><div class="dungeon-sub">完成周级副本，炼心得愿力</div></div></div>' +
+      '<div class="dungeon-cards weekly-cards">' + weeklyCardsHtml() + '</div>' +
+      '<div class="dungeon-reset-note">🗓️ 每周一 0 点（中国时区）重置周本进度，未领取的奖励将失效。</div>' +
+    '</div>';
+}
 
 function renderPlaceholder(title, msg) {
   return `<div class="section-title">${esc(title)}</div>

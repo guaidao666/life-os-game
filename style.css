@@ -294,3 +294,42 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .succ-success:hover{background:rgba(63,156,109,.12)}
 .succ-fail{border-color:#c0392b;color:#c0392b}
 .succ-fail:hover{background:rgba(192,57,43,.1)}
+
+/* ===== 周天试炼（周本 · 周级副本） ===== */
+.dungeon{background:linear-gradient(135deg,var(--panel),var(--panel2));border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow)}
+.dungeon-header{position:relative;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px 22px;background:linear-gradient(135deg,rgba(200,144,44,.14),rgba(200,144,44,.05));border:1px solid rgba(200,144,44,.4);border-radius:var(--radius);box-shadow:var(--shadow)}
+.dungeon-header::before,.dungeon-header::after{content:'❖';position:absolute;color:rgba(200,144,44,.5);font-size:14px}
+.dungeon-header::before{top:8px;left:10px}
+.dungeon-header::after{bottom:8px;right:10px;transform:rotate(180deg)}
+.dungeon-title{font-size:22px;font-weight:800;letter-spacing:3px;color:var(--text)}
+.dungeon-sub{font-size:13px;color:var(--muted);margin-top:6px;letter-spacing:1px}
+.dungeon-head-right{display:flex;align-items:center;gap:14px;flex:none}
+.dungeon-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.dungeon-token{position:relative;overflow:hidden;background:var(--panel);border:1px solid rgba(200,144,44,.45);border-radius:14px;padding:18px 18px 16px;box-shadow:var(--shadow);transition:.2s}
+.dungeon-token::before{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,rgba(200,144,44,.10),transparent 60%)}
+.dungeon-token.done{border-color:var(--lp);background:rgba(63,156,109,.07)}
+.dungeon-token.done::before{background:linear-gradient(135deg,rgba(63,156,109,.14),transparent 60%)}
+.dungeon-token-icon{font-size:30px}
+.dungeon-token-gname{font-size:15px;font-weight:700;margin:8px 0 2px;letter-spacing:1px}
+.dungeon-token-name{font-size:12px;color:var(--muted)}
+.dungeon-seal{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;border:2px solid #A32D2D;color:#A32D2D;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;transform:rotate(-12deg);opacity:.9}
+.dungeon-token-btn{width:100%;border:none;border-radius:10px;padding:9px;font-size:14px;cursor:pointer;font-weight:600;position:relative;background:rgba(200,144,44,.18);color:var(--wp)}
+.dungeon-token-btn:hover{background:rgba(200,144,44,.28)}
+.dungeon-token.done .dungeon-token-btn{background:var(--bg);color:var(--muted)}
+.dungeon-token-btn.done{background:rgba(63,156,109,.14);color:var(--lp);cursor:default}
+.dungeon-progress{height:8px;background:var(--bg);border-radius:8px;overflow:hidden;border:1px solid var(--border);margin:8px 0 4px}
+.dungeon-progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--lp));transition:width .4s}
+.dungeon-progress-txt{font-size:11px;color:var(--muted);text-align:right;margin-bottom:8px}
+.dungeon-reset-note{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5}
+.dg-btn{cursor:pointer;border:1px solid var(--border);background:var(--panel2);color:var(--text);padding:9px 16px;border-radius:10px;font-size:14px;font-weight:600;transition:.18s;font-family:inherit}
+.dg-btn:hover{filter:brightness(.97);transform:translateY(-1px)}
+/* 周天试炼专属 */
+.weekly-dungeon{margin-top:6px}
+.weekly-dungeon .dungeon-title{color:var(--wp)}
+.weekly-cards{margin-top:6px}
+.weekly-token.locked{opacity:.55;filter:grayscale(.3)}
+.game-card-title{font-size:14px;font-weight:700;margin:4px 0}
+.input{width:100%;border:1px solid var(--border);background:var(--panel);color:var(--text);padding:8px 11px;border-radius:9px;font-size:13px;font-family:inherit;transition:.15s}
+.input:focus{outline:none;border-color:var(--accent)}
+.tb-del-btn{cursor:pointer;border:1px solid var(--border);background:var(--panel2);color:var(--muted);width:28px;height:28px;border-radius:8px;font-size:14px;flex:none;transition:.15s}
+.tb-del-btn:hover{border-color:#c0392b;color:#c0392b}
