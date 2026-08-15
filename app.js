@@ -10,6 +10,7 @@ const MODULES = [
   { id: 'cook',      name: '烹饪',   icon: '🍳', group: '生活' },
   { id: 'bag',       name: '背包仓库', icon: '🎒', group: '生活' },
   { id: 'fun',       name: '娱乐',   icon: '🎬', group: '生活' },
+  { id: 'diary',     name: '日记',   icon: '📔', group: '生活' },
   { id: 'weight',    name: '体重',   icon: '⚖️', group: '体魄' },
   { id: 'sleep',     name: '睡眠',   icon: '🌙', group: '体魄' },
   { id: 'char',      name: '角色',   icon: '👤', group: '成长' },
@@ -41,7 +42,6 @@ const SKILL_GROUPS = [
   { key: 'interest', label: '兴趣爱好' },
   { key: 'office',   label: '办公技能' }
 ];
-function skillCost(lv) { return lv <= 3 ? 20 : (lv <= 6 ? 40 : 60); } // Lv0-3:20 / 4-6:40 / 7-9:60
 function skillTotalLevel() {
   const s = player().skills || {};
   return Object.keys(SKILL_DEFS).reduce((sum, k) => sum + (Number(s[k]) || 0), 0);
@@ -166,7 +166,6 @@ function renderResbar() {
     ['wp', '愿力 WP', num(p.willpower, 0)],
     ['lp', '幸运 LP', num(p.lucky, 0)],
     ['dp', '天命 DP', num(p.destiny, 0)],
-    ['ct', '契约', num(p.contract, 0) + ' 日'],
   ];
   document.getElementById('resbar').innerHTML = items.map(([c, k, v]) =>
     `<div class="res ${c}"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
@@ -285,6 +284,20 @@ function addEconLog() {
   renderMain('economist');
 }
 
+function renderDiary() {
+  const list = (DATA.diary || []).slice().sort((a, b) => (a.date < b.date ? 1 : -1));
+  const entries = list.length ? list.map(d => {
+    const date = esc(d.date || '');
+    const title = esc(d.title || '（无题）');
+    const mood = d.mood ? esc(d.mood) : '';
+    const content = esc(d.content || '').replace(/\n/g, '<br>');
+    return '<details class="diary-entry"><summary><span class="diary-date">' + date + '</span><span class="diary-title">' + title + '</span>' + (mood ? '<span class="diary-mood">' + mood + '</span>' : '') + '</summary><div class="diary-body">' + content + '</div></details>';
+  }).join('') : '<div class="game-empty">还没有日记记录</div>';
+  return '<div class="section-title">📔 日记 <span class="game-tag">迁移自人生管理系统 · 共 ' + list.length + ' 篇</span></div>' +
+    '<div class="meta" style="margin-bottom:10px">取自主站日记库（Obsidian 同步），点击每篇可展开正文。</div>' +
+    '<div class="diary-list">' + entries + '</div>';
+}
+
 /* ---------- 渲染：主内容 ---------- */
 function renderMain(id) {
   const main = document.getElementById('main');
@@ -304,6 +317,7 @@ function renderMain(id) {
     case 'weight':    html = renderWeight(); break;
     case 'sleep':     html = renderSleep(); break;
     case 'fun':       html = renderFun(); break;
+    case 'diary':     html = renderDiary(); break;
     case 'heart':     html = renderHeart(); break;
     case 'char':      html = renderChar(); break;
     case 'economist': html = renderEconomist(); break;
@@ -327,7 +341,7 @@ function renderDashboard() {
   const ds = demons();
   const bag = inv().filter(i => i.location === 'bag').length;
   const wh = inv().filter(i => i.location === 'warehouse').length;
-  const hero = `<div class="hero"><h1>欢迎回来，凯</h1><p>今日修行概览 · 愿力 ${num(p.willpower, 0)} / 契约 ${num(p.contract, 0)} 日 · ${ds.length} 道魔障待镇压</p></div>`;
+  const hero = `<div class="hero"><h1>欢迎回来，凯</h1><p>今日修行概览 · 愿力 <span class="c-wp">${num(p.willpower, 0)}</span> · ${ds.length} 道魔障待镇压</p></div>`;
   const top5 = DASH_TOP5.map(t => {
     const done = t.done();
     return `<div class="top5-item${done ? ' done' : ''}" onclick="go('${t.mod}')">
@@ -345,11 +359,11 @@ function renderDashboard() {
       <div class="meta">菜谱库总 ${recipes.length} 道</div></div>
     <div class="card"><span class="tag">🎒 背包仓库</span><h3>背包 ${bag}/${BAG_CAP}</h3>
       <div class="meta">仓库 ${wh}/${getWhCap()} 格</div></div>
-    <div class="card"><span class="tag">🔮 命愿祈铺</span><h3>LP ${num(p.lucky, 0)} → DP ${num(p.destiny, 0)}</h3>
+    <div class="card"><span class="tag">🔮 命愿祈铺</span><h3><span class="c-lp">LP ${num(p.lucky, 0)}</span> → <span class="c-dp">DP ${num(p.destiny, 0)}</span></h3>
       <div class="meta">凝结比例 10 LP = 1 DP</div></div>
   </div>`;
   const snap = `<div class="section-title">🎮 角色快照</div><div class="dash-snap">
-    <div class="dash-snap-head"><div class="game-avatar">🎮</div><div><div class="game-char-name">玩家 · 凯</div><div class="game-char-sub">Lv.${num(p.level, 1)} · 契约 ${num(p.contract, 0)} 日</div></div></div>
+    <div class="dash-snap-head"><div class="game-avatar">🎮</div><div><div class="game-char-name">玩家 · 凯</div><div class="game-char-sub">Lv.${num(p.level, 1)}</div></div></div>
     <div class="dash-snap-stats">
       <div><b>${num(p.willpower, 0)}</b><span>愿力 WP</span></div>
       <div><b>${num(p.lucky, 0)}</b><span>幸运 LP</span></div>
@@ -546,7 +560,9 @@ const DAILY_DUNGEONS = [
   { id: 'diary',     name: '📝 日记', desc: '写今日日记', realm: '岁笺录' },
   { id: 'gooddeed',  name: '🤲 日行一善', desc: '行一件善事（捐步 / 助人）', realm: '功德法' },
   { id: 'xinjing',   name: '🌿 心境觉察', desc: '内省今日一种面向（乐观 / 内向 / 理性 / 感性 / 外向）', realm: '千面法' },
-  { id: 'econ',      name: '📖 经济师学习', desc: '备考中级经济师', realm: null }
+  { id: 'econ',      name: '📖 经济师学习', desc: '备考中级经济师', realm: null },
+  { id: 'chat_zhaoxi', name: '💬 昭夕聊天', desc: '和昭夕聊会天（陪伴修行）', realm: null },
+  { id: 'dinner_cucumber', name: '🥒 晚餐自律', desc: '晚餐不吃饭 / 只吃黄瓜', realm: null }
 ];
 function todayKey() { return new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }).replace(/\//g, '-'); }
 function dungeonFlag(id) { return 'game_dungeon_' + todayKey() + '_' + id; }
@@ -571,7 +587,7 @@ function renderDungeon() {
       <div class="dc-top5-flag">${esc(flag)}</div>
     </div>`;
   }).join('');
-  const restIds = ['exercise', 'baduanjin', 'wuqinxi', 'read', 'finance', 'gooddeed', 'xinjing'];
+  const restIds = ['exercise', 'baduanjin', 'wuqinxi', 'read', 'finance', 'gooddeed', 'xinjing', 'chat_zhaoxi', 'dinner_cucumber'];
   const restRows = DAILY_DUNGEONS.filter(d => restIds.includes(d.id)).map(d => {
     const ok = dungeonDone(d.id);
     const badge = d.realm ? `<span class="dc-reward realm">${esc(d.realm)} +1</span>` : `<span class="dc-reward">日常 +1</span>`;
@@ -593,8 +609,7 @@ function renderDungeon() {
   <div class="dc-top5">${topCards}</div>
   <div class="section-title" style="margin-top:16px">📋 其余日常副本</div>
   <div class="dungeon-tasks">${restRows}</div>
-  <div class="meta" style="margin-top:6px">带「境界 +1」的副本完成为对应境界记经验；完成全部 ${total} 个副本击破心魔，契约点 +1${realmBuffSum('taskBonus') > 0 ? ' · 愿力 +' + (5 + Math.min(20, realmBuffSum('taskBonus'))) : ''}（每日限一次）。</div>
-  ${dailyTasksHtml()}`;
+  <div class="meta" style="margin-top:6px">带「境界 +1」的副本完成为对应境界记经验；完成全部 ${total} 个副本击破心魔，额外愿力 +${5 + Math.min(20, realmBuffSum('taskBonus'))}（每日限一次）。</div>`;
 }
 async function top5Click(id) {
   if (id === 'weight') { go('weight'); return; }
@@ -602,24 +617,6 @@ async function top5Click(id) {
   if (dungeonDone(id)) setDungeonOff(id); else await clearDungeon(id);
 }
 function setDungeonOff(id) { try { localStorage.setItem(dungeonFlag(id), '0'); } catch (e) {} renderMain('dungeon'); }
-function dailyTasksHtml() {
-  const tb = (DATA.taskboard || []).filter(t => /日级/.test(t.grp || ''));
-  if (!tb.length) return '';
-  const rows = tb.map(t => `<label class="task-row"><input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTaskDone(${t.id}, this.checked)"> <span class="task-text${t.done ? ' done' : ''}">${esc(t.text || '')}</span></label>`).join('');
-  return `<div class="section-title" style="margin-top:18px">📋 今日任务（勾选写回任务板）</div>
-  <div class="dungeon-tasks">${rows}</div>
-  <div class="meta" style="margin-top:6px">勾选完成任务将写回主站任务板；若任务文本含某 NPC 名字，自动为该 NPC 加好感 +5（每天每 NPC 一次）。</div>`;
-}
-async function toggleTaskDone(id, done) {
-  try {
-    const j = await fetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'taskboard', id: id, fields: { done: done ? 1 : 0 } }) });
-    const r = await j.json();
-    if (!r.ok) { toast('任务更新失败：' + (r.error || ''), 'warn'); return; }
-    const t = (DATA.taskboard || []).find(x => x.id === id); if (t) t.done = done ? 1 : 0;
-    if (done) await grantNpcAffinityByText(t ? (t.text || '') : '');
-    renderMain('dungeon');
-  } catch (e) { toast('任务更新失败：' + e.message, 'warn'); }
-}
 /* 周天试炼下的「本周任务栏」：复用日级任务列表样式，每行右侧显示 +X愿 奖励标签。
    数据来自任务板「周级」分组；勾选写回主站任务板，配置奖励在每周首次完成时发放愿力（防刷）。 */
 function weeklyTasksHtml() {
@@ -644,19 +641,26 @@ async function toggleWeeklyTask(id, done) {
     const r = await j.json();
     if (!r.ok) { toast('任务更新失败：' + (r.error || ''), 'warn'); return; }
     const t = (DATA.taskboard || []).find(x => x.id === id); if (t) t.done = done ? 1 : 0;
+    const pts = Number(t && t.points) || 0;
+    const wk = yearWeekCST();
+    const key = 'lifeos_weeklyTaskWP_' + wk;
+    let got = {}; try { got = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { got = {}; }
     if (done) {
       await grantNpcAffinityByText(t ? (t.text || '') : '');
-      const pts = Number(t && t.points) || 0;
-      if (pts > 0) {
-        const wk = yearWeekCST();
-        const key = 'lifeos_weeklyTaskWP_' + wk;
-        let got = {}; try { got = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { got = {}; }
-        if (!got[id]) {
-          got[id] = true;
-          try { localStorage.setItem(key, JSON.stringify(got)); } catch (e) {}
-          await grantWP(pts, '周级任务', (t && t.text) || '周级任务');
-          toast('🎯 周级任务「' + (t && t.text || '') + '」完成，+' + pts + ' 愿力', 'good');
-        }
+      // 勾选：本周首次完成才发放奖励（防跨周/重复刷）
+      if (pts > 0 && !got[id]) {
+        got[id] = true;
+        try { localStorage.setItem(key, JSON.stringify(got)); } catch (e) {}
+        await grantWP(pts, '周级任务', (t && t.text) || '周级任务');
+        toast('🎯 周级任务「' + (t && t.text || '') + '」完成，+' + pts + ' 愿力', 'good');
+      }
+    } else {
+      // 取消勾选：若本周已发放奖励，则扣回愿力，并清除已发放标记（允许本周内重新完成再发）
+      if (pts > 0 && got[id]) {
+        delete got[id];
+        try { localStorage.setItem(key, JSON.stringify(got)); } catch (e) {}
+        await grantWP(-pts, '周级任务·取消', (t && t.text) || '周级任务');
+        toast('↩️ 已取消「' + (t && t.text || '') + '」，扣回 ' + pts + ' 愿力', 'warn');
       }
     }
     renderMain(CUR);
@@ -675,9 +679,9 @@ async function clearDungeon(id) {
       localStorage.setItem(f, '1');
       try {
         const bonus = 5 + Math.min(20, realmBuffSum('taskBonus'));
-        const j = await fetch('/api/reward', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contract: 1, willpower: bonus, source: '心魔击败', text: '每日秘境全完成' }) });
+        const j = await fetch('/api/reward', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ willpower: bonus, source: '心魔击败', text: '每日秘境全完成' }) });
         const r = await j.json();
-        if (r.ok && r.player) { DATA.player.contract = r.player.contract; if (r.player.willpower != null) DATA.player.willpower = r.player.willpower; renderResbar(); }
+        if (r.ok && r.player) { if (r.player.willpower != null) DATA.player.willpower = r.player.willpower; renderResbar(); }
         if (bonus) wpLedgerAppend(bonus, '心魔击败', '每日秘境全完成');
         toast('🎉 心魔已被击破！契约点 +1' + (bonus ? ' · 愿力 +' + bonus : ''), 'good');
       } catch (e) { toast('击破记录失败：' + e.message, 'warn'); }
@@ -690,8 +694,7 @@ async function clearDungeon(id) {
 
 /* ==================== 体重（对应境界 · 体魄录） ==================== */
 const WEIGHT_KEY = 'game_weight_log';
-function weightLoad() { try { return JSON.parse(localStorage.getItem(WEIGHT_KEY) || '[]'); } catch (e) { return []; } }
-function weightSave(a) { try { localStorage.setItem(WEIGHT_KEY, JSON.stringify(a)); } catch (e) {} }
+function weightLoad() { return (DATA.weight || []).map(x => ({ id: x.id, date: x.date, kg: Number(x.weight) || 0 })); }
 function weightUnit() { try { return localStorage.getItem('game_weight_unit') || 'kg'; } catch (e) { return 'kg'; } }
 function weightSetUnit(u) { try { localStorage.setItem('game_weight_unit', u); } catch (e) {} }
 function weightStreak() {
@@ -738,11 +741,16 @@ async function saveWeight() {
   const v = parseFloat(el ? el.value : '');
   if (!(v > 0)) { toast('请输入有效体重', 'warn'); return; }
   const t = todayKey();
-  const log = weightLoad();
-  const idx = log.findIndex(x => x.date === t);
-  const isNew = idx < 0;
-  if (isNew) log.push({ date: t, kg: v }); else log[idx].kg = v;
-  weightSave(log);
+  const Existing = (DATA.weight || []).find(x => x.date === t);
+  const isNew = !Existing;
+  try {
+    if (isNew) {
+      await fetch('/api/insert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'weight', fields: { date: t, weight: v, note: '', created_at: new Date().toISOString() } }) });
+    } else {
+      await fetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'weight', id: Existing.id, fields: { weight: v } }) });
+    }
+    await loadData();
+  } catch (e) { toast('体重保存失败：' + e.message, 'warn'); return; }
   if (isNew) {
     await grantRealmXp('体魄录', 1, { oncePerDay: true });
     try { await grantWP(1, '体魄录', '称体重'); } catch (e) {}
@@ -1101,13 +1109,10 @@ function renderBag() { return renderBagHtml(); }
 function renderSkill() {
   const sk = player().skills || {};
   const total = skillTotalLevel();
-  const wp = num(player().willpower, 0);
   const groupsHtml = SKILL_GROUPS.map(g => {
     const cards = Object.keys(SKILL_DEFS).filter(k => SKILL_DEFS[k].group === g.key).map(k => {
       const lv = Number(sk[k]) || 0;
       const maxed = lv >= SKILL_MAX;
-      const cost = skillCost(lv);
-      const can = !maxed && wp >= cost;
       const pct = Math.round(lv / SKILL_MAX * 100);
       return `<div class="card skill-card">
         <span class="tag">${esc(g.label)}</span>
@@ -1115,33 +1120,28 @@ function renderSkill() {
         <div class="meta">Lv.${lv} / ${SKILL_MAX}</div>
         <div class="bar"><i style="width:${pct}%"></i></div>
         <div class="skill-desc">${esc(SKILL_DEFS[k].desc)}</div>
-        <button class="btn primary sm skill-cult-btn" ${can ? '' : 'disabled'} onclick="cultivateSkill('${k}')">${maxed ? '已满级' : ('修炼（耗 ' + cost + ' 愿力）')}</button>
+        <button class="btn primary sm skill-cult-btn" ${maxed ? 'disabled' : ''} onclick="cultivateSkill('${k}')">${maxed ? '已满级' : '修炼'}</button>
       </div>`;
     }).join('');
     return `<div class="skill-group-title">${esc(g.label)}</div><div class="cards">${cards}</div>`;
   }).join('');
-  return `<div class="section-title">⚔️ 技能修炼台 <span class="game-tag">消耗愿力点升级</span></div>
-    <div class="skill-total">总技能等级 <b>${total}</b> / ${Object.keys(SKILL_DEFS).length * SKILL_MAX}　·　愿力 <b>${wp}</b></div>
+  return `<div class="section-title">⚔️ 技能修炼台 <span class="game-tag">勤练自精 · 不耗愿力</span></div>
+    <div class="skill-total">总技能等级 <b>${total}</b> / ${Object.keys(SKILL_DEFS).length * SKILL_MAX}</div>
     ${groupsHtml}
-    <div class="meta" style="margin-top:12px">修炼消耗愿力点（真实生活攒来的经验货币）。满级 Lv.${SKILL_MAX}；Lv0-3 耗20 / 4-6 耗40 / 7-9 耗60。</div>`;
+    <div class="meta" style="margin-top:12px">技能靠日常修行精进，修炼不再消耗愿力点（愿力是真实生活攒来的经验货币，留给更重要的突破）。满级 Lv.${SKILL_MAX}。</div>`;
 }
 async function cultivateSkill(name) {
   const p = player();
-  const wp = num(p.willpower, 0);
   const skills = Object.assign({}, p.skills || {});
   const lv = Number(skills[name]) || 0;
   if (lv >= SKILL_MAX) { toast(name + ' 已满级', ''); return; }
-  const cost = skillCost(lv);
-  if (wp < cost) { toast('愿力点不足，需 ' + cost + ' 点', 'warn'); return; }
   try {
-    const j = await fetch('/api/reward', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ willpower: -cost, source: '技能修炼', text: name }) });
+    skills[name] = lv + 1;
+    const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { skills: JSON.stringify(skills) } }) });
     const r = await j.json();
     if (!r.ok) { toast('修炼失败：' + (r.error || ''), 'warn'); return; }
-    skills[name] = lv + 1;
-    const newP = r.player || {};
-    const j2 = await (await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { skills: JSON.stringify(skills), willpower: newP.willpower, starwish: newP.starwish, contract: newP.contract, level: newP.level } }) })).json();
-    if (j2.ok && j2.player) DATA.player = j2.player;
-    else { DATA.player.skills = skills; if (newP.willpower != null) DATA.player.willpower = newP.willpower; }
+    if (r.player && r.player.skills) DATA.player.skills = r.player.skills;
+    else DATA.player.skills = skills;
     renderResbar(); renderMain('skill');
     if (skills[name] >= SKILL_MAX) skillAchievePopup(name, skills[name]);
     else toast('🎉 ' + name + ' 升级至 Lv.' + skills[name], 'good');
@@ -1568,7 +1568,6 @@ function closeRealm() { document.querySelectorAll('.realm-modal').forEach(m => m
     function renderChar() {
       const p = player();
       const willpower = num(p.willpower, 0);
-      const contract = num(p.contract, 0);
       const level = num(p.level, 1);
       const mod = willpower % 1000;
       const xpPct = Math.max(0, Math.min(100, mod / 10));
@@ -1600,10 +1599,9 @@ function closeRealm() { document.querySelectorAll('.realm-modal').forEach(m => m
         '<div class="game-grid">' +
           '<div class="game-card game-char">' +
             '<div class="game-char-head"><div class="game-avatar">🎮</div><div><div class="game-char-name">玩家 · 凯</div><div class="game-char-sub">Lv.' + level + '</div></div></div>' +
-            '<div class="game-xp-label" title="愿力经验 = 当前愿力点对 1000 取模；满 1000 自动凝结升阶">愿力经验 <b>' + willpower.toFixed(1) + '</b> / 1000（距升级还差 ' + xpRemain.toFixed(1) + '）</div>' +
+            '<div class="game-xp-label" title="愿力经验 = 当前愿力点对 1000 取模；满 1000 自动凝结升阶">愿力经验 <b class="c-wp">' + willpower.toFixed(1) + '</b> / 1000（距升级还差 ' + xpRemain.toFixed(1) + '）</div>' +
             '<div class="game-bar big"><span style="width:' + xpPct + '%"></span></div>' +
             '<div class="game-stats">' +
-              '<div class="game-stat" title="契约点：心魔被击破等里程碑奖励，永久累积"><div class="game-stat-num">' + contract + '</div><div class="game-stat-lbl">📜 契约点</div></div>' +
               '<div class="game-stat" title="等级：愿力经验凝结升阶所得"><div class="game-stat-num">' + level + '</div><div class="game-stat-lbl">🏅 等级</div></div>' +
               '<div class="game-stat" title="总技能等级：七艺修炼之和，上限 70"><div class="game-stat-num">' + skillTotalLevel() + '</div><div class="game-stat-lbl">🛠️ 技能</div></div>' +
               '<div class="game-stat" title="累计参悟层数：七境累计，圆满轮回永续"><div class="game-stat-num">' + realmTotalLayers() + '</div><div class="game-stat-lbl">🗺️ 境界</div></div>' +

@@ -493,3 +493,21 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .npc-ib small{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-top:2px}
 .npc-ib:hover{border-color:var(--accent);transform:translateY(-1px)}
 
+/* 货币统一配色工具类：愿力 WP / 幸运 LP / 天命 DP 在全站保持一致的字体与色相 */
+.c-wp{color:var(--wp);font-weight:800;font-variant-numeric:tabular-nums}
+.c-lp{color:var(--lp);font-weight:800;font-variant-numeric:tabular-nums}
+.c-dp{color:var(--dp);font-weight:800;font-variant-numeric:tabular-nums}
+
+/* 日记（迁移自主站日记库） */
+.diary-list{display:flex;flex-direction:column;gap:8px}
+.diary-entry{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:0;overflow:hidden}
+.diary-entry summary{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;list-style:none;font-size:14px}
+.diary-entry summary::-webkit-details-marker{display:none}
+.diary-entry summary::before{content:"▸";color:var(--muted);transition:transform .2s;flex:0 0 auto}
+.diary-entry[open] summary::before{transform:rotate(90deg)}
+.diary-date{flex:0 0 auto;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.diary-title{flex:1 1 auto;font-weight:700;color:var(--text)}
+.diary-mood{flex:0 0 auto;font-size:12px;padding:2px 9px;border-radius:20px;background:var(--panel2);color:var(--muted);border:1px solid var(--border)}
+.diary-body{padding:4px 16px 16px;color:var(--text);font-size:14px;line-height:1.85;white-space:normal}
+.diary-body br{content:"";display:block;margin-bottom:2px}
+
