@@ -118,6 +118,32 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .fc-btn:hover{filter:brightness(1.05)}
 .fc-btn.disabled,.fc-btn:disabled{opacity:.45;cursor:not-allowed;filter:grayscale(.4)}
 .fc-note{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.6}
+/* 命愿祈铺 · 货架（与主站商城同源） */
+.shop-zones{display:flex;flex-direction:column;gap:16px}
+.shop-zone{border-radius:16px;padding:16px;border:1px solid var(--border)}
+.shop-zone.zone-wp{background:linear-gradient(135deg,rgba(200,162,90,.12),rgba(200,162,90,.03));border-color:rgba(200,162,90,.4)}
+.shop-zone.zone-lp{background:linear-gradient(135deg,rgba(154,167,176,.16),rgba(154,167,176,.03));border-color:rgba(154,167,176,.5)}
+.shop-zone.zone-dp{background:linear-gradient(135deg,rgba(212,175,55,.18),rgba(212,175,55,.04));border-color:rgba(212,175,55,.55)}
+.shop-zone-head{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.shop-zone-title{font-size:18px;font-weight:800;color:var(--text)}
+.shop-zone-sub{font-size:12px;color:var(--muted)}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.shop-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow)}
+.shop-card.disabled{opacity:.72}
+.shop-card-head{display:flex;align-items:center;gap:10px}
+.shop-card-icon{width:34px;height:34px;border-radius:9px;flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+.shop-card-name{font-weight:700;font-size:15px;color:var(--text)}
+.shop-card-desc{font-size:12px;color:var(--muted);min-height:16px;line-height:1.5}
+.shop-badges{display:flex;flex-wrap:wrap;gap:6px}
+.shop-badge{font-size:11px;padding:2px 8px;border-radius:8px;background:var(--panel2);border:1px solid var(--border);color:var(--muted)}
+.shop-badge.limit{background:rgba(245,166,35,.15);color:#B5790A;border-color:#E0A93B}
+.shop-badge.timed{background:rgba(83,74,183,.14);color:#534AB7;border-color:#534AB7}
+.shop-card-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px}
+.shop-price{font-weight:700;font-size:14px;color:var(--text)}
+.shop-poor{font-size:11px;font-weight:500;color:#A32D2D}
+.shop-buy{border:none;border-radius:9px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;color:#fff;background:var(--accent);font-family:inherit}
+.shop-buy:disabled{background:var(--border);color:var(--muted);cursor:not-allowed}
+.shop-card-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
 /* 确认弹窗 */
 .modal-msg{white-space:pre-line;font-size:14px;color:var(--text);line-height:1.7;padding:4px 2px 14px;font-family:inherit}
 .btn.danger{background:#c0392b;border-color:transparent;color:#fff}

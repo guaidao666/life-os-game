@@ -424,6 +424,80 @@ function showConfirm(title, msg, cb, yesLabel) {
 }
 function closeConfirm() { const el = document.getElementById('confirmModal'); if (el) el.classList.remove('open'); _confirmCb = null; }
 function onConfirmYes() { const cb = _confirmCb; _confirmCb = null; closeConfirm(); if (cb) cb(); }
+/* ---------- 命愿祈铺 · 货架（与主站商城同源 shop_items，只读共享 life.db） ---------- */
+const CUR_LABEL = { wp: '愿力点', lp: '幸运点', dp: '天命点' };
+const CUR_ABBR = { wp: 'WP', lp: 'LP', dp: 'DP' };
+function shopBal() {
+  const p = player();
+  return { wp: num(p.willpower, 0), lp: num(p.lucky, 0), dp: num(p.destiny, 0) };
+}
+function renderShopItems() {
+  const items = (DATA && DATA.shopItems) || [];
+  if (!items.length) return '<div class="section-title" style="margin-top:18px">🏪 祈铺货架</div><div class="meta">暂无在售机缘，去主站命愿祈铺上架商品后会自动同步到这里。</div>';
+  const zones = [];
+  const byZone = {};
+  items.forEach(it => {
+    const z = it.zone || '其他';
+    if (!byZone[z]) { byZone[z] = []; zones.push(z); }
+    byZone[z].push(it);
+  });
+  const bal = shopBal();
+  const card = (it) => {
+    const cur = it.currency || 'wp';
+    const price = Number(it.price) || 0;
+    const have = bal[cur] != null ? bal[cur] : 0;
+    const outOfStock = it.stock != null && Number(it.stock) <= 0;
+    const poor = have < price;
+    const disabled = outOfStock || poor;
+    const color = it.iconColor || '#C8A25A';
+    return '<div class="shop-card' + (disabled ? ' disabled' : '') + '" data-name="' + esc(it.name) + '" data-cat="' + esc(it.category || '') + '">' +
+      '<div class="shop-card-head"><div class="shop-card-icon" style="background:' + esc(color) + '"></div><div class="shop-card-name">' + esc(it.name) + '</div></div>' +
+      (it.desc ? '<div class="shop-card-desc">' + esc(it.desc) + '</div>' : '<div class="shop-card-desc"></div>') +
+      '<div class="shop-badges">' +
+        '<span class="shop-badge">' + esc(it.category || '材料') + '</span>' +
+        (it.isLimited ? '<span class="shop-badge limit">限购</span>' : '') +
+        (it.section === 'timed' ? '<span class="shop-badge timed">限时</span>' : '') +
+      '</div>' +
+      '<div class="shop-card-foot">' +
+        '<span class="shop-price">' + price + ' ' + CUR_ABBR[cur] + (poor ? ' <span class="shop-poor">（不足）</span>' : '') + '</span>' +
+        '<button class="shop-buy" ' + (disabled ? 'disabled' : '') + ' onclick="shopBuy(' + it.id + ')">' + (outOfStock ? '已兑完' : '兑换') + '</button>' +
+      '</div>' +
+      '<div class="shop-card-meta">库存 ' + (it.stock == null ? '∞' : it.stock) + (it.limitCycle ? ' · 每周期限 ' + it.limitCycle : '') + '</div>' +
+    '</div>';
+  };
+  const zoneHtml = zones.map(z => {
+    const zc = byZone[z][0];
+    const zcur = (zc && zc.currency) || 'wp';
+    return '<div class="shop-zone zone-' + zcur + '">' +
+      '<div class="shop-zone-head"><div class="shop-zone-title">' + esc(z) + '</div><div class="shop-zone-sub">以 ' + CUR_LABEL[zcur] + '（' + CUR_ABBR[zcur] + '）兑换</div></div>' +
+      '<div class="shop-grid">' + byZone[z].map(card).join('') + '</div>' +
+    '</div>';
+  }).join('');
+  return '<div class="section-title" style="margin-top:18px">🏪 祈铺货架 <span class="game-tag">与主站命愿祈铺同源 · 兑换即入账背包</span></div>' +
+    '<div class="meta" style="margin:4px 0 10px">当前余额：🍀 WP ' + bal.wp + ' · 🍀 LP ' + bal.lp + ' · 👑 DP ' + bal.dp + '。兑换消耗对应货币，限量商品每周期限购。</div>' +
+    '<div class="shop-zones">' + zoneHtml + '</div>';
+}
+async function shopBuy(id) {
+  const it = ((DATA && DATA.shopItems) || []).find(x => x.id === id);
+  if (!it) return;
+  const cur = it.currency || 'wp';
+  const price = Number(it.price) || 0;
+  const bal = shopBal();
+  const have = bal[cur] != null ? bal[cur] : 0;
+  if (have < price) { toast('【' + CUR_LABEL[cur] + '】不足，还差 ' + (price - have), 'warn'); return; }
+  if (it.stock != null && Number(it.stock) <= 0) { toast('该商品已兑完', 'warn'); return; }
+  showConfirm('确认兑换', '确定兑换【' + it.name + '】吗？\n消耗 ' + price + ' ' + CUR_LABEL[cur] + '（' + CUR_ABBR[cur] + '）。', async function () {
+    try {
+      const r = await fetch('/api/shop-buy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }) });
+      const j = await r.json();
+      if (j.ok) {
+        toast('兑换成功：' + it.name + '（-' + price + ' ' + CUR_ABBR[cur] + '）', 'good');
+        await loadData();
+        renderResbar(); renderAltar();
+      } else { toast('兑换失败：' + (j.error || '未知错误'), 'warn'); }
+    } catch (e) { toast('兑换失败：' + e.message, 'warn'); }
+  }, '兑换');
+}
 function renderAltar() {
   const p = player();
   const lp = num(p.lucky, 0), dp = num(p.destiny, 0);
@@ -440,7 +514,7 @@ function renderAltar() {
     <div class="fc-preview">本次可凝结：<b>+${can} DP</b>（凝结后剩余 ${lp - can * 10} LP）</div>
     <button class="fc-btn${enough ? '' : ' disabled'}" ${enough ? '' : 'disabled'} onclick="condenseFate()">凝结（${can} LP → ${can} DP）</button>
     <div class="fc-note">化命台将幸运点凝结为天命点，此过程<b>不可逆</b>。请谨慎操作。</div>
-  </div>` + renderWpLedgerHtml();
+  </div>` + renderWpLedgerHtml() + renderShopItems();
 }
 async function condenseFate() {
   const p = player();
