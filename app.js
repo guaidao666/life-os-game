@@ -1144,10 +1144,21 @@ function closeRealm() { document.querySelectorAll('.realm-modal').forEach(m => m
           '<button class="npc-del" onclick="event.stopPropagation();delNpc(' + n.id + ')">删除</button></div></div>';
       }).join('');
     }
+    function npcRulesHtml() {
+      const lines = Object.keys(REL_RANKS).map(rel => {
+        const cfg = REL_RANKS[rel];
+        const steps = cfg.stages.map((s, i) => (i === 0 ? s + '（' + cfg.thr[0] + '）' : s + '（≥' + cfg.thr[i] + '）')).join(' → ');
+        return '<div class="npc-rule-line"><b class="npc-rel-' + esc(rel) + '">' + esc(rel) + '线 · ' + esc(cfg.title) + '</b>' +
+          '<div class="npc-rule-steps">' + esc(steps) + '</div></div>';
+      }).join('');
+      return '<details class="npc-rules" open><summary>📖 关系规则（三条线 · 等级与升级阈值）</summary>' + lines +
+        '<div class="npc-rule-note">互动好感与愿力同梯度：聊天 +1 / 打电话 +2 / 视频 +3 / 线下 +5。好感满 ' + REL_RANKS['家人'].thr[REL_RANKS['家人'].thr.length - 1] + ' 登顶当前线。</div></details>';
+    }
     function renderNpc() {
       const typeOpts = ['all'].concat(NPC_TYPES);
       const filterHtml = typeOpts.map(t => '<option value="' + t + '"' + (npcFilter === t ? ' selected' : '') + '>' + (t === 'all' ? '全部类型' : t) + '</option>').join('');
       return '<div class="section-title">🧝 江湖 NPC <span class="game-tag">墨渊人物档案</span></div>' +
+        npcRulesHtml() +
         '<div class="npc-toolbar">' +
           '<input class="input" id="npcSearch" placeholder="搜索名字 / 人设 / 州" value="' + esc(npcSearch) + '" oninput="npcSearch=this.value;const g=document.getElementById(\'npcGrid\');if(g)g.innerHTML=npcCardsHtml();">' +
           '<select class="input" id="npcTypeFilter" onchange="npcFilter=this.value;const g=document.getElementById(\'npcGrid\');if(g)g.innerHTML=npcCardsHtml();">' + filterHtml + '</select>' +
