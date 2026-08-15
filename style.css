@@ -194,6 +194,8 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .realm-card.maxed{border-color:var(--dp)}
 .realm-lock{font-size:12px;color:var(--muted);background:var(--panel2);border-radius:8px;padding:4px 8px;margin-bottom:6px;display:inline-block}
 .realm-card .realm-cult-btn{margin-top:8px}
+.realm-src{margin-top:8px;font-size:12px;color:var(--accent);cursor:pointer;font-weight:600}
+.realm-src:hover{text-decoration:underline}
 .realm-card-effect{font-size:12px;color:var(--muted);line-height:1.6;margin-top:4px}
 /* 境界详情弹窗 */
 .realm-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:60;padding:16px}
@@ -510,4 +512,74 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .diary-mood{flex:0 0 auto;font-size:12px;padding:2px 9px;border-radius:20px;background:var(--panel2);color:var(--muted);border:1px solid var(--border)}
 .diary-body{padding:4px 16px 16px;color:var(--text);font-size:14px;line-height:1.85;white-space:normal}
 .diary-body br{content:"";display:block;margin-bottom:2px}
+
+/* 撤销 Toast */
+.undo-toast{display:flex;align-items:center;gap:12px}
+.toast-undo-btn{margin-left:auto;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:8px;padding:4px 14px;font-size:12px;cursor:pointer;font-weight:700}
+.toast-undo-btn:hover{opacity:.9}
+
+/* 我做菜记录 */
+.cook-hist{display:flex;flex-direction:column;gap:6px}
+.cook-hist-row{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+.ch-date{flex:0 0 auto;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.ch-name{flex:1 1 auto;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ch-rate{color:#e0a92b;font-size:13px;flex:0 0 auto}
+.ch-undo{flex:0 0 auto;border:1px solid var(--border);background:var(--panel2);color:var(--muted);border-radius:8px;padding:4px 12px;font-size:12px;cursor:pointer}
+.ch-undo:hover{border-color:#c0392b;color:#c0392b}
+
+/* ===== 日记模块 ===== */
+.card-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px}
+.diary-layout{display:grid;grid-template-columns:2fr 1fr;gap:18px;align-items:start}
+@media(max-width:760px){.diary-layout{grid-template-columns:1fr}}
+.diary-mood-pick{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;padding:0 8px;border:1px solid var(--border);border-radius:20px;background:var(--panel2);color:var(--muted);cursor:pointer;font-size:16px}
+.diary-mood-pick.selected{border-color:var(--accent);color:var(--accent);background:var(--panel)}
+.diary-mood-pick:hover{border-color:var(--accent)}
+.diary-cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.diary-cal-title{flex:1;text-align:center;font-weight:700;color:var(--text)}
+.diary-cal-head{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:11px;color:var(--muted);margin-bottom:4px}
+.diary-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.diary-cell{position:relative;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text);border-radius:8px;background:var(--panel2);cursor:pointer}
+.diary-cell:hover{background:rgba(138,154,91,.18)}
+.diary-cell.muted{background:transparent;cursor:default}
+.diary-cell.today{border:1px solid var(--accent);font-weight:700}
+.diary-cell.sel{background:var(--accent);color:#fff}
+.diary-cell .dot{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--accent)}
+.diary-cell.sel .dot{background:#fff}
+.diary-cal-stat{margin-top:10px;font-size:12px;color:var(--muted)}
+.diary-item{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;cursor:pointer}
+.diary-item:hover{border-color:var(--accent)}
+.diary-item-head{display:flex;align-items:center;gap:10px}
+.diary-mood-mini{font-size:13px}
+.diary-title{flex:1;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.diary-snippet{margin-top:4px;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.diary-detail-modal{max-width:640px}
+.dd-actions{margin-bottom:8px}
+.dd-paper{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:18px 20px}
+.dd-paper-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px;border-bottom:1px dashed var(--border);padding-bottom:8px}
+.dd-paper-date{font-weight:700;color:var(--text)}
+.dd-paper-week{font-size:13px;color:var(--muted)}
+.dd-paper-mood{font-size:13px;color:var(--muted);margin-left:auto}
+.dd-paper-body{font-size:15px;line-height:1.9;color:var(--text)}
+.dd-paper-body p{margin:0 0 10px}
+.dd-paper-body blockquote{margin:0 0 10px;padding:8px 14px;background:var(--panel2);border-left:3px solid var(--accent);border-radius:6px;color:var(--muted);font-style:italic}
+.dd-sign{text-align:right;color:var(--muted);font-style:italic;margin-top:6px}
+.dd-paper-footer{margin-top:14px;text-align:center;font-size:12px;color:var(--muted)}
+.dd-mood{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;padding:0 8px;border:1px solid var(--border);border-radius:18px;background:var(--panel2);color:var(--muted);cursor:pointer;font-size:15px}
+.dd-mood.selected{border-color:var(--accent);color:var(--accent);background:var(--panel)}
+
+/* ===== 体重模块（复刻主站三件套） ===== */
+.weight-form-card .form-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.weight-form-card .form-row>span{width:48px;color:var(--muted);font-size:13px}
+.weight-form-card .hint{font-size:12px;color:var(--muted);margin:-2px 0 10px}
+.weight-chart-wrap svg{display:block}
+.weight-list .weight-item{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--border)}
+.weight-list .w-date{min-width:92px;color:var(--muted);font-size:13px}
+.weight-list .w-val{font-size:18px;font-weight:700;color:var(--wp);min-width:84px}
+.weight-list .w-val2{font-size:13px;color:var(--muted);min-width:84px}
+.weight-list .w-note{flex:1;color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.weight-list .w-del{cursor:pointer;color:#ff453a;font-size:18px;padding:0 6px}
+.weight-list .w-del:hover{opacity:.8}
+.wt-unit-toggle{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:12px}
+.wt-unit-toggle button{border:0;padding:4px 12px;background:transparent;color:var(--muted);cursor:pointer}
+.wt-unit-toggle button.on{background:var(--accent);color:#fff}
 

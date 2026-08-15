@@ -50,22 +50,31 @@ const REALM_XP_NEEDED = 7;     // 每层需 7 经验（约 1 周/层，约 2 月
 const REALM_STAGES = 9;        // 单轮阶数（满 9 层 = 一次圆满，进入轮回继续攀升）
 const REALM_DEFS = {
   '炼体法': { group:'body', icon:'🏋️', story:'以八段锦、五禽戏、运动为基，淬炼筋骨气血，乃修行之根。', effect:'每层 +3% 副本愿力产出。', buff:{ type:'taskBonus', per:3 },
+    src:{ label:'运动 · 八段锦 · 五禽戏', mod:'dungeon' },
     stages:['散炼境','凝筋境','易骨境','锻脏境','换血境','通脉境','洗髓境','伐毛境','大圆满'] },
   '万卷书': { group:'mind', icon:'📖', story:'读万卷书，明事理、开智慧。', effect:'每层 +3% 副本愿力产出。', buff:{ type:'taskBonus', per:3 },
+    src:{ label:'读书副本 · 娱乐录书', mod:'dungeon' },
     stages:['百卷境','三百卷','五百卷','八百卷','千卷境','千五卷','两千卷','三千卷','大圆满'] },
   '万里路': { group:'mind', icon:'🥾', story:'行万里路，见天地、阔眼界。偶发游历（点亮城市 / 风景）记经验，平时静默。', effect:'每圆满 +8% 心魔抵抗。', buff:{ type:'xinmoResist', per:8, onRound:true },
+    src:{ label:'点亮地图 · 记录风景', mod:'map' },
     stages:['初行境','百里境','千里境','万里境','遍历境','通达境','洞明境','无界境','大圆满'] },
   '功德法': { group:'heart', icon:'🤲', story:'渡人渡己，积功德于无形。日行一善即记经验。', effect:'每圆满 +8% 魅魔抵抗。', buff:{ type:'meimoResist', per:8, onRound:true },
+    src:{ label:'日行一善（每日副本）', mod:'dungeon' },
     stages:['初善境','行善境','积善境','圆满境','广济境','普度境','无量境','慈悲境','大圆满'] },
   '千面法': { group:'heart', icon:'🎭', story:'理智与感性并存，千人千面。每日「心境觉察」内省一种面向即记经验。', effect:'每层 +2% 全副本愿力产出。', buff:{ type:'taskBonus', per:2 },
+    src:{ label:'心境觉察（每日副本）', mod:'dungeon' },
     stages:['初面境','双面境','多面境','洞悉境','无相境','随心境','通明境','自在境','大圆满'] },
   '灶神录': { group:'life', icon:'🍳', story:'烟火人间，灶下修心。新菜 +5 经验、重复做 +1 经验。', effect:'每层 +2% 副本愿力产出。', buff:{ type:'taskBonus', per:2 },
+    src:{ label:'做一道菜（烹饪）', mod:'cook' },
     stages:['炊烟境','调羹境','五味境','火候境','庖丁境','食神境','飨宴境','至味境','大圆满'] },
   '岁笺录': { group:'life', icon:'📜', story:'岁岁笺墨，日记修心。每写一篇日记 +1 经验。', effect:'每层 +2% 副本愿力产出。', buff:{ type:'taskBonus', per:2 },
+    src:{ label:'写日记', mod:'diary' },
     stages:['起笔境','记微境','叙事境','省身境','明智境','通慧境','自得境','圆满境','大圆满'] },
   '体魄录': { group:'body', icon:'⚖️', story:'动静有常，称量其身。每日称体重即记经验，观体魄之变、养筋骨之基。', effect:'每层 +2% 心魔抵抗。', buff:{ type:'xinmoResist', per:2 },
+    src:{ label:'称体重（每日首称）', mod:'weight' },
     stages:['初秤境','知重境','轻身境','固本境','强筋境','壮骨境','淬体境','无垢境','大圆满'] },
   '娱心录': { group:'life', icon:'🎬', story:'怡情悦性，张弛有度。录入一部好作品（书/影视/动漫/游戏/歌）即记经验，劳逸相济。', effect:'每层 +2% 副本愿力产出。', buff:{ type:'taskBonus', per:2 },
+    src:{ label:'录入作品（娱乐）', mod:'fun' },
     stages:['初赏境','阅世境','怡情境','沉醉境','博闻境','品鉴境','通娱境','忘忧境','大圆满'] }
 };
 function realmState(key) {
@@ -284,18 +293,182 @@ function addEconLog() {
   renderMain('economist');
 }
 
+/* ---------- 日记（迁移主站三件套：写日记 / 日历 / 时间线） ---------- */
+let diaryCalYear = null, diaryCalMonth = null, diarySelDate = null;
+let diaryMoodSel = '';
+const DIARY_MOODS = ['', '😄', '🙂', '😐', '😕', '😢'];
+function diaryCalInit() {
+  const n = new Date();
+  if (diaryCalYear == null) diaryCalYear = n.getFullYear();
+  if (diaryCalMonth == null) diaryCalMonth = n.getMonth();
+  if (diarySelDate == null) diarySelDate = todayKey();
+}
+function diaryCalendarHtml() {
+  diaryCalInit();
+  const all = DATA.diary || [];
+  const byDate = {}; all.forEach(d => { if (d.date) byDate[d.date] = true; });
+  const first = new Date(diaryCalYear, diaryCalMonth, 1);
+  const startDay = first.getDay();
+  const daysInMonth = new Date(diaryCalYear, diaryCalMonth + 1, 0).getDate();
+  const today = todayKey();
+  const cells = [];
+  for (let i = 0; i < startDay; i++) cells.push('<div class="diary-cell muted"></div>');
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = diaryCalYear + '-' + String(diaryCalMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    const has = !!byDate[ds];
+    const cls = ['diary-cell'];
+    if (ds === today) cls.push('today');
+    if (ds === diarySelDate) cls.push('sel');
+    cells.push('<div class="' + cls.join(' ') + '" onclick="clickDiaryDate(\'' + ds + '\',' + has + ')">' + d + (has ? '<span class="dot"></span>' : '') + '</div>');
+  }
+  let cnt = 0;
+  for (let d = 1; d <= daysInMonth; d++) { const ds = diaryCalYear + '-' + String(diaryCalMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0'); if (byDate[ds]) cnt++; }
+  return '<div class="diary-cal-nav"><button class="btn ghost" onclick="diaryPrevMonth()">‹</button>' +
+    '<span class="diary-cal-title">' + diaryCalYear + '年' + (diaryCalMonth + 1) + '月</span>' +
+    '<button class="btn ghost" onclick="diaryNextMonth()">›</button>' +
+    '<button class="btn btn-blue" onclick="diaryGoToday()">今天</button></div>' +
+    '<div class="diary-cal-head"><div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div></div>' +
+    '<div class="diary-cal">' + cells.join('') + '</div>' +
+    '<div class="diary-cal-stat">本月已写 ' + cnt + ' / ' + daysInMonth + ' 天</div>';
+}
+function diaryPrevMonth() { diaryCalMonth--; if (diaryCalMonth < 0) { diaryCalMonth = 11; diaryCalYear--; } renderMain('diary'); }
+function diaryNextMonth() { diaryCalMonth++; if (diaryCalMonth > 11) { diaryCalMonth = 0; diaryCalYear++; } renderMain('diary'); }
+function diaryGoToday() { const n = new Date(); diaryCalYear = n.getFullYear(); diaryCalMonth = n.getMonth(); diarySelDate = todayKey(); renderMain('diary'); }
+function clickDiaryDate(ds, has) {
+  diarySelDate = ds;
+  const d = (DATA.diary || []).find(x => x.date === ds);
+  if (has && d) { openDiary(d.id); return; }
+  diaryMoodSel = '';
+  renderMain('diary');
+  const ta = document.getElementById('diaryContent'); if (ta) { ta.value = ''; ta.focus(); }
+  const dt = document.getElementById('diaryDate'); if (dt) dt.value = ds;
+  const tt = document.getElementById('diaryTitle'); if (tt) tt.value = '';
+  document.querySelectorAll('.diary-mood-pick').forEach(m => m.classList.remove('selected'));
+  showDiaryMsg('已切到 ' + ds + '，写点什么保存即创建');
+}
+function diaryTimelineHtml() {
+  const all = (DATA.diary || []).slice().sort((a, b) => (a.date < b.date ? 1 : -1));
+  if (!all.length) return '<div class="game-empty">还没有日记，写第一篇吧</div>';
+  return all.map(d => '<div class="diary-item" onclick="openDiary(' + d.id + ')">' +
+    '<div class="diary-item-head"><span class="diary-date">' + esc(d.date) + '</span>' +
+    (d.mood ? '<span class="diary-mood-mini">' + esc(d.mood) + '</span>' : '') +
+    '<span class="diary-title">' + esc(d.title || '无标题') + '</span></div>' +
+    '<div class="diary-snippet">' + esc((d.content || '').slice(0, 90)) + ((d.content || '').length > 90 ? '…' : '') + '</div></div>').join('');
+}
 function renderDiary() {
-  const list = (DATA.diary || []).slice().sort((a, b) => (a.date < b.date ? 1 : -1));
-  const entries = list.length ? list.map(d => {
-    const date = esc(d.date || '');
-    const title = esc(d.title || '（无题）');
-    const mood = d.mood ? esc(d.mood) : '';
-    const content = esc(d.content || '').replace(/\n/g, '<br>');
-    return '<details class="diary-entry"><summary><span class="diary-date">' + date + '</span><span class="diary-title">' + title + '</span>' + (mood ? '<span class="diary-mood">' + mood + '</span>' : '') + '</summary><div class="diary-body">' + content + '</div></details>';
-  }).join('') : '<div class="game-empty">还没有日记记录</div>';
-  return '<div class="section-title">📔 日记 <span class="game-tag">迁移自人生管理系统 · 共 ' + list.length + ' 篇</span></div>' +
-    '<div class="meta" style="margin-bottom:10px">取自主站日记库（Obsidian 同步），点击每篇可展开正文。</div>' +
-    '<div class="diary-list">' + entries + '</div>';
+  diaryCalInit();
+  const moodPicks = DIARY_MOODS.map(m => '<span class="diary-mood-pick" data-m="' + m + '" onclick="selectDiaryMoodPick(this)">' + (m || '😐') + '</span>').join('');
+  return '<div class="section-title">📔 日记 <span class="game-tag">迁移自人生管理系统 · 共 ' + (DATA.diary || []).length + ' 篇</span></div>' +
+    '<div class="diary-layout">' +
+      '<div class="card diary-write"><div class="card-title">📝 写日记</div>' +
+        '<div style="display:flex;gap:10px;"><input class="input" id="diaryDate" type="date" style="max-width:170px;" value="' + todayKey() + '">' +
+        '<input class="input" id="diaryTitle" type="text" placeholder="标题（可选）" style="flex:1;"></div>' +
+        '<div style="margin-top:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="color:var(--muted);font-size:13px;">心情</span>' + moodPicks + '</div>' +
+        '<textarea class="input" id="diaryContent" rows="10" placeholder="今天发生了什么？可直接粘贴你写好的日记…" style="margin-top:12px;"></textarea>' +
+        '<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;"><button class="btn primary" onclick="saveDiary()">保存日记</button>' +
+        '<button class="btn" onclick="syncDiary()">🔄 同步 Obsidian</button></div>' +
+        '<div id="diaryMsg" style="margin-top:10px;font-size:13px;min-height:18px;color:var(--accent);"></div>' +
+      '</div>' +
+      '<div class="card diary-side-cal"><div class="card-title">📅 日记日历</div>' + diaryCalendarHtml() + '</div>' +
+    '</div>' +
+    '<div class="card" style="margin-top:18px;"><div class="card-title">📚 日记时间线</div><div id="diaryList">' + diaryTimelineHtml() + '</div></div>';
+}
+function selectDiaryMoodPick(el) {
+  document.querySelectorAll('.diary-mood-pick').forEach(m => m.classList.remove('selected'));
+  el.classList.add('selected');
+  diaryMoodSel = el.dataset.m;
+}
+function showDiaryMsg(msg, warn) {
+  const el = document.getElementById('diaryMsg'); if (!el) return;
+  el.textContent = msg || ''; el.style.color = warn ? '#c0392b' : 'var(--accent)';
+}
+async function saveDiary() {
+  const dateEl = document.getElementById('diaryDate'); const titleEl = document.getElementById('diaryTitle'); const contentEl = document.getElementById('diaryContent');
+  const date = (dateEl && dateEl.value) || todayKey();
+  const title = titleEl ? titleEl.value.trim() : '';
+  const content = contentEl ? contentEl.value.trim() : '';
+  if (!content) { showDiaryMsg('日记内容不能为空', true); return; }
+  const fields = Object.assign({ date: date, title: title, content: content, mood: diaryMoodSel }, { created_at: new Date().toISOString() });
+  try {
+    const j = await fetch('/api/insert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'diary', fields: fields }) });
+    const r = await j.json();
+    if (!r.ok) { showDiaryMsg('保存失败：' + (r.error || ''), true); return; }
+    await loadData();
+    diaryMoodSel = '';
+    closeRealm();
+    renderMain('diary');
+    showDiaryMsg('已保存 ✓');
+  } catch (e) { showDiaryMsg('保存失败：' + e.message, true); }
+}
+async function syncDiary() {
+  showDiaryMsg('同步中…');
+  try {
+    const j = await fetch('/api/sync-diary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    const r = await j.json();
+    if (r.ok) { await loadData(); renderMain('diary'); showDiaryMsg('已同步：新增 ' + (r.inserted || 0) + ' 篇，更新 ' + (r.updated || 0) + ' 篇 ✓'); }
+    else showDiaryMsg('同步失败：' + (r.error || ''), true);
+  } catch (e) { showDiaryMsg('同步失败：' + e.message, true); }
+}
+let ddMood = '';
+function weekdayCN(ds) { if (!ds) return ''; const d = new Date(ds + 'T00:00:00'); if (isNaN(d.getTime())) return ''; return '星期' + ['日', '一', '二', '三', '四', '五', '六'][d.getDay()]; }
+function fmtDateCN(ds) { const m = (ds || '').match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? (m[1] + '年' + m[2] + '月' + m[3] + '日') : (ds || ''); }
+function diaryReadHtml(content) {
+  const lines = (content || '').split('\n');
+  let html = '', para = [];
+  const bold = s => s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  const flush = () => { if (para.length) { html += '<p>' + bold(para.join('<br>')) + '</p>'; para = []; } };
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) { flush(); continue; }
+    if (line.charAt(0) === '>') { flush(); html += '<blockquote>' + bold(esc(line.slice(1).trim())) + '</blockquote>'; continue; }
+    if (line.startsWith('——')) { flush(); html += '<div class="dd-sign">' + esc(line) + '</div>'; continue; }
+    para.push(bold(esc(line)));
+  }
+  flush();
+  return html;
+}
+function openDiary(id) {
+  const d = (DATA.diary || []).find(x => x.id === id); if (!d) return;
+  ddMood = d.mood || '';
+  const readView = '<div class="dd-paper"><div class="dd-paper-head"><div class="dd-paper-date">' + esc(fmtDateCN(d.date)) + '</div><div class="dd-paper-week">' + weekdayCN(d.date) + '</div>' + (d.mood ? '<div class="dd-paper-mood">心情：' + esc(d.mood) + '</div>' : '') + '</div><div class="dd-paper-body">' + diaryReadHtml(d.content) + '</div><div class="dd-paper-footer">— 拾光 LifeOS · ' + esc(d.date) + ' —</div></div>';
+  const editView = '<div id="ddEdit" style="display:none;">' +
+    '<div style="display:flex;gap:10px;margin-bottom:12px;"><input class="input" id="ddDate" type="date" value="' + esc(d.date || '') + '" style="max-width:170px;"><input class="input" id="ddTitle" type="text" value="' + esc(d.title || '') + '" placeholder="标题（可选）" style="flex:1;"></div>' +
+    '<div style="margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;"><span style="color:var(--muted);font-size:13px;">心情</span>' + DIARY_MOODS.map(m => '<span class="dd-mood" data-m="' + m + '" onclick="selectDdMood(this)">' + (m || '😐') + '</span>').join('') + '</div>' +
+    '<textarea class="input" id="ddContent" rows="14" style="margin-bottom:12px;">' + esc(d.content || '') + '</textarea>' +
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="btn primary" onclick="saveDiaryDetail(' + d.id + ')">保存</button><button class="btn" onclick="if(confirm(\'删除这篇日记？\'))delDiary(' + d.id + ')">删除</button></div></div>';
+  const box = document.createElement('div');
+  box.className = 'realm-modal';
+  box.innerHTML = '<div class="realm-modal-box diary-detail-modal"><h3>📔 ' + esc(d.title || '无标题') + '</h3>' +
+    '<div class="dd-actions"><button class="btn" id="ddEditBtn" onclick="toggleDiaryEdit()">✏️ 编辑</button></div>' +
+    '<div id="ddRead">' + readView + '</div>' + editView +
+    '<button class="realm-cult-btn" style="margin-top:10px;background:var(--panel2);color:var(--text)" onclick="closeRealm()">关闭</button></div>';
+  box.onclick = (e) => { if (e.target === box) box.remove(); };
+  document.body.appendChild(box);
+  document.querySelectorAll('.dd-mood').forEach(m => m.classList.toggle('selected', m.dataset.m === ddMood && !!ddMood));
+}
+function toggleDiaryEdit() {
+  const r = document.getElementById('ddRead'), e = document.getElementById('ddEdit'), b = document.getElementById('ddEditBtn');
+  if (!r || !e) return;
+  if (e.style.display === 'none') { e.style.display = ''; r.style.display = 'none'; if (b) b.textContent = '👁 阅读'; }
+  else { e.style.display = 'none'; r.style.display = ''; if (b) b.textContent = '✏️ 编辑'; }
+}
+function selectDdMood(el) { document.querySelectorAll('.dd-mood').forEach(m => m.classList.remove('selected')); el.classList.add('selected'); ddMood = el.dataset.m; }
+async function saveDiaryDetail(id) {
+  const fields = { date: document.getElementById('ddDate').value, title: document.getElementById('ddTitle').value.trim(), content: document.getElementById('ddContent').value, mood: ddMood };
+  try {
+    const j = await fetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'diary', id: id, fields: fields }) });
+    const r = await j.json();
+    if (!r.ok) { alert('保存失败：' + (r.error || '')); return; }
+    await loadData(); closeRealm(); renderMain('diary'); showDiaryMsg('已保存 ✓');
+  } catch (e) { alert('保存失败：' + e.message); }
+}
+async function delDiary(id) {
+  try {
+    const j = await fetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'diary', id: id }) });
+    const r = await j.json();
+    if (!r.ok) { alert('删除失败：' + (r.error || '')); return; }
+    await loadData(); closeRealm(); renderMain('diary'); showDiaryMsg('已删除');
+  } catch (e) { alert('删除失败：' + e.message); }
 }
 
 /* ---------- 渲染：主内容 ---------- */
@@ -706,48 +879,101 @@ function weightStreak() {
   }
   return s;
 }
-function renderWeight() {
-  const log = weightLoad();
+function weightDisp(kg) { const u = weightUnit(); return u === 'kg' ? (Number(kg).toFixed(1) + ' kg') : (Number(kg) * 2).toFixed(1) + ' 斤'; }
+function weightOther(kg) { const u = weightUnit(); return u === 'kg' ? (Number(kg) * 2).toFixed(1) + ' 斤' : (Number(kg) / 2).toFixed(1) + ' kg'; }
+function wKgToJin() { const kg = document.getElementById('wKg'), jin = document.getElementById('wJin'); if (kg && jin && kg.value) jin.value = (parseFloat(kg.value) * 2).toFixed(1); }
+function wJinToKg() { const kg = document.getElementById('wKg'), jin = document.getElementById('wJin'); if (jin && kg && jin.value) kg.value = (parseFloat(jin.value) / 2).toFixed(1); }
+function weightChart(rows) {
+  if (!rows.length) return '<div class="game-empty" style="padding:20px;">暂无体重记录，先记一条吧 ⚖️</div>';
   const unit = weightUnit();
-  const disp = (kg) => unit === 'kg' ? (Number(kg).toFixed(1) + ' kg') : (Number(kg) * 2).toFixed(1) + ' 斤';
+  const w = 320, h = 160, pad = 24;
+  const stepX = rows.length > 1 ? (w - 2 * pad) / (rows.length - 1) : 0;
+  const xs = rows.map((r, i) => pad + i * stepX);
+  const vals = rows.map(r => unit === 'jin' ? Number(r.weight) * 2 : Number(r.weight));
+  let min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+  if (min === max) { min -= 1; max += 1; }
+  const ys = vals.map(v => h - pad - (v - min) / (max - min) * (h - 2 * pad));
+  const pts = xs.map((x, i) => x.toFixed(1) + ',' + ys[i].toFixed(1)).join(' ');
+  const dots = xs.map((x, i) => '<circle cx="' + x.toFixed(1) + '" cy="' + ys[i].toFixed(1) + '" r="3.5" fill="var(--wp)"></circle>').join('');
+  const line = '<polyline fill="none" stroke="var(--wp)" stroke-width="2.5" points="' + pts + '"/>';
+  const u = unit === 'jin' ? '斤' : 'kg', dec = 1;
+  const lbl = '<text x="2" y="' + (pad + 4) + '" font-size="10" fill="var(--wp)">' + max.toFixed(dec) + ' ' + u + '</text>' +
+    '<text x="2" y="' + (h - pad + 6) + '" font-size="10" fill="var(--wp)">' + min.toFixed(dec) + ' ' + u + '</text>';
+  const xfirst = '<text x="' + xs[0].toFixed(1) + '" y="' + (h - 4) + '" font-size="9" fill="var(--muted)">' + rows[0].date.slice(5) + '</text>';
+  const xlast = '<text x="' + xs[xs.length - 1].toFixed(1) + '" y="' + (h - 4) + '" font-size="9" fill="var(--muted)" text-anchor="end">' + rows[rows.length - 1].date.slice(5) + '</text>';
+  return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" style="display:block">' + lbl + line + dots + xfirst + xlast + '</svg>';
+}
+function weightListHtml(rows) {
+  if (!rows.length) return '<div class="game-empty">暂无记录</div>';
+  return rows.slice().reverse().map(r => '<div class="weight-item">' +
+    '<div class="w-date">' + esc(r.date || '') + '</div>' +
+    '<div class="w-val">' + weightDisp(r.weight) + '</div>' +
+    '<div class="w-val2">' + weightOther(r.weight) + '</div>' +
+    '<div class="w-note">' + esc(r.note || '') + '</div>' +
+    '<div class="w-del" onclick="deleteWeight(' + r.id + ')" title="删除">✕</div></div>').join('');
+}
+async function deleteWeight(id) {
+  if (!confirm('确定删除这条体重记录？')) return;
+  try {
+    const j = await fetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'weight', id: id }) });
+    const r = await j.json();
+    if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; }
+    await loadData(); renderMain('weight'); toast('已删除', 'good');
+  } catch (e) { toast('删除失败：' + e.message, 'warn'); }
+}
+function renderWeight() {
+  const log = (DATA.weight || []).slice().sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.id || 0) - (b.id || 0));
+  const unit = weightUnit();
   const latest = log.length ? log.reduce((a, b) => a.date > b.date ? a : b) : null;
-  const recent = log.slice().sort((a, b) => a.date < b.date ? 1 : -1).slice(0, 7);
-  let bars = '<div class="wt-empty">尚无记录，记下今天的体重开始吧</div>';
-  if (recent.length) {
-    const ks = recent.map(x => Number(x.kg));
-    const mn = Math.min.apply(null, ks), mx = Math.max.apply(null, ks);
-    const span = Math.max(0.2, mx - mn);
-    bars = recent.slice().reverse().map(x => {
-      const h = Math.round(18 + (Number(x.kg) - mn) / span * 64);
-      return '<div class="wt-bar-wrap" title="' + x.date + ' ' + Number(x.kg).toFixed(1) + 'kg"><div class="wt-bar" style="height:' + h + 'px"></div><div class="wt-bar-d">' + Number(x.kg).toFixed(1) + '</div></div>';
-    }).join('');
-  }
-  const todayEntry = log.find(x => x.date === todayKey());
   const stage = realmStageName('体魄录');
-  const uBtn = (u) => '<button class="wp-filt' + (unit === u ? ' on' : '') + '" onclick="weightSetUnit(\'' + u + '\');renderMain(\'weight\')">' + (u === 'kg' ? 'kg' : '斤') + '</button>';
+  const todayEntry = log.find(x => x.date === todayKey());
+  const dateVal = todayEntry ? todayEntry.date : todayKey();
+  const kgVal = todayEntry ? (Number(todayEntry.weight) || 0) : '';
+  const jinVal = kgVal !== '' ? (kgVal * 2).toFixed(1) : '';
+  const noteVal = todayEntry ? (todayEntry.note || '') : '';
   return '<div class="section-title">⚖️ 体重 <span class="game-tag">对应境界 · 体魄录</span></div>' +
-    '<div class="wt-head"><div class="wt-latest"><div class="wt-num">' + (latest ? disp(latest.kg) : '—') + '</div><div class="wt-sub">最近一次 · ' + (latest ? latest.date : '未记录') + '</div></div>' +
+    '<div class="wt-head"><div class="wt-latest"><div class="wt-num">' + (latest ? weightDisp(latest.weight) : '—') + '</div><div class="wt-sub">最近一次 · ' + (latest ? latest.date : '未记录') + '</div></div>' +
     '<div class="wt-stat"><div class="wt-stat-num">' + weightStreak() + '</div><div class="wt-stat-lbl">🔥 连续打卡</div></div>' +
     '<div class="wt-stat"><div class="wt-stat-num">' + esc(stage) + '</div><div class="wt-stat-lbl">⚖️ 体魄录</div></div></div>' +
-    '<div class="wf-form"><input class="input" id="wtKg" type="number" step="0.1" placeholder="今日体重 (kg，小数)">' +
-    '<button class="btn primary" onclick="saveWeight()">⚖️ 记录今日体重</button>' +
-    '<span class="wf-unit">' + uBtn('kg') + uBtn('jin') + '</span></div>' +
-    (todayEntry ? '<div class="meta" style="margin:6px 0">✅ 今日已记录：' + disp(todayEntry.kg) + '（每日首次称体重 → 体魄录经验 +1 · 愿力 +1）</div>' : '') +
-    '<div class="wt-chart-title">近 7 次趋势（' + (unit === 'kg' ? 'kg' : '斤') + '）</div>' +
-    '<div class="wt-chart">' + bars + '</div>';
+    '<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:start;">' +
+      '<div class="card weight-form-card" style="flex:1 1 320px;">' +
+        '<div class="card-title">⚖️ 记录今日体重</div>' +
+        '<div class="form-row"><span>日期</span><input class="input" type="date" id="wDate" value="' + dateVal + '"></div>' +
+        '<div class="form-row"><span>斤</span><input class="input" type="number" id="wJin" step="0.1" placeholder="市斤" value="' + jinVal + '" oninput="wJinToKg()"></div>' +
+        '<div class="form-row"><span>公斤</span><input class="input" type="number" id="wKg" step="0.1" placeholder="kg" value="' + kgVal + '" oninput="wKgToJin()"></div>' +
+        '<div class="hint">填其中一个，另一个自动换算（1 斤 = 0.5 公斤）</div>' +
+        '<div class="form-row"><span>备注</span><input class="input" type="text" id="wNote" placeholder="可空，如「空腹/晚饭后」" value="' + esc(noteVal) + '"></div>' +
+        '<div style="margin-top:8px;"><button class="btn primary" onclick="saveWeight()">💾 保存记录</button></div>' +
+      '</div>' +
+      '<div class="card" style="flex:1 1 360px;">' +
+        '<div class="card-title" style="display:flex;align-items:center;gap:10px;">📈 体重趋势' +
+          '<span style="margin-left:auto;" class="wt-unit-toggle"><button class="' + (unit === 'kg' ? 'on' : '') + '" onclick="weightSetUnit(\'kg\');renderMain(\'weight\')">公斤</button>' +
+          '<button class="' + (unit === 'jin' ? 'on' : '') + '" onclick="weightSetUnit(\'jin\');renderMain(\'weight\')">斤</button></span>' +
+        '</div>' +
+        '<div class="weight-chart-wrap" id="weightChartWrap">' + weightChart(log) + '</div>' +
+        '<div id="weightLatest" style="margin-top:10px;font-size:13px;color:var(--muted);"></div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="card" style="margin-top:18px;">' +
+      '<div class="card-title">📋 历史记录</div>' +
+      '<div class="weight-list" id="weightList">' + weightListHtml(log) + '</div>' +
+    '</div>';
 }
 async function saveWeight() {
-  const el = document.getElementById('wtKg');
-  const v = parseFloat(el ? el.value : '');
-  if (!(v > 0)) { toast('请输入有效体重', 'warn'); return; }
-  const t = todayKey();
+  const kgEl = document.getElementById('wKg');
+  const dateEl = document.getElementById('wDate');
+  const noteEl = document.getElementById('wNote');
+  const v = parseFloat(kgEl ? kgEl.value : '');
+  if (!(v > 0)) { toast('请先在「斤」或「公斤」里填一个有效体重', 'warn'); return; }
+  const t = (dateEl && dateEl.value) || todayKey();
+  const note = (noteEl && noteEl.value.trim()) || '';
   const Existing = (DATA.weight || []).find(x => x.date === t);
   const isNew = !Existing;
   try {
     if (isNew) {
-      await fetch('/api/insert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'weight', fields: { date: t, weight: v, note: '', created_at: new Date().toISOString() } }) });
+      await fetch('/api/insert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'weight', fields: { date: t, weight: v, note: note, created_at: new Date().toISOString() } }) });
     } else {
-      await fetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'weight', id: Existing.id, fields: { weight: v } }) });
+      await fetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'weight', id: Existing.id, fields: { weight: v, note: note } }) });
     }
     await loadData();
   } catch (e) { toast('体重保存失败：' + e.message, 'warn'); return; }
@@ -756,7 +982,7 @@ async function saveWeight() {
     try { await grantWP(1, '体魄录', '称体重'); } catch (e) {}
     toast('⚖️ 已记录 ' + v.toFixed(1) + ' kg（体魄录参悟 +1 · 愿力 +1）', 'good');
   } else {
-    toast('⚖️ 已更新今日体重 ' + v.toFixed(1) + ' kg', 'good');
+    toast('⚖️ 已更新体重 ' + v.toFixed(1) + ' kg', 'good');
   }
   renderMain('weight');
 }
@@ -882,9 +1108,19 @@ function renderCook() {
       <button class="btn primary sm" onclick="cookDish(${r.id})">🍳 做一道</button>
     </div>`;
   }).join('');
+  const meals = (DATA.meals || []).slice(0, 15);
+  const hist = meals.length ? meals.map(m => {
+    const r = (food().recipes || []).find(x => x.id === m.recipeId);
+    return '<div class="cook-hist-row"><span class="ch-date">' + esc(m.date || '') + '</span>' +
+      '<span class="ch-name">' + esc(m.name || '(未关联菜谱)') + '</span>' +
+      (m.rating ? '<span class="ch-rate">' + '★'.repeat(m.rating) + '</span>' : '') +
+      '<button class="ch-undo" onclick="undoCook(' + m.id + ')">撤销</button></div>';
+  }).join('') : '<div class="game-empty">还没有做菜记录</div>';
   return `<div class="mod-toolbar"><div class="section-title">🍳 烹饪 · 菜谱 ${recipes.length} 道</div>
     <button class="btn primary" onclick="openCookModal()">🍳 记录做菜</button></div>
-    <div class="cards">${cards}</div>`;
+    <div class="cards">${cards}</div>
+    <div class="section-title" style="margin-top:18px">📜 我做菜记录 <span class="game-tag">点「撤销」回退奖励与境界经验</span></div>
+    <div class="cook-hist">${hist}</div>`;
 }
 
 /* ---------- 烹饪交互 ---------- */
@@ -930,6 +1166,7 @@ async function saveCookPost() {
           await grantRealmXp('灶神录', j.gains.activated ? 5 : 1, {});
         }
         renderMain('cook');
+        toastUndo('🍳 已记录「' + (dish || '') + '」，点此可撤销', () => undoCook(j.id));
         return;
       } else { toast('做菜结算失败：' + (j.error || '未知错误'), 'warn'); }
     } catch (e) { toast('请求失败：' + e.message, 'warn'); }
@@ -966,6 +1203,55 @@ function toast(msg, kind) {
   el.textContent = msg;
   wrap.appendChild(el);
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 2400);
+}
+function toastUndo(msg, onUndo) {
+  const wrap = document.getElementById('toastWrap');
+  if (!wrap) { if (onUndo) onUndo(); return; }
+  const el = document.createElement('div');
+  el.className = 'toast undo-toast';
+  const span = document.createElement('span'); span.textContent = msg;
+  const btn = document.createElement('button'); btn.className = 'toast-undo-btn'; btn.textContent = '撤销';
+  el.appendChild(span); el.appendChild(btn);
+  let done = false;
+  const close = () => { if (done) return; done = true; el.classList.add('out'); setTimeout(() => el.remove(), 400); };
+  btn.addEventListener('click', () => { if (done) return; done = true; el.remove(); if (onUndo) onUndo(); });
+  wrap.appendChild(el);
+  setTimeout(close, 6000);
+}
+async function rollbackRealmXp(key, amount) {
+  if (!REALM_DEFS[key] || !amount) return;
+  const realms = Object.assign({}, player().realms || {});
+  const s = realmState(key);
+  s.xp -= amount;
+  while (s.xp < 0) {
+    if (s.layer > 0) { s.layer -= 1; s.xp += REALM_XP_NEEDED; }
+    else { s.xp = 0; break; }
+  }
+  s.round = Math.floor(s.layer / REALM_STAGES);
+  realms[key] = s;
+  try {
+    const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { realms: JSON.stringify(realms) } }) });
+    const r = await j.json();
+    if (r.ok && r.player) DATA.player = r.player; else DATA.player.realms = realms;
+    renderResbar();
+  } catch (e) {}
+}
+async function undoCook(mealId) {
+  try {
+    const j = await fetch('/api/cook-undo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mealId }) });
+    const r = await j.json();
+    if (!r.ok) { toast('撤销失败：' + (r.error || ''), 'warn'); return; }
+    await loadData();
+    if (r.rollback && r.rollback.realmXp) await rollbackRealmXp('灶神录', r.rollback.realmXp);
+    renderMain('cook');
+    const rb = r.rollback || {};
+    const parts = ['已撤销做菜'];
+    if (rb.wp) parts.push('愿力-' + rb.wp);
+    if (rb.lp) parts.push('幸运-' + rb.lp);
+    if (rb.dp) parts.push('天命-' + rb.dp);
+    if (rb.realmXp) parts.push('灶神录经验-' + rb.realmXp);
+    toast(parts.join(' · '), 'good');
+  } catch (e) { toast('撤销失败：' + e.message, 'warn'); }
 }
 
 /* ---------- 背包仓库交互（接 /api/inventory） ---------- */
@@ -1172,6 +1458,7 @@ function renderRealm() {
       <div class="meta">${esc(stage)}　·　经验 ${s.xp}/${REALM_XP_NEEDED}</div>
       <div class="bar"><i style="width:${pct}%"></i></div>
       <div class="meta">${esc(def.effect)}</div>
+      <div class="realm-src" onclick="event.stopPropagation();renderMain('${def.src.mod}')">📌 经验来源：${esc(def.src.label)} →</div>
     </div>`;
   }).join('');
   return `<div class="section-title">🌟 境界参悟 <span class="game-tag">经验制 · 圆满轮回永续</span></div>
@@ -1198,6 +1485,7 @@ function openRealm(key) {
   box.innerHTML = '<div class="realm-modal-box"><h3>' + def.icon + ' ' + esc(key) + (s.round > 0 ? ' · 轮回第' + s.round + '世' : '') + '</h3>' +
     '<p>' + esc(def.story) + '</p>' +
     '<div class="realm-card-effect" style="margin-bottom:8px"><b>境界效果：</b>' + esc(def.effect) + '</div>' +
+    '<div class="realm-card-effect"><b>经验来源：</b>' + esc(def.src.label) + '（<a href="javascript:void(0)" onclick="closeRealm();renderMain(\'' + def.src.mod + '\')">前往 ' + esc(def.src.mod) + ' →</a>）</div>' +
     '<div style="font-size:13px;font-weight:600;margin:6px 0 4px">当前经验 ' + s.xp + '/' + REALM_XP_NEEDED + '（满则自动参悟一层）</div>' +
     '<div class="bar" style="height:12px;margin-bottom:8px"><i style="width:' + pct + '%"></i></div>' +
     '<div style="font-size:13px;font-weight:600;margin:6px 0 4px">修阶（本轮第 ' + (curStage + 1) + ' 阶）</div>' +
@@ -1220,7 +1508,7 @@ function closeRealm() { document.querySelectorAll('.realm-modal').forEach(m => m
     function npcsArr() { return (DATA && DATA.npcs) || []; }
     function getNpcMeta(n) { return (n && n.meta && typeof n.meta === 'object') ? n.meta : (typeof (n && n.meta) === 'string' ? safeParse(n.meta, {}) : {}); }
     function todayCST() { return new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }); }
-    function npcRel(n) { const m = getNpcMeta(n); return m.rel || (['家人', '恋慕', '朋友'].includes(n.type) ? n.type : '朋友'); }
+    function npcRel(n) { const m = getNpcMeta(n); const r = m.rel; return (r === '家人' || r === '恋慕' || r === '朋友') ? r : (['家人', '恋慕', '朋友'].includes(n.type) ? n.type : '朋友'); }
     function npcRankInfo(n) {
       const rel = npcRel(n), cfg = REL_RANKS[rel] || REL_RANKS['朋友'];
       const aff = Number(getNpcMeta(n).affinity) || 0;
