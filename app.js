@@ -546,6 +546,48 @@ async function toggleTaskDone(id, done) {
     renderMain('dungeon');
   } catch (e) { toast('任务更新失败：' + e.message, 'warn'); }
 }
+/* 周天试炼下的「本周任务栏」：复用日级任务列表样式，每行右侧显示 +X愿 奖励标签。
+   数据来自任务板「周级」分组；勾选写回主站任务板，配置奖励在每周首次完成时发放愿力（防刷）。 */
+function weeklyTasksHtml() {
+  const tb = (DATA.taskboard || []).filter(t => /周级/.test(t.grp || ''));
+  if (!tb.length) return '';
+  const rows = tb.slice().sort((a, b) => (a.ord || 0) - (b.ord || 0)).map(t => {
+    const pts = Number(t.points) || 0;
+    const reward = pts > 0 ? '<span class="dc-reward">+' + pts + '愿</span>' : '';
+    return '<label class="task-row dc-rest-row' + (t.done ? ' done' : '') + '">' +
+      '<input type="checkbox" ' + (t.done ? 'checked' : '') + ' onchange="toggleWeeklyTask(' + t.id + ', this.checked)">' +
+      '<span class="task-text' + (t.done ? ' done' : '') + '">' + esc(t.text || '') + '</span>' +
+      reward +
+    '</label>';
+  }).join('');
+  return '<div class="section-title" style="margin-top:18px">📋 本周任务栏（勾选写回任务板）</div>' +
+    '<div class="dungeon-tasks">' + rows + '</div>' +
+    '<div class="meta" style="margin-top:6px">勾选完成写回主站任务板；任务配置的奖励愿力于本周首次完成时发放（每周每任务仅一次），并自动为命中 NPC 加好感。</div>';
+}
+async function toggleWeeklyTask(id, done) {
+  try {
+    const j = await fetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'taskboard', id: id, fields: { done: done ? 1 : 0 } }) });
+    const r = await j.json();
+    if (!r.ok) { toast('任务更新失败：' + (r.error || ''), 'warn'); return; }
+    const t = (DATA.taskboard || []).find(x => x.id === id); if (t) t.done = done ? 1 : 0;
+    if (done) {
+      await grantNpcAffinityByText(t ? (t.text || '') : '');
+      const pts = Number(t && t.points) || 0;
+      if (pts > 0) {
+        const wk = yearWeekCST();
+        const key = 'lifeos_weeklyTaskWP_' + wk;
+        let got = {}; try { got = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { got = {}; }
+        if (!got[id]) {
+          got[id] = true;
+          try { localStorage.setItem(key, JSON.stringify(got)); } catch (e) {}
+          await grantWP(pts, '周级任务', (t && t.text) || '周级任务');
+          toast('🎯 周级任务「' + (t && t.text || '') + '」完成，+' + pts + ' 愿力', 'good');
+        }
+      }
+    }
+    renderMain(CUR);
+  } catch (e) { toast('任务更新失败：' + e.message, 'warn'); }
+}
 async function clearDungeon(id) {
   try { localStorage.setItem(dungeonFlag(id), '1'); } catch (e) {}
   const xm = (demons() || []).find(d => d.key === 'xinmo');
@@ -1671,6 +1713,7 @@ function renderTrial() {
         '<div class="dungeon-head-right"><button class="dg-btn" style="width:auto;padding:6px 14px" onclick="openWeeklyManage()">⚙️ 管理周本</button></div>' +
       '</div>' +
       '<div class="dungeon-cards weekly-cards">' + weeklyCardsHtml() + '</div>' +
+      weeklyTasksHtml() +
       '<div class="dungeon-reset-note">🗓️ 每周一 0 点（中国时区）重置周本进度，未领取的奖励将失效。</div>' +
     '</div>';
 }
