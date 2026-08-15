@@ -353,6 +353,18 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .dungeon-tasks{margin-top:6px;display:flex;flex-direction:column;gap:6px}
 .task-row{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:8px 11px;cursor:pointer;font-size:13px}
 .task-row input{width:16px;height:16px;accent-color:var(--wp);flex:none}
+.dc-top5{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:4px 0 2px}
+.dc-top5-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:.15s;box-shadow:var(--shadow)}
+.dc-top5-card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.dc-top5-card.cleared{border-color:var(--lp);background:linear-gradient(180deg,var(--panel),rgba(47,127,176,.07))}
+.dc-top5-ic{font-size:26px;margin-bottom:6px}
+.dc-top5-name{font-weight:700;font-size:14px;margin-bottom:4px}
+.dc-top5-flag{font-size:12px;color:var(--muted)}
+.dc-top5-card.cleared .dc-top5-flag{color:var(--lp)}
+.dc-reward{margin-left:auto;font-size:11px;color:var(--wp);background:var(--panel2);border:1px solid var(--accent);border-radius:8px;padding:2px 8px;white-space:nowrap;flex:none}
+.dc-reward.realm{color:var(--lp);border-color:var(--lp)}
+.dc-rest-row .task-text{flex:1}
+.dc-rest-desc{font-size:11px;color:var(--muted);max-width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .task-text.done{text-decoration:line-through;color:var(--muted)}
 /* 境界：轮回光环 + buff 概览 */
 .realm-round{font-size:11px;color:#fff;background:linear-gradient(90deg,#d4a017,#b8860b);border-radius:8px;padding:1px 7px;margin-left:6px;font-weight:600}

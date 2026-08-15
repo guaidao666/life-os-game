@@ -479,27 +479,55 @@ function dungeonFlag(id) { return 'game_dungeon_' + todayKey() + '_' + id; }
 function dungeonDone(id) { try { return localStorage.getItem(dungeonFlag(id)) === '1'; } catch (e) { return false; } }
 function xinmoHpFromDungeons() { const done = DAILY_DUNGEONS.filter(d => dungeonDone(d.id)).length; return Math.max(0, 100 - Math.round(done / DAILY_DUNGEONS.length * 100)); }
 function renderDungeon() {
+  const top5 = [
+    { id: 'econ',   name: '📖 经济师学习', realm: null },
+    { id: 'diary',  name: '📝 写日记',     realm: '岁笺录' },
+    { id: 'weight', name: '⚖️ 称体重',     realm: '体魄录' },
+    { id: 'cook',   name: '🍳 烟火做饭',   realm: null },
+    { id: 'sleep',  name: '🌙 早睡',       realm: null }
+  ];
+  const topCards = top5.map(d => {
+    const ok = d.id === 'weight' ? weightLoad().some(x => x.date === todayKey())
+              : d.id === 'sleep' ? sleepLoad().some(x => x.date === todayKey())
+              : dungeonDone(d.id);
+    const flag = ok ? '✅ 已完成' : (d.realm ? d.realm + ' +1' : '点击完成');
+    return `<div class="dc-top5-card${ok ? ' cleared' : ''}" onclick="top5Click('${d.id}')">
+      <div class="dc-top5-ic">${ok ? '✅' : esc(d.name.slice(0, 2))}</div>
+      <div class="dc-top5-name">${esc(d.name)}</div>
+      <div class="dc-top5-flag">${esc(flag)}</div>
+    </div>`;
+  }).join('');
+  const restIds = ['exercise', 'baduanjin', 'wuqinxi', 'read', 'finance', 'gooddeed', 'xinjing'];
+  const restRows = DAILY_DUNGEONS.filter(d => restIds.includes(d.id)).map(d => {
+    const ok = dungeonDone(d.id);
+    const badge = d.realm ? `<span class="dc-reward realm">${esc(d.realm)} +1</span>` : `<span class="dc-reward">日常 +1</span>`;
+    return `<label class="task-row dc-rest-row${ok ? ' done' : ''}">
+      <input type="checkbox" ${ok ? 'checked' : ''} onchange="if(this.checked)clearDungeon('${d.id}');else setDungeonOff('${d.id}')">
+      <span class="task-text${ok ? ' done' : ''}">${esc(d.name)}</span>
+      <span class="dc-rest-desc">${esc(d.desc || '')}</span>
+      ${badge}
+    </label>`;
+  }).join('');
   const done = DAILY_DUNGEONS.filter(d => dungeonDone(d.id)).length;
   const total = DAILY_DUNGEONS.length;
   const hp = xinmoHpFromDungeons();
-  const all = done === total;
-  const cards = DAILY_DUNGEONS.map(d => {
-    const ok = dungeonDone(d.id);
-    const relTag = d.realm ? `<span class="dc-realm">${esc(d.realm)} +1</span>` : '';
-    return `<div class="card dungeon-card${ok ? ' cleared' : ''}">
-      <div class="dc-head"><span class="dc-icon">${ok ? '✅' : '⚔️'}</span><div><div class="tag">${ok ? '已完成' : '副本'}</div><h3>${esc(d.name)}</h3></div>${relTag}</div>
-      <div class="meta">${esc(d.desc)}</div>
-      ${ok ? '<div class="meta">🎉 已完成</div>' : '<button class="btn primary" onclick="clearDungeon(\'' + d.id + '\')">标记已完成</button>'}
-    </div>`;
-  }).join('');
   return `<div class="section-title">🗺️ 每日秘境 · ${done}/${total}</div>
   <div class="demon-avatars-title">心魔·拖延 HP（每完成一个副本削减 ${Math.round(100 / total)}）</div>
   <div class="bar" style="height:14px"><i style="width:${hp}%;${hp <= 0 ? 'background:#6fcf97' : ''}"></i></div>
   <div class="meta" style="margin:6px 0 14px">当前 HP ${hp}/100${hp <= 0 ? ' · 🎉 心魔已被击破！' : ''}</div>
-  <div class="cards">${cards}</div>
-  <div class="meta" style="margin-top:12px">完成全部 ${total} 个副本即击破心魔，获得 📜 契约点 +1${realmBuffSum('taskBonus') > 0 ? ' · 愿力 +' + (5 + Math.min(20, realmBuffSum('taskBonus'))) + '（境界加成）' : ''}（每日限一次）。带「境界名 +1」的副本完成为该境界记经验。</div>
+  <div class="section-title" style="font-size:15px">🔥 今日五大要事</div>
+  <div class="dc-top5">${topCards}</div>
+  <div class="section-title" style="margin-top:16px">📋 其余日常副本</div>
+  <div class="dungeon-tasks">${restRows}</div>
+  <div class="meta" style="margin-top:6px">带「境界 +1」的副本完成为对应境界记经验；完成全部 ${total} 个副本击破心魔，契约点 +1${realmBuffSum('taskBonus') > 0 ? ' · 愿力 +' + (5 + Math.min(20, realmBuffSum('taskBonus'))) : ''}（每日限一次）。</div>
   ${dailyTasksHtml()}`;
 }
+async function top5Click(id) {
+  if (id === 'weight') { go('weight'); return; }
+  if (id === 'sleep') { go('sleep'); return; }
+  if (dungeonDone(id)) setDungeonOff(id); else await clearDungeon(id);
+}
+function setDungeonOff(id) { try { localStorage.setItem(dungeonFlag(id), '0'); } catch (e) {} renderMain('dungeon'); }
 function dailyTasksHtml() {
   const tb = (DATA.taskboard || []).filter(t => /日级/.test(t.grp || ''));
   if (!tb.length) return '';
