@@ -374,6 +374,9 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .input:focus{outline:none;border-color:var(--accent)}
 .tb-del-btn{cursor:pointer;border:1px solid var(--border);background:var(--panel2);color:var(--muted);width:28px;height:28px;border-radius:8px;font-size:14px;flex:none;transition:.15s}
 .tb-del-btn:hover{border-color:#c0392b;color:#c0392b}
+.wk-mng-acts{display:flex;gap:6px;flex:none}
+.tb-edit-btn{cursor:pointer;border:1px solid var(--border);background:var(--panel2);color:var(--muted);width:28px;height:28px;border-radius:8px;font-size:14px;flex:none;transition:.15s}
+.tb-edit-btn:hover{border-color:var(--accent);color:var(--accent)}
 
 /* ===== v17 新增样式 ===== */
 /* 每日秘境：境界经验标签 */

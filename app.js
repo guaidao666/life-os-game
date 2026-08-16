@@ -2320,7 +2320,10 @@ const WEEKLY_DEFAULTS = [
 function weeklyDefs() {
   let custom = [];
   try { custom = JSON.parse(localStorage.getItem('lifeos_weeklyDefs') || '[]'); } catch (e) { custom = []; }
-  return WEEKLY_DEFAULTS.concat(custom);
+  const map = {};
+  WEEKLY_DEFAULTS.forEach(d => map[String(d.id)] = Object.assign({}, d));
+  custom.forEach(d => { if (map[String(d.id)]) map[String(d.id)] = Object.assign({}, map[String(d.id)], d, { fixed: true }); else map[String(d.id)] = Object.assign({}, d); });
+  return Object.keys(map).map(k => map[k]);
 }
 function yearWeekCST() {
   const now = new Date();
@@ -2425,11 +2428,13 @@ function openWeeklyManage() {
   const defs = weeklyDefs();
   const rowHtml = (d) => {
     const isC = d.fixed;
+    const acts = '<span class="wk-mng-acts"><button type="button" class="tb-edit-btn" onclick="editWeeklyDef(\'' + String(d.id) + '\')">✏️</button>' +
+      (isC ? '' : '<button type="button" class="tb-del-btn" onclick="delWeeklyDef(\'' + String(d.id) + '\')">✕</button>') + '</span>';
     return '<div class="wk-mng-row">' +
       '<div class="wk-mng-ic">' + esc(d.icon || '❖') + '</div>' +
       '<div class="wk-mng-info"><div class="wk-mng-gname">' + esc(d.gname || '') + '<span class="wk-mng-name">' + esc(d.name || '') + '</span></div>' +
       '<div class="wk-mng-sub">匹配：' + (d.tasks || []).map(esc).join(' / ') + '　·　需求 ' + d.need + '　·　奖励 +' + d.reward + (d.unlock ? ('　·　' + esc(d.unlock.text)) : '') + '</div></div>' +
-      (isC ? '<span class="wk-mng-fixed">默认</span>' : '<button type="button" class="tb-del-btn" onclick="delWeeklyDef(' + d.id + ')">✕</button>') +
+      (isC ? '<span class="wk-mng-fixed">默认</span>' : acts) +
       '</div>';
   };
   const box = document.createElement('div');
@@ -2472,25 +2477,73 @@ function addWeeklyDef() {
   renderMain(CUR);
 }
 function delWeeklyDef(id) {
+  const def = weeklyDefs().find(d => String(d.id) === String(id));
+  if (def && def.fixed) { toast('默认周本不可删除，可用编辑修改', 'warn'); return; }
   showConfirm('删除周本', '确定删除这个自定义周本？', function () {
     let custom = [];
     try { custom = JSON.parse(localStorage.getItem('lifeos_weeklyDefs') || '[]'); } catch (e) { custom = []; }
-    custom = custom.filter(d => d.id !== id);
+    custom = custom.filter(d => String(d.id) !== String(id));
     try { localStorage.setItem('lifeos_weeklyDefs', JSON.stringify(custom)); } catch (e) {}
     toast('已删除自定义周本');
     const m = document.getElementById('weeklyManageModal'); if (m) m.remove();
     renderMain(CUR);
   });
 }
+function editWeeklyDef(id) {
+  const def = weeklyDefs().find(d => String(d.id) === String(id));
+  if (!def) return;
+  const box = document.createElement('div');
+  box.className = 'realm-modal';
+  box.id = 'weeklyEditModal';
+  box.innerHTML = '<div class="realm-modal-box">' +
+    '<h3>✏️ 编辑周本</h3>' +
+    '<div class="mgmt-form">' +
+    '<label class="mgmt-fld"><span>名称</span><input class="input" id="wekName" value="' + esc(def.name || '') + '"></label>' +
+    '<label class="mgmt-fld"><span>古风名</span><input class="input" id="wekGname" value="' + esc(def.gname || '') + '"></label>' +
+    '<label class="mgmt-fld"><span>图标 emoji</span><input class="input" id="wekIcon" value="' + esc(def.icon || '') + '"></label>' +
+    '<label class="mgmt-fld"><span>匹配任务（逗号分隔）</span><input class="input" id="wekTasks" value="' + esc((def.tasks || []).join(',')) + '"></label>' +
+    '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+      '<label class="mgmt-fld"><span>需求次数</span><input class="input" id="wekNeed" type="number" value="' + (def.need || 1) + '"></label>' +
+      '<label class="mgmt-fld"><span>奖励愿力</span><input class="input" id="wekReward" type="number" value="' + (def.reward || 5) + '"></label>' +
+    '</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:10px;margin-top:10px"><button class="btn primary" onclick="saveWeeklyDef(\'' + String(id) + '\',' + (def.fixed ? 'true' : 'false') + ')">保存</button><button class="btn" onclick="closeRealm()">取消</button></div>' +
+    '</div>';
+  box.onclick = e => { if (e.target === box) box.remove(); };
+  document.body.appendChild(box);
+}
+function saveWeeklyDef(id, fixed) {
+  const name = (document.getElementById('wekName') || {}).value || '';
+  const gname = (document.getElementById('wekGname') || {}).value || name;
+  const icon = (document.getElementById('wekIcon') || {}).value || '❖';
+  const tasks = (document.getElementById('wekTasks') || {}).value.split(/[,，]/).map(s => s.trim()).filter(Boolean);
+  const need = parseInt((document.getElementById('wekNeed') || {}).value) || tasks.length || 1;
+  const reward = parseInt((document.getElementById('wekReward') || {}).value) || 5;
+  if (!tasks.length) { toast('请填写匹配任务文本', 'warn'); return; }
+  let custom = [];
+  try { custom = JSON.parse(localStorage.getItem('lifeos_weeklyDefs') || '[]'); } catch (e) { custom = []; }
+  let base = {};
+  if (fixed) { const o = WEEKLY_DEFAULTS.find(x => String(x.id) === String(id)); if (o) base = o; }
+  const entry = { id: fixed ? String(id) : (custom.find(d => String(d.id) === String(id)) ? id : Date.now()), name: name.trim(), gname: gname.trim(), icon: icon, tasks: tasks, need: need, reward: reward, unlock: base.unlock || null, fixed: !!fixed };
+  const idx = custom.findIndex(d => String(d.id) === String(id));
+  if (idx >= 0) custom[idx] = entry; else custom.push(entry);
+  try { localStorage.setItem('lifeos_weeklyDefs', JSON.stringify(custom)); } catch (e) {}
+  toast('🗡️ 已保存周本', 'good');
+  const em = document.getElementById('weeklyEditModal'); if (em) em.remove();
+  const mm = document.getElementById('weeklyManageModal'); if (mm) mm.remove();
+  renderMain(CUR);
+}
 function renderWeekly() {
   const defs = weeklyDefs();
   const rowHtml = (d) => {
     const isC = d.fixed;
+    const acts = '<span class="wk-mng-acts"><button type="button" class="tb-edit-btn" onclick="editWeeklyDef(\'' + String(d.id) + '\')">✏️</button>' +
+      (isC ? '' : '<button type="button" class="tb-del-btn" onclick="delWeeklyDef(\'' + String(d.id) + '\')">✕</button>') + '</span>';
     return '<div class="wk-mng-row">' +
       '<div class="wk-mng-ic">' + esc(d.icon || '❖') + '</div>' +
       '<div class="wk-mng-info"><div class="wk-mng-gname">' + esc(d.gname || '') + '<span class="wk-mng-name">' + esc(d.name || '') + '</span></div>' +
       '<div class="wk-mng-sub">匹配：' + (d.tasks || []).map(esc).join(' / ') + '　·　需求 ' + d.need + '　·　奖励 +' + d.reward + (d.unlock ? ('　·　' + esc(d.unlock.text)) : '') + '</div></div>' +
-      (isC ? '<span class="wk-mng-fixed">默认</span>' : '<button type="button" class="tb-del-btn" onclick="delWeeklyDef(' + d.id + ')">✕</button>') +
+      (isC ? '<span class="wk-mng-fixed">默认</span>' : acts) +
       '</div>';
   };
   return '<div class="section-title">📅 周本管理 <span class="game-tag">自定义周级修行副本</span></div>' +
