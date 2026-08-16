@@ -515,8 +515,10 @@ const MGMT = {
     fields:[{k:'name',label:'名字',type:'text'},{k:'type',label:'类型',type:'select',opts:['家人','恋慕','朋友']},{k:'region',label:'所属州',type:'text'},{k:'desc',label:'人设',type:'text'},{k:'x',label:'地图X',type:'number'},{k:'y',label:'地图Y',type:'number'}] },
   dungeon: { store:'api', table:'taskboard', dataKey:'taskboard', nameF:d=>d.text||('任务'+d.id),
     fields:[{k:'grp',label:'分组',type:'text'},{k:'text',label:'内容',type:'text'},{k:'points',label:'愿力',type:'number'},{k:'depth',label:'层级',type:'number'}] },
-  dungeonTasks: { store:'dailies', nameF:d=>d.name||('任务'+d.id),
+  dungeonTasks: { store:'dailies', render:'dungeon', nameF:d=>d.name||('任务'+d.id),
     fields:[{k:'name',label:'名称(可带emoji)',type:'text'},{k:'desc',label:'描述',type:'text'},{k:'realm',label:'对应境界key',type:'text'},{k:'wp',label:'完成愿力奖励',type:'number'},{k:'focus',label:'进入五大要事(1/0)',type:'number'},{k:'wpEarly',label:'[睡眠]早睡愿力',type:'number'},{k:'wpOntime',label:'[睡眠]按时愿力',type:'number'}] },
+  weeklyTasks: { store:'api', table:'taskboard', dataKey:'taskboard', scope:'weekly', render:'trial', nameF:d=>d.text||('任务'+d.id),
+    fields:[{k:'text',label:'内容',type:'text'},{k:'points',label:'愿力奖励',type:'number'},{k:'depth',label:'层级',type:'number'}] },
   cook:    { store:'api', table:'recipes', dataKey:'food', dataSub:'recipes', nameF:d=>d.name||('菜谱'+d.id),
     fields:[{k:'name',label:'菜名',type:'text'},{k:'category',label:'分类',type:'text'},{k:'difficulty',label:'难度',type:'number'},{k:'cost',label:'成本',type:'text'},{k:'time',label:'时长(分)',type:'number'},{k:'ingredients',label:'食材(JSON)',type:'text'},{k:'steps',label:'步骤',type:'textarea'}] },
   fun:     { store:'local', localKey:'game_fun_log', nameF:d=>d.title||d.name||('记录'+d.id),
@@ -546,7 +548,7 @@ function mgmtBtnHtml(id) {
 function mgmtToggle(id) { EDIT[id] = !EDIT[id]; renderMain(id); }
 function mgmtList(kind) {
   const c = MGMT[kind]; if (!c) return [];
-  if (c.store === 'api') { const arr = c.dataSub ? (((DATA[c.dataKey] || {})[c.dataSub]) || []) : (DATA[c.dataKey] || []); return arr.slice(); }
+  if (c.store === 'api') { const arr = c.dataSub ? (((DATA[c.dataKey] || {})[c.dataSub]) || []) : (DATA[c.dataKey] || []); let out = arr.slice(); if (c.scope === 'weekly') out = out.filter(x => /周级/.test(x.grp || '')); return out; }
   if (c.store === 'local') { try { return JSON.parse(localStorage.getItem(c.localKey) || '[]'); } catch (e) { return []; } }
   if (c.store === 'econ') { return econLoad().map((x, i) => Object.assign({ id: String(i) }, x)); }
   if (c.store === 'player') { const p = player(); if (c.isObj) { const o = p[c.playerField] || {}; return Object.keys(o).map(k => Object.assign({ id: k, name: k }, o[k])); } return (p[c.playerField] || []).slice(); }
@@ -564,6 +566,7 @@ function mgmtPanel(kind, scope) {
     let list = items;
     if (scope === 'focus') list = items.filter(x => Number(x.focus) > 0);
     else if (scope === 'rest') list = items.filter(x => !x.focus || Number(x.focus) === 0);
+    else if (c.scope === 'weekly') list = items;
     const rows = list.length ? list.map(it => {
       const nm = c.nameF ? c.nameF(it) : (it.name || it.id || '');
       const idv = (it.id != null) ? it.id : (it.date || '');
@@ -609,7 +612,7 @@ async function mgmtUpsert(kind, id, fields) {
   try {
     if (c.store === 'api') {
       if (id !== '') { const j = await fetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: c.table, id: Number(id), fields }) }); const r = await j.json(); if (!r.ok) { toast('更新失败：' + (r.error || ''), 'warn'); return; } }
-      else { const j = await fetch('/api/insert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: c.table, fields }) }); const r = await j.json(); if (!r.ok) { toast('新增失败：' + (r.error || ''), 'warn'); return; } }
+      else { const f2 = Object.assign({}, fields); if (c.scope === 'weekly') f2.grp = '周级'; const j = await fetch('/api/insert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: c.table, fields: f2 }) }); const r = await j.json(); if (!r.ok) { toast('新增失败：' + (r.error || ''), 'warn'); return; } }
       await loadData();
     } else if (c.store === 'local') {
       const arr = JSON.parse(localStorage.getItem(c.localKey) || '[]');
@@ -647,7 +650,7 @@ async function mgmtUpsert(kind, id, fields) {
       else { fields.id = 'custom_' + Date.now(); arr.push(fields); }
       saveDailies(arr);
     } else { toast('该模块暂不支持保存', 'warn'); return; }
-    toast('已保存 ✓', 'good'); closeRealm(); renderMain(kind);
+    toast('已保存 ✓', 'good'); closeRealm(); renderMain(c.render || kind);
   } catch (e) { toast('保存失败：' + e.message, 'warn'); }
 }
 async function mgmtDel(kind, id) {
@@ -661,7 +664,7 @@ async function mgmtDel(kind, id) {
     else if (c.store === 'heart') { delHeartCustom(Number(String(id).replace('c_', ''))); return; }
     else if (c.store === 'dailies') { const arr = dailies().slice(); const idx = arr.findIndex(x => x.id === id); if (idx >= 0) arr.splice(idx, 1); saveDailies(arr); }
     else { toast('该模块不可删除', 'warn'); return; }
-    toast('已删除', 'good'); closeRealm(); renderMain(kind);
+    toast('已删除', 'good'); closeRealm(); renderMain(c.render || kind);
   } catch (e) { toast('删除失败：' + e.message, 'warn'); }
 }
 
@@ -1091,7 +1094,7 @@ function weeklyTasksHtml() {
       reward +
     '</label>';
   }).join('');
-  return '<div class="section-title" style="margin-top:18px">📋 本周任务栏（勾选写回任务板）</div>' +
+  return '<div class="section-title mgmt-block-title" style="margin-top:18px;display:flex;align-items:center;justify-content:space-between">📋 本周任务栏（勾选写回任务板）<button class="btn sm" onclick="mgmtPanel(\'weeklyTasks\')">🛠 管理</button></div>' +
     '<div class="dungeon-tasks">' + rows + '</div>' +
     '<div class="meta" style="margin-top:6px">勾选完成写回主站任务板；任务配置的奖励愿力于本周首次完成时发放（每周每任务仅一次），并自动为命中 NPC 加好感。</div>';
 }
