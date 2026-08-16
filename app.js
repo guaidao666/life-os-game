@@ -506,6 +506,8 @@ const MGMT = {
     fields:[{k:'name',label:'名字',type:'text'},{k:'type',label:'类型',type:'select',opts:['家人','恋慕','朋友']},{k:'region',label:'所属州',type:'text'},{k:'desc',label:'人设',type:'text'},{k:'x',label:'地图X',type:'number'},{k:'y',label:'地图Y',type:'number'}] },
   dungeon: { store:'api', table:'taskboard', dataKey:'taskboard', nameF:d=>d.text||('任务'+d.id),
     fields:[{k:'grp',label:'分组',type:'text'},{k:'text',label:'内容',type:'text'},{k:'points',label:'愿力',type:'number'},{k:'depth',label:'层级',type:'number'}] },
+  dungeonTasks: { store:'dailies', nameF:d=>d.name||('任务'+d.id),
+    fields:[{k:'name',label:'名称(可带emoji)',type:'text'},{k:'desc',label:'描述',type:'text'},{k:'realm',label:'对应境界key',type:'text'},{k:'wp',label:'完成愿力奖励',type:'number'},{k:'focus',label:'进入五大要事(1/0)',type:'number'},{k:'wpEarly',label:'[睡眠]早睡愿力',type:'number'},{k:'wpOntime',label:'[睡眠]按时愿力',type:'number'}] },
   cook:    { store:'api', table:'recipes', dataKey:'food', dataSub:'recipes', nameF:d=>d.name||('菜谱'+d.id),
     fields:[{k:'name',label:'菜名',type:'text'},{k:'category',label:'分类',type:'text'},{k:'difficulty',label:'难度',type:'number'},{k:'cost',label:'成本',type:'text'},{k:'time',label:'时长(分)',type:'number'},{k:'ingredients',label:'食材(JSON)',type:'text'},{k:'steps',label:'步骤',type:'textarea'}] },
   fun:     { store:'local', localKey:'game_fun_log', nameF:d=>d.title||d.name||('记录'+d.id),
@@ -540,26 +542,32 @@ function mgmtList(kind) {
   if (c.store === 'econ') { return econLoad().map((x, i) => Object.assign({ id: String(i) }, x)); }
   if (c.store === 'player') { const p = player(); if (c.isObj) { const o = p[c.playerField] || {}; return Object.keys(o).map(k => Object.assign({ id: k, name: k }, o[k])); } return (p[c.playerField] || []).slice(); }
   if (c.store === 'heart') { return heartCustom().slice(); }
+  if (c.store === 'dailies') { return dailies().slice(); }
   return [];
 }
 function modName(id) { const m = MODULES.find(x => x.id === id); return m ? m.name : id; }
-function mgmtPanel(kind) {
+function mgmtPanel(kind, scope) {
   const c = MGMT[kind]; if (!c) return;
   let body;
   if (c.store === 'readonly') body = '<div class="meta">' + esc(c.note || '该模块为只读，不可在本页增删。') + '</div>';
   else {
     const items = mgmtList(kind);
-    const rows = items.length ? items.map(it => {
+    let list = items;
+    if (scope === 'focus') list = items.filter(x => Number(x.focus) > 0);
+    else if (scope === 'rest') list = items.filter(x => !x.focus || Number(x.focus) === 0);
+    const rows = list.length ? list.map(it => {
       const nm = c.nameF ? c.nameF(it) : (it.name || it.id || '');
       const idv = (it.id != null) ? it.id : (it.date || '');
       return '<div class="mgmt-row"><span class="mgmt-name">' + esc(String(nm)) + '</span>' +
         '<span class="mgmt-acts"><button class="btn sm" onclick="mgmtModal(\'' + kind + '\',\'' + encodeURIComponent(idv) + '\')">✏️</button>' +
         '<button class="btn sm danger" onclick="mgmtDel(\'' + kind + '\',\'' + encodeURIComponent(idv) + '\')">🗑️</button></span></div>';
     }).join('') : '<div class="game-empty">暂无数据</div>';
-    body = rows + '<button class="btn primary" style="margin-top:8px" onclick="mgmtModal(\'' + kind + '\',\'\')">＋ 新增</button>';
+    const addHint = scope === 'focus' ? '（新增默认进入要事）' : scope === 'rest' ? '（新增默认不进要事）' : '';
+    body = rows + '<button class="btn primary" style="margin-top:8px" onclick="mgmtModal(\'' + kind + '\',\'\')">＋ 新增' + addHint + '</button>';
   }
+  const scopeLabel = scope === 'focus' ? '（今日五大要事）' : scope === 'rest' ? '（其余日常副本）' : '';
   const box = document.createElement('div'); box.className = 'realm-modal';
-  box.innerHTML = '<div class="realm-modal-box"><h3>🛠 管理 · ' + esc(modName(kind)) + '</h3><div class="mgmt-list">' + body + '</div>' +
+  box.innerHTML = '<div class="realm-modal-box"><h3>🛠 管理 · ' + esc(modName(kind)) + scopeLabel + '</h3><div class="mgmt-list">' + body + '</div>' +
     '<button class="realm-cult-btn" style="margin-top:10px;background:var(--panel2);color:var(--text)" onclick="closeRealm()">关闭</button></div>';
   box.onclick = e => { if (e.target === box) box.remove(); };
   document.body.appendChild(box);
@@ -624,6 +632,11 @@ async function mgmtUpsert(kind, id, fields) {
     } else if (c.store === 'heart') {
       if (id !== '') { const cid = Number(String(id).replace('c_', '')); const arr = heartCustom(); const idx = arr.findIndex(x => x.id === cid); if (idx >= 0) { arr[idx] = Object.assign({}, arr[idx], { name: fields.name || arr[idx].name, effect: fields.effect || arr[idx].effect, desc: fields.desc || arr[idx].desc }); try { localStorage.setItem('lifeos_heartCustom', JSON.stringify(arr)); } catch (e) {} } }
       else { if (!fields.name) { toast('需填心法名', 'warn'); return; } const arr = heartCustom(); arr.push({ id: Date.now(), name: fields.name, effect: fields.effect || '', desc: fields.desc || '', buff: {} }); try { localStorage.setItem('lifeos_heartCustom', JSON.stringify(arr)); } catch (e) {} }
+    } else if (c.store === 'dailies') {
+      const arr = dailies().slice();
+      if (id !== '') { const idx = arr.findIndex(x => x.id === id); if (idx >= 0) arr[idx] = Object.assign({}, arr[idx], fields); else { fields.id = id; arr.push(fields); } }
+      else { fields.id = 'custom_' + Date.now(); arr.push(fields); }
+      saveDailies(arr);
     } else { toast('该模块暂不支持保存', 'warn'); return; }
     toast('已保存 ✓', 'good'); closeRealm(); renderMain(kind);
   } catch (e) { toast('保存失败：' + e.message, 'warn'); }
@@ -637,6 +650,7 @@ async function mgmtDel(kind, id) {
     else if (c.store === 'econ') { const arr = econLoad(); const idx = arr.findIndex((x, i) => String(i) === id); if (idx >= 0) arr.splice(idx, 1); econSave(arr); }
     else if (c.store === 'player') { const p = player(); let cur = p[c.playerField]; if (c.isObj) { cur = Object.assign({}, cur || {}); delete cur[id]; } else { cur = (cur || []).filter(x => (x.id != null ? String(x.id) : '') !== id); } if (c.playerField === 'inventory') { const j = await fetch('/api/inventory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set', inventory: cur }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } if (r.inventory) DATA.player.inventory = r.inventory; } else { const obj = {}; obj[c.playerField] = cur; const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: obj }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } await loadData(); } }
     else if (c.store === 'heart') { delHeartCustom(Number(String(id).replace('c_', ''))); return; }
+    else if (c.store === 'dailies') { const arr = dailies().slice(); const idx = arr.findIndex(x => x.id === id); if (idx >= 0) arr.splice(idx, 1); saveDailies(arr); }
     else { toast('该模块不可删除', 'warn'); return; }
     toast('已删除', 'good'); closeRealm(); renderMain(kind);
   } catch (e) { toast('删除失败：' + e.message, 'warn'); }
@@ -668,16 +682,25 @@ function renderMain(id) {
     case 'trial':     html = renderTrial(); break;
     default: html = renderPlaceholder(mod.name, '该模块数据接口将在二期接入，本期仅占位。');
   }
-  main.innerHTML = mgmtBtnHtml(id) + html;
+  main.innerHTML = (id === 'dungeon' ? '' : mgmtBtnHtml(id)) + html;
 }
 
-const DASH_TOP5 = [
-  { icon: '📚', name: '经济师学习', mod: 'economist', done: () => dungeonDone('econ'), hint: '备考 · 万卷书+1' },
-  { icon: '📝', name: '写日记', mod: 'dungeon', done: () => dungeonDone('diary'), hint: '岁笺录+1' },
-  { icon: '⚖️', name: '称体重', mod: 'weight', done: () => weightLoad().some(x => x.date === todayKey()), hint: '体魄录+1 · 愿力+1' },
-  { icon: '🍳', name: '烟火做饭', mod: 'cook', done: () => dungeonDone('cook'), hint: '灶神录+经验' },
-  { icon: '🌙', name: '早睡', mod: 'sleep', done: () => sleepLoad().some(x => x.date === todayKey()), hint: '休养 · 愿力+2' },
-];
+function dungeonNavMod(id) {
+  if (id === 'econ') return 'economist';
+  if (id === 'weight') return 'weight';
+  if (id === 'cook') return 'cook';
+  if (id === 'sleep') return 'sleep';
+  return 'dungeon';
+}
+function dashTop5() {
+  return dailies().filter(d => d.focus).map(d => ({
+    icon: leadEmoji(d.name),
+    name: d.name,
+    mod: dungeonNavMod(d.id),
+    done: () => dungeonDoneCheck(d.id),
+    hint: (d.realm ? d.realm + ' +1' : '日常') + (d.wp ? ' · 愿力+' + d.wp : '')
+  }));
+}
 function renderDashboard() {
   const p = player();
   const recipes = food().recipes || [];
@@ -686,7 +709,7 @@ function renderDashboard() {
   const bag = inv().filter(i => i.location === 'bag').length;
   const wh = inv().filter(i => i.location === 'warehouse').length;
   const hero = `<div class="hero"><h1>欢迎回来，凯</h1><p>今日修行概览 · 愿力 <span class="c-wp">${num(p.willpower, 0)}</span> · ${ds.length} 道魔障待镇压</p></div>`;
-  const top5 = DASH_TOP5.map(t => {
+  const top5 = dashTop5().map(t => {
     const done = t.done();
     return `<div class="top5-item${done ? ' done' : ''}" onclick="go('${t.mod}')">
       <span class="top5-ic">${t.icon}</span>
@@ -929,48 +952,77 @@ async function condenseDestiny() {
 }
 
 /* ---------- 每日秘境（每日副本，完成削减心魔 HP） ---------- */
-const DAILY_DUNGEONS = [
-  { id: 'exercise',  name: '🏃 运动打卡', desc: '运动 ≥ 30 分钟', realm: '炼体法' },
-  { id: 'baduanjin', name: '🧘 八段锦', desc: '习练八段锦一遍', realm: '炼体法' },
-  { id: 'wuqinxi',   name: '🐯 五禽戏', desc: '习练五禽戏一遍', realm: '炼体法' },
-  { id: 'read',      name: '📚 读书', desc: '静心阅读 ≥ 30 分钟', realm: '万卷书' },
-  { id: 'finance',   name: '💰 记账', desc: '记录今日收支', realm: null },
-  { id: 'cook',      name: '🍳 烟火', desc: '亲自做一顿饭', realm: null },
-  { id: 'diary',     name: '📝 日记', desc: '写今日日记', realm: '岁笺录' },
-  { id: 'gooddeed',  name: '🤲 日行一善', desc: '行一件善事（捐步 / 助人）', realm: '功德法' },
-  { id: 'xinjing',   name: '🌿 心境觉察', desc: '内省今日一种面向（乐观 / 内向 / 理性 / 感性 / 外向）', realm: '千面法' },
-  { id: 'econ',      name: '📖 经济师学习', desc: '备考中级经济师', realm: null },
-  { id: 'chat_zhaoxi', name: '💬 昭夕聊天', desc: '和昭夕聊会天（陪伴修行）', realm: null },
-  { id: 'dinner_cucumber', name: '🥒 晚餐自律', desc: '晚餐不吃饭 / 只吃黄瓜', realm: null }
+/* ===== 每日秘境任务（数据化：localStorage 持久化，可经「管理」增删改 + 配愿力奖励） ===== */
+const DEFAULT_DAILIES = [
+  { id:'econ',      name:'📖 经济师学习', desc:'备考中级经济师',             realm:'万卷书', wp:1, focus:1 },
+  { id:'diary',     name:'📝 写日记',     desc:'写今日日记',                 realm:'岁笺录', wp:1, focus:1 },
+  { id:'weight',    name:'⚖️ 称体重',     desc:'测量并记录体重',             realm:'体魄录', wp:1, focus:1 },
+  { id:'cook',      name:'🍳 烟火做饭',   desc:'亲自做一顿饭',               realm:null,     wp:1, focus:1 },
+  { id:'sleep',     name:'🌙 早睡',       desc:'23:00 前就寝（记昨晚的觉）',  realm:null,     wp:2, focus:1, wpEarly:2, wpOntime:1 },
+  { id:'exercise',  name:'🏃 运动打卡',   desc:'运动 ≥ 30 分钟',             realm:'炼体法', wp:1, focus:0 },
+  { id:'baduanjin', name:'🧘 八段锦',     desc:'习练八段锦一遍',             realm:'炼体法', wp:1, focus:0 },
+  { id:'wuqinxi',   name:'🐯 五禽戏',     desc:'习练五禽戏一遍',             realm:'炼体法', wp:1, focus:0 },
+  { id:'read',      name:'📚 读书',       desc:'静心阅读 ≥ 30 分钟',         realm:'万卷书', wp:1, focus:0 },
+  { id:'finance',   name:'💰 记账',       desc:'记录今日收支',               realm:null,     wp:1, focus:0 },
+  { id:'gooddeed',  name:'🤲 日行一善',   desc:'行一件善事（捐步 / 助人）',  realm:'功德法', wp:1, focus:0 },
+  { id:'xinjing',   name:'🌿 心境觉察',   desc:'内省今日一种面向',           realm:'千面法', wp:1, focus:0 },
+  { id:'chat_zhaoxi', name:'💬 昭夕聊天', desc:'和昭夕聊会天（陪伴修行）',   realm:null,     wp:1, focus:0 },
+  { id:'dinner_cucumber', name:'🥒 晚餐自律', desc:'晚餐不吃饭 / 只吃黄瓜',  realm:null,     wp:1, focus:0 }
 ];
+const DAILY_KEY = 'game_dailies';
+function dailies() {
+  try {
+    const raw = localStorage.getItem(DAILY_KEY);
+    if (raw) { const a = JSON.parse(raw); if (Array.isArray(a) && a.length) return a; }
+  } catch (e) {}
+  const seed = DEFAULT_DAILIES.map(d => Object.assign({}, d));
+  try { localStorage.setItem(DAILY_KEY, JSON.stringify(seed)); } catch (e) {}
+  return seed;
+}
+function saveDailies(a) { try { localStorage.setItem(DAILY_KEY, JSON.stringify(a)); } catch (e) {} }
+function dungeonDef(id) { return dailies().find(d => d.id === id); }
+function leadEmoji(s) { const m = /^[\s]*([\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{2700}-\u{27BF}])/u.exec(s || ''); return m ? m[1] : '•'; }
+function wpBadge(wp) { wp = Number(wp) || 0; return wp > 0 ? '<span class="dc-reward">+' + wp + '愿</span>' : ''; }
+function dungeonMod(id) { return id === 'weight' ? 'weight' : (id === 'sleep' ? 'sleep' : 'dungeon'); }
+function dungeonDoneCheck(id) {
+  if (id === 'weight') return weightLoad().some(x => x.date === todayKey());
+  if (id === 'sleep') return sleepLoad().some(x => x.date === yesterdayKey());
+  return dungeonDone(id);
+}
+/* 每日秘境任务完成发放愿力：每任务每日仅发一次（按日期记旗，防重复勾选/刷）。 */
+function dwpFlag(id, day) { return 'game_dwp_' + day + '_' + id; }
+async function grantDungeonWp(id, day, amount) {
+  const def = dungeonDef(id); if (!def) return;
+  if (amount == null) amount = Number(def.wp) || 0;
+  if (!amount) return;
+  const f = dwpFlag(id, day);
+  try { if (localStorage.getItem(f) === '1') return; } catch (e) {}
+  try {
+    await grantWP(amount, '每日秘境', def.name || id);
+    try { localStorage.setItem(f, '1'); } catch (e) {}
+  } catch (e) {}
+}
 function todayKey() { return new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }).replace(/\//g, '-'); }
 function yesterdayKey() { const d = new Date(); d.setDate(d.getDate() - 1); const p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
 function dungeonFlag(id) { return 'game_dungeon_' + todayKey() + '_' + id; }
 function dungeonDone(id) { try { return localStorage.getItem(dungeonFlag(id)) === '1'; } catch (e) { return false; } }
-function xinmoHpFromDungeons() { const done = DAILY_DUNGEONS.filter(d => dungeonDone(d.id)).length; return Math.max(0, 100 - Math.round(done / DAILY_DUNGEONS.length * 100)); }
+function xinmoHpFromDungeons() { const all = dailies(); const done = all.filter(d => dungeonDone(d.id)).length; return Math.max(0, 100 - Math.round(done / all.length * 100)); }
 function renderDungeon() {
-  const top5 = [
-    { id: 'econ',   name: '📖 经济师学习', realm: null },
-    { id: 'diary',  name: '📝 写日记',     realm: '岁笺录' },
-    { id: 'weight', name: '⚖️ 称体重',     realm: '体魄录' },
-    { id: 'cook',   name: '🍳 烟火做饭',   realm: null },
-    { id: 'sleep',  name: '🌙 早睡',       realm: null }
-  ];
-  const topCards = top5.map(d => {
-    const ok = d.id === 'weight' ? weightLoad().some(x => x.date === todayKey())
-              : d.id === 'sleep' ? sleepLoad().some(x => x.date === todayKey())
-              : dungeonDone(d.id);
+  const all = dailies();
+  const top = all.filter(d => d.focus);
+  const rest = all.filter(d => !d.focus);
+  const topCards = top.map(d => {
+    const ok = dungeonDoneCheck(d.id);
     const flag = ok ? '✅ 已完成' : (d.realm ? d.realm + ' +1' : '点击完成');
     return `<div class="dc-top5-card${ok ? ' cleared' : ''}" onclick="top5Click('${d.id}')">
-      <div class="dc-top5-ic">${ok ? '✅' : esc(d.name.slice(0, 2))}</div>
+      <div class="dc-top5-ic">${ok ? '✅' : esc(leadEmoji(d.name))}</div>
       <div class="dc-top5-name">${esc(d.name)}</div>
-      <div class="dc-top5-flag">${esc(flag)}</div>
+      <div class="dc-top5-flag">${esc(flag)}${wpBadge(d.wp)}</div>
     </div>`;
   }).join('');
-  const restIds = ['exercise', 'baduanjin', 'wuqinxi', 'read', 'finance', 'gooddeed', 'xinjing', 'chat_zhaoxi', 'dinner_cucumber'];
-  const restRows = DAILY_DUNGEONS.filter(d => restIds.includes(d.id)).map(d => {
+  const restRows = rest.map(d => {
     const ok = dungeonDone(d.id);
-    const badge = d.realm ? `<span class="dc-reward realm">${esc(d.realm)} +1</span>` : `<span class="dc-reward">日常 +1</span>`;
+    const badge = (d.realm ? `<span class="dc-reward realm">${esc(d.realm)} +1</span>` : '') + wpBadge(d.wp);
     return `<label class="task-row dc-rest-row${ok ? ' done' : ''}">
       <input type="checkbox" ${ok ? 'checked' : ''} onchange="if(this.checked)clearDungeon('${d.id}');else setDungeonOff('${d.id}')">
       <span class="task-text${ok ? ' done' : ''}">${esc(d.name)}</span>
@@ -978,18 +1030,18 @@ function renderDungeon() {
       ${badge}
     </label>`;
   }).join('');
-  const done = DAILY_DUNGEONS.filter(d => dungeonDone(d.id)).length;
-  const total = DAILY_DUNGEONS.length;
+  const done = all.filter(d => dungeonDone(d.id)).length;
+  const total = all.length;
   const hp = xinmoHpFromDungeons();
   return `<div class="section-title">🗺️ 每日秘境 · ${done}/${total}</div>
   <div class="demon-avatars-title">心魔·拖延 HP（每完成一个副本削减 ${Math.round(100 / total)}）</div>
   <div class="bar" style="height:14px"><i style="width:${hp}%;${hp <= 0 ? 'background:#6fcf97' : ''}"></i></div>
   <div class="meta" style="margin:6px 0 14px">当前 HP ${hp}/100${hp <= 0 ? ' · 🎉 心魔已被击破！' : ''}</div>
-  <div class="section-title" style="font-size:15px">🔥 今日五大要事</div>
+  <div class="section-title" style="font-size:15px;display:flex;align-items:center;gap:10px">🔥 今日五大要事<span style="margin-left:auto"><button class="btn sm" onclick="mgmtPanel('dungeonTasks','focus')">🛠 管理</button></span></div>
   <div class="dc-top5">${topCards}</div>
-  <div class="section-title" style="margin-top:16px">📋 其余日常副本</div>
+  <div class="section-title" style="margin-top:16px;display:flex;align-items:center;gap:10px">📋 其余日常副本<span style="margin-left:auto"><button class="btn sm" onclick="mgmtPanel('dungeonTasks','rest')">🛠 管理</button></span></div>
   <div class="dungeon-tasks">${restRows}</div>
-  <div class="meta" style="margin-top:6px">带「境界 +1」的副本完成为对应境界记经验；完成全部 ${total} 个副本击破心魔，额外愿力 +${5 + Math.min(20, realmBuffSum('taskBonus'))}（每日限一次）。</div>`;
+  <div class="meta" style="margin-top:6px">带「境界 +1」的副本完成为对应境界记经验；完成全部 ${total} 个副本击破心魔，额外愿力 +${5 + Math.min(20, realmBuffSum('taskBonus'))}（每日限一次）。打勾完成的副本按配置发放对应愿力（每日每任务仅一次）。</div>`;
 }
 async function top5Click(id) {
   if (id === 'weight') { go('weight'); return; }
@@ -1050,10 +1102,11 @@ async function clearDungeon(id) {
   try { localStorage.setItem(dungeonFlag(id), '1'); } catch (e) {}
   const xm = (demons() || []).find(d => d.key === 'xinmo');
   if (xm) xm.hp = xinmoHpFromDungeons();
-  const def = DAILY_DUNGEONS.find(d => d.id === id);
+  const def = dailies().find(d => d.id === id);
   if (def && def.realm) await grantRealmXp(def.realm, 1, { oncePerDay: true });
-  const done = DAILY_DUNGEONS.filter(d => dungeonDone(d.id)).length;
-  if (done === DAILY_DUNGEONS.length) {
+  await grantDungeonWp(id, todayKey());
+  const done = dailies().filter(d => dungeonDone(d.id)).length;
+  if (done === dailies().length) {
     const f = 'game_defeated_' + todayKey();
     if (!localStorage.getItem(f)) {
       localStorage.setItem(f, '1');
@@ -1067,7 +1120,7 @@ async function clearDungeon(id) {
       } catch (e) { toast('击破记录失败：' + e.message, 'warn'); }
     } else { toast('心魔已击破（今日已领取）', 'good'); }
   } else {
-    toast('副本完成，心魔 HP -' + Math.round(100 / DAILY_DUNGEONS.length), 'good');
+    toast('副本完成，心魔 HP -' + Math.round(100 / dailies().length), 'good');
   }
   renderMain('dungeon');
 }
@@ -1186,8 +1239,9 @@ async function saveWeight() {
   } catch (e) { toast('体重保存失败：' + e.message, 'warn'); return; }
   if (isNew) {
     await grantRealmXp('体魄录', 1, { oncePerDay: true });
-    try { await grantWP(1, '体魄录', '称体重'); } catch (e) {}
-    toast('⚖️ 已记录 ' + v.toFixed(1) + ' kg（体魄录参悟 +1 · 愿力 +1）', 'good');
+    const wamt = Number((dungeonDef('weight') || {}).wp) || 1;
+    await grantDungeonWp('weight', t);
+    toast('⚖️ 已记录 ' + v.toFixed(1) + ' kg（体魄录参悟 +1 · 愿力 +' + wamt + '）', 'good');
   } else {
     toast('⚖️ 已更新体重 ' + v.toFixed(1) + ' kg', 'good');
   }
@@ -1249,8 +1303,11 @@ async function saveSleep() {
   sleepSave(log);
   let msg = '';
   if (isNew) {
-    if (tier === 'early') { try { await grantWP(2, '休养', '早睡'); } catch (e) {} msg = '🌙 早睡打卡 +2 愿力 · 休养 +1'; }
-    else if (tier === 'ontime') { try { await grantWP(1, '休养', '按时睡'); } catch (e) {} msg = '🌙 按时就寝 +1 愿力'; }
+    const sd = dungeonDef('sleep') || {};
+    const wamt = tier === 'early' ? (Number(sd.wpEarly) || 2) : tier === 'ontime' ? (Number(sd.wpOntime) || 1) : 0;
+    if (wamt) await grantDungeonWp('sleep', date, wamt);
+    if (tier === 'early') msg = '🌙 早睡打卡 +' + wamt + ' 愿力 · 休养 +1';
+    else if (tier === 'ontime') msg = '🌙 按时就寝 +' + wamt + ' 愿力';
     else { msg = '🌙 熬夜了… 0 愿力，早点休息护身体 💤'; }
     toast(msg, tier === 'late' ? 'warn' : 'good');
   } else {
@@ -1268,8 +1325,9 @@ async function cancelSleep() {
   if (!confirm('取消 ' + date + ' 的睡眠记录？将扣回对应愿力点（' + (rec.tier === 'early' ? '-2' : rec.tier === 'ontime' ? '-1' : '0') + '）')) return;
   log.splice(idx, 1);
   sleepSave(log);
-  if (rec.tier === 'early') { try { await grantWP(-2, '休养', '取消早睡'); } catch (e) {} }
-  else if (rec.tier === 'ontime') { try { await grantWP(-1, '休养', '取消按时睡'); } catch (e) {} }
+  const sd = dungeonDef('sleep') || {};
+  const wamt = rec.tier === 'early' ? (Number(sd.wpEarly) || 2) : rec.tier === 'ontime' ? (Number(sd.wpOntime) || 1) : 0;
+  if (wamt) { try { await grantWP(-wamt, '休养', '取消早睡'); } catch (e) {} try { localStorage.removeItem(dwpFlag('sleep', date)); } catch (e) {} }
   toast('已取消 ' + date + ' 记录，愿力已回退', 'good');
   renderMain('sleep');
 }
@@ -1699,7 +1757,7 @@ function skillAchievePopup(name, lv) {
 
 function renderRealm() {
   const totalLayer = realmTotalLayers();
-  const doneCount = DAILY_DUNGEONS.filter(d => dungeonDone(d.id)).length;
+  const doneCount = dailies().filter(d => dungeonDone(d.id)).length;
   const tb = realmBuffSum('taskBonus'), xr = realmBuffSum('xinmoResist'), mr = realmBuffSum('meimoResist');
   const cards = Object.keys(REALM_DEFS).map(k => {
     const def = REALM_DEFS[k];
@@ -1716,7 +1774,7 @@ function renderRealm() {
     </div>`;
   }).join('');
   return `<div class="section-title">🌟 境界参悟 <span class="game-tag">经验制 · 圆满轮回永续</span></div>
-    <div class="realm-total">累计参悟层数 <b>${totalLayer}</b>　·　今日已通秘境 <b>${doneCount}/${DAILY_DUNGEONS.length}</b></div>
+    <div class="realm-total">累计参悟层数 <b>${totalLayer}</b>　·　今日已通秘境 <b>${doneCount}/${dailies().length}</b></div>
     <div class="realm-buffs">当前修行 Buff：副本愿力 +${tb}%　·　心魔抵抗 +${xr}%　·　魅魔抵抗 +${mr}%</div>
     <div class="cards">${cards}</div>
     <div class="meta" style="margin-top:12px">每日完成对应副本 / 活动即记经验（每层 7 点）。满 9 层 = 一次圆满，进入轮回继续攀升，永久光环 +1，永无止境。点击卡片看详情。</div>`;
