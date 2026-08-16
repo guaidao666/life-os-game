@@ -107,6 +107,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .bi-btn.danger:hover{background:#fbeae8}
 /* 命愿祈铺 · 化命台 */
 .fate-convert{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:22px;max-width:520px;box-shadow:var(--shadow)}
+.fate-convert + .fate-convert{margin-top:18px}
 .fc-title{font-size:18px;font-weight:800;color:var(--text)}
 .fc-sub{font-size:12px;font-weight:500;color:var(--muted);margin-left:6px}
 .fc-row{font-size:14px;color:var(--muted);margin:10px 0 14px}

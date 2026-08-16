@@ -858,23 +858,58 @@ async function shopBuy(id) {
 }
 function renderAltar() {
   const p = player();
-  const lp = num(p.lucky, 0), dp = num(p.destiny, 0);
-  const can = Math.floor(lp / 10);
-  const enough = lp >= 10;
+  const wp = num(p.willpower, 0), lp = num(p.lucky, 0), dp = num(p.destiny, 0);
+  // 第一层：WP → LP（100 愿力点 = 1 幸运点）
+  const lpGain = Math.floor(wp / 100);
+  const wpEnough = wp >= 100;
+  // 第二层：LP → DP（10 幸运点 = 1 天命点）
+  const dpGain = Math.floor(lp / 10);
+  const lpEnough = lp >= 10;
   return `<div class="section-title">🔮 命愿祈铺 · 化命台</div>
   <div class="fate-convert">
-    <div class="fc-title">🔥 化命台 <span class="fc-sub">唯一货币升级渠道 · 不可逆</span></div>
+    <div class="fc-title">🔥 化命台 · 一层 <span class="fc-sub">愿力凝幸运 · 不可逆</span></div>
+    <div class="fc-row">100 愿力点(WP) → 1 幸运点(LP)</div>
+    <div class="fc-balance">
+      <span class="sb">🔆 <b>${wp}</b> WP</span>
+      <span class="sb">🍀 <b>${lp}</b> LP</span>
+    </div>
+    <div class="fc-preview">本次可凝结：<b>+${lpGain} LP</b>（凝结后剩余 ${wp - lpGain * 100} WP）</div>
+    <button class="fc-btn${wpEnough ? '' : ' disabled'}" ${wpEnough ? '' : 'disabled'} onclick="condenseLucky()">凝结（${lpGain * 100} WP → ${lpGain} LP）</button>
+    <div class="fc-note">化命台将愿力点凝结为幸运点，此过程<b>不可逆</b>。请谨慎操作。</div>
+  </div>
+  <div class="fate-convert">
+    <div class="fc-title">🔥 化命台 · 二层 <span class="fc-sub">幸运凝天命 · 不可逆</span></div>
     <div class="fc-row">10 幸运点(LP) → 1 天命点(DP)</div>
     <div class="fc-balance">
       <span class="sb">🍀 <b>${lp}</b> LP</span>
       <span class="sb">👑 <b>${dp}</b> DP</span>
     </div>
-    <div class="fc-preview">本次可凝结：<b>+${can} DP</b>（凝结后剩余 ${lp - can * 10} LP）</div>
-    <button class="fc-btn${enough ? '' : ' disabled'}" ${enough ? '' : 'disabled'} onclick="condenseFate()">凝结（${can} LP → ${can} DP）</button>
+    <div class="fc-preview">本次可凝结：<b>+${dpGain} DP</b>（凝结后剩余 ${lp - dpGain * 10} LP）</div>
+    <button class="fc-btn${lpEnough ? '' : ' disabled'}" ${lpEnough ? '' : 'disabled'} onclick="condenseDestiny()">凝结（${dpGain * 10} LP → ${dpGain} DP）</button>
     <div class="fc-note">化命台将幸运点凝结为天命点，此过程<b>不可逆</b>。请谨慎操作。</div>
   </div>` + renderWpLedgerHtml() + renderShopItems();
 }
-async function condenseFate() {
+// 一层：愿力(WP) → 幸运(LP)
+async function condenseLucky() {
+  const p = player();
+  const wp = num(p.willpower, 0), lp = num(p.lucky, 0);
+  if (wp < 100) { toast('愿力点不足 100，无法凝结', 'warn'); return; }
+  const gain = Math.floor(wp / 100);
+  showConfirm('⚠ 化命台凝结确认', '将把 ' + (gain * 100) + ' 愿力点凝结为 ' + gain + ' 幸运点。\n此过程不可逆，确定凝结？', function () {
+    showConfirm('⚠ 仍要凝结？', '再次确认：消耗 ' + (gain * 100) + ' WP，获得 ' + gain + ' LP。\n（凝结后剩余 ' + (wp - gain * 100) + ' WP，' + (lp + gain) + ' LP）', async function () {
+      try {
+        const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ willpower: wp - gain * 100, lucky: lp + gain }) });
+        const r = await j.json();
+        if (!r.ok) { toast('凝结失败：' + (r.error || ''), 'warn'); return; }
+        DATA.player.willpower = r.player.willpower; DATA.player.lucky = r.player.lucky;
+        renderResbar(); renderAltar();
+        toast('🔥 凝结成功：+' + gain + ' LP', 'good');
+      } catch (e) { toast('凝结失败：' + e.message, 'warn'); }
+    }, '仍要凝结');
+  }, '凝结');
+}
+// 二层：幸运(LP) → 天命(DP)
+async function condenseDestiny() {
   const p = player();
   const lp = num(p.lucky, 0), dp = num(p.destiny, 0);
   if (lp < 10) { toast('幸运点不足 10，无法凝结', 'warn'); return; }
