@@ -999,8 +999,21 @@ async function grantDungeonWp(id, day, amount) {
   try { if (localStorage.getItem(f) === '1') return; } catch (e) {}
   try {
     await grantWP(amount, '每日秘境', def.name || id);
-    try { localStorage.setItem(f, '1'); } catch (e) {}
+    try { localStorage.setItem(f, String(amount)); } catch (e) {}
   } catch (e) {}
+}
+async function revokeDungeonWp(id, day) {
+  const f = dwpFlag(id, day);
+  let amt = 0;
+  try {
+    const v = localStorage.getItem(f);
+    if (v) { amt = Number(v) || 0; localStorage.removeItem(f); }
+  } catch (e) {}
+  if (amt > 0) {
+    const def = dungeonDef(id);
+    try { await grantWP(-amt, '每日秘境·取消', def ? def.name : id); } catch (e) {}
+  }
+  return amt;
 }
 function todayKey() { return new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }).replace(/\//g, '-'); }
 function yesterdayKey() { const d = new Date(); d.setDate(d.getDate() - 1); const p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
@@ -1046,9 +1059,14 @@ function renderDungeon() {
 async function top5Click(id) {
   if (id === 'weight') { go('weight'); return; }
   if (id === 'sleep') { go('sleep'); return; }
-  if (dungeonDone(id)) setDungeonOff(id); else await clearDungeon(id);
+  if (dungeonDone(id)) await setDungeonOff(id); else await clearDungeon(id);
 }
-function setDungeonOff(id) { try { localStorage.setItem(dungeonFlag(id), '0'); } catch (e) {} renderMain('dungeon'); }
+async function setDungeonOff(id) {
+  try { localStorage.setItem(dungeonFlag(id), '0'); } catch (e) {}
+  const refunded = await revokeDungeonWp(id, todayKey());
+  if (refunded > 0) toast('↩️ 已取消完成，扣回 ' + refunded + ' 愿力', 'warn');
+  renderMain('dungeon');
+}
 /* 周天试炼下的「本周任务栏」：复用日级任务列表样式，每行右侧显示 +X愿 奖励标签。
    数据来自任务板「周级」分组；勾选写回主站任务板，配置奖励在每周首次完成时发放愿力（防刷）。 */
 function weeklyTasksHtml() {
