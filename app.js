@@ -21,7 +21,7 @@ const MODULES = [
   { id: 'map',       name: '地图',   icon: '🌐', group: '成长' },
   { id: 'economist', name: '中级经济师', icon: '📚', group: '备考' },
 ];
-const GROUPS = ['首页', '修行', '生活', '体魄', '成长', '备考'];
+const GROUPS = ['首页', '修行', '备考', '生活', '体魄', '成长'];
 const QUA = { 1: { label: '普通', star: 1 }, 2: { label: '美味', star: 2 }, 3: { label: '珍稀', star: 3 }, 4: { label: '完美', star: 4 } };
 const BAG_CAP = 40;        // 背包固定 40 格
 const WAREHOUSE_CAP = 60;  // 仓库默认 60 格（一期只读，扩容逻辑二期）
@@ -281,7 +281,7 @@ function renderEconomist() {
     '</div>' +
     '<div class="meta" style="margin-top:12px">进度存于本机浏览器（localStorage），不影响主站数据；换设备不互通。</div>';
 }
-function addEconLog() {
+async function addEconLog() {
   const date = (document.getElementById('econDate') || {}).value || todayCST();
   const subject = (document.getElementById('econSubject') || {}).value || '经济学基础';
   const min = Math.max(1, parseInt((document.getElementById('econMin') || {}).value) || 0);
@@ -289,7 +289,16 @@ function addEconLog() {
   const log = econLoad();
   log.unshift({ date, subjects: [subject], min });
   econSave(log.slice(0, 200));
-  toast('📚 已记录 ' + subject + ' ' + min + ' 分钟', 'good');
+  try {
+    await grantWP(min, '中级经济师备考', subject + ' ' + min + '分钟');
+    try {
+      const f = dwpFlag('econ', date);
+      const prev = Number(localStorage.getItem(f)) || 0;
+      localStorage.setItem(f, String(prev + min));
+      localStorage.setItem(dungeonFlag('econ'), '1');
+    } catch (e) {}
+  } catch (e) {}
+  toast('📚 已记录 ' + subject + ' ' + min + ' 分钟 · +' + min + ' 愿力', 'good');
   renderMain('economist');
 }
 
@@ -698,7 +707,7 @@ function dashTop5() {
     name: d.name,
     mod: dungeonNavMod(d.id),
     done: () => dungeonDoneCheck(d.id),
-    hint: (d.realm ? d.realm + ' +1' : '日常') + (d.wp ? ' · 愿力+' + d.wp : '')
+    hint: d.id === 'econ' ? '按分钟愿力' : (d.realm ? d.realm + ' +1' : '日常') + (d.wp ? ' · 愿力+' + d.wp : '')
   }));
 }
 function renderDashboard() {
@@ -982,7 +991,7 @@ function dailies() {
 function saveDailies(a) { try { localStorage.setItem(DAILY_KEY, JSON.stringify(a)); } catch (e) {} }
 function dungeonDef(id) { return dailies().find(d => d.id === id); }
 function leadEmoji(s) { const m = /^[\s]*([\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{2700}-\u{27BF}])/u.exec(s || ''); return m ? m[1] : '•'; }
-function wpBadge(wp) { wp = Number(wp) || 0; return wp > 0 ? '<span class="dc-reward">+' + wp + '愿</span>' : ''; }
+function wpBadge(id, wp) { wp = Number(wp) || 0; return id === 'econ' ? '<span class="dc-reward">按分钟</span>' : (wp > 0 ? '<span class="dc-reward">+' + wp + '愿</span>' : ''); }
 function dungeonMod(id) { return id === 'weight' ? 'weight' : (id === 'sleep' ? 'sleep' : 'dungeon'); }
 function dungeonDoneCheck(id) {
   if (id === 'weight') return weightLoad().some(x => x.date === todayKey());
@@ -1030,12 +1039,12 @@ function renderDungeon() {
     return `<div class="dc-top5-card${ok ? ' cleared' : ''}" onclick="top5Click('${d.id}')">
       <div class="dc-top5-ic">${ok ? '✅' : esc(leadEmoji(d.name))}</div>
       <div class="dc-top5-name">${esc(d.name)}</div>
-      <div class="dc-top5-flag">${esc(flag)}${wpBadge(d.wp)}</div>
+      <div class="dc-top5-flag">${esc(flag)}${wpBadge(d.id, d.wp)}</div>
     </div>`;
   }).join('');
   const restRows = rest.map(d => {
     const ok = dungeonDone(d.id);
-    const badge = (d.realm ? `<span class="dc-reward realm">${esc(d.realm)} +1</span>` : '') + wpBadge(d.wp);
+    const badge = (d.realm ? `<span class="dc-reward realm">${esc(d.realm)} +1</span>` : '') + wpBadge(d.id, d.wp);
     return `<label class="task-row dc-rest-row${ok ? ' done' : ''}">
       <input type="checkbox" ${ok ? 'checked' : ''} onchange="if(this.checked)clearDungeon('${d.id}');else setDungeonOff('${d.id}')">
       <span class="task-text${ok ? ' done' : ''}">${esc(d.name)}</span>
@@ -1059,6 +1068,7 @@ function renderDungeon() {
 async function top5Click(id) {
   if (id === 'weight') { go('weight'); return; }
   if (id === 'sleep') { go('sleep'); return; }
+  if (id === 'econ') { go('economist'); return; }
   if (dungeonDone(id)) await setDungeonOff(id); else await clearDungeon(id);
 }
 async function setDungeonOff(id) {
@@ -1117,6 +1127,7 @@ async function toggleWeeklyTask(id, done) {
   } catch (e) { toast('任务更新失败：' + e.message, 'warn'); }
 }
 async function clearDungeon(id) {
+  if (id === 'econ') { go('economist'); return; }
   try { localStorage.setItem(dungeonFlag(id), '1'); } catch (e) {}
   const xm = (demons() || []).find(d => d.key === 'xinmo');
   if (xm) xm.hp = xinmoHpFromDungeons();
