@@ -107,6 +107,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .bi-btn.danger:hover{background:#fbeae8}
 /* 命愿祈铺 · 化命台 */
 .fate-convert{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:22px;max-width:520px;box-shadow:var(--shadow)}
+.fate-convert + .fate-convert{margin-top:18px}
 .fc-title{font-size:18px;font-weight:800;color:var(--text)}
 .fc-sub{font-size:12px;font-weight:500;color:var(--muted);margin-left:6px}
 .fc-row{font-size:14px;color:var(--muted);margin:10px 0 14px}
@@ -118,6 +119,32 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .fc-btn:hover{filter:brightness(1.05)}
 .fc-btn.disabled,.fc-btn:disabled{opacity:.45;cursor:not-allowed;filter:grayscale(.4)}
 .fc-note{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.6}
+/* 命愿祈铺 · 货架（与主站商城同源） */
+.shop-zones{display:flex;flex-direction:column;gap:16px}
+.shop-zone{border-radius:16px;padding:16px;border:1px solid var(--border)}
+.shop-zone.zone-wp{background:linear-gradient(135deg,rgba(200,162,90,.12),rgba(200,162,90,.03));border-color:rgba(200,162,90,.4)}
+.shop-zone.zone-lp{background:linear-gradient(135deg,rgba(154,167,176,.16),rgba(154,167,176,.03));border-color:rgba(154,167,176,.5)}
+.shop-zone.zone-dp{background:linear-gradient(135deg,rgba(212,175,55,.18),rgba(212,175,55,.04));border-color:rgba(212,175,55,.55)}
+.shop-zone-head{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.shop-zone-title{font-size:18px;font-weight:800;color:var(--text)}
+.shop-zone-sub{font-size:12px;color:var(--muted)}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.shop-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow)}
+.shop-card.disabled{opacity:.72}
+.shop-card-head{display:flex;align-items:center;gap:10px}
+.shop-card-icon{width:34px;height:34px;border-radius:9px;flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+.shop-card-name{font-weight:700;font-size:15px;color:var(--text)}
+.shop-card-desc{font-size:12px;color:var(--muted);min-height:16px;line-height:1.5}
+.shop-badges{display:flex;flex-wrap:wrap;gap:6px}
+.shop-badge{font-size:11px;padding:2px 8px;border-radius:8px;background:var(--panel2);border:1px solid var(--border);color:var(--muted)}
+.shop-badge.limit{background:rgba(245,166,35,.15);color:#B5790A;border-color:#E0A93B}
+.shop-badge.timed{background:rgba(83,74,183,.14);color:#534AB7;border-color:#534AB7}
+.shop-card-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px}
+.shop-price{font-weight:700;font-size:14px;color:var(--text)}
+.shop-poor{font-size:11px;font-weight:500;color:#A32D2D}
+.shop-buy{border:none;border-radius:9px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;color:#fff;background:var(--accent);font-family:inherit}
+.shop-buy:disabled{background:var(--border);color:var(--muted);cursor:not-allowed}
+.shop-card-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
 /* 确认弹窗 */
 .modal-msg{white-space:pre-line;font-size:14px;color:var(--text);line-height:1.7;padding:4px 2px 14px;font-family:inherit}
 .btn.danger{background:#c0392b;border-color:transparent;color:#fff}
@@ -168,6 +195,8 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .realm-card.maxed{border-color:var(--dp)}
 .realm-lock{font-size:12px;color:var(--muted);background:var(--panel2);border-radius:8px;padding:4px 8px;margin-bottom:6px;display:inline-block}
 .realm-card .realm-cult-btn{margin-top:8px}
+.realm-src{margin-top:8px;font-size:12px;color:var(--accent);cursor:pointer;font-weight:600}
+.realm-src:hover{text-decoration:underline}
 .realm-card-effect{font-size:12px;color:var(--muted);line-height:1.6;margin-top:4px}
 /* 境界详情弹窗 */
 .realm-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:60;padding:16px}
@@ -184,7 +213,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .npc-toolbar{display:flex;gap:10px;margin:10px 0 14px;flex-wrap:wrap}
 .npc-toolbar .input{flex:1;min-width:160px}
 .npc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--gap)}
-.npc-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);cursor:pointer;transition:.15s}
+.npc-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);cursor:pointer;transition:.15s;display:flex;flex-direction:column}
 .npc-card:hover{transform:translateY(-2px);border-color:var(--accent)}
 .npc-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
 .npc-avatar{width:38px;height:38px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;flex:0 0 auto}
@@ -198,7 +227,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .npc-aff{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:10px}
 .npc-aff-bar{flex:1;height:6px;border-radius:6px;background:var(--panel2);overflow:hidden}
 .npc-aff-bar span{display:block;height:100%;background:var(--wp)}
-.npc-actions{display:flex;gap:8px}
+.npc-actions{display:flex;gap:8px;margin-top:auto}
 .npc-visit{flex:1;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;padding:7px 10px;border-radius:9px;border:none;background:var(--accent);color:#fff;transition:.15s}
 .npc-visit:hover{filter:brightness(1.05)}
 .npc-visit:disabled{cursor:not-allowed;opacity:.6;background:var(--panel2);color:var(--muted)}
@@ -353,12 +382,24 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .dungeon-tasks{margin-top:6px;display:flex;flex-direction:column;gap:6px}
 .task-row{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:8px 11px;cursor:pointer;font-size:13px}
 .task-row input{width:16px;height:16px;accent-color:var(--wp);flex:none}
+.dc-top5{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:4px 0 2px}
+.dc-top5-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:.15s;box-shadow:var(--shadow)}
+.dc-top5-card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.dc-top5-card.cleared{border-color:var(--lp);background:linear-gradient(180deg,var(--panel),rgba(47,127,176,.07))}
+.dc-top5-ic{font-size:26px;margin-bottom:6px}
+.dc-top5-name{font-weight:700;font-size:14px;margin-bottom:4px}
+.dc-top5-flag{font-size:12px;color:var(--muted)}
+.dc-top5-card.cleared .dc-top5-flag{color:var(--lp)}
+.dc-reward{margin-left:auto;font-size:11px;color:var(--wp);background:var(--panel2);border:1px solid var(--accent);border-radius:8px;padding:2px 8px;white-space:nowrap;flex:none}
+.dc-reward.realm{color:var(--lp);border-color:var(--lp)}
+.dc-rest-row .task-text{flex:1}
+.dc-rest-desc{font-size:11px;color:var(--muted);max-width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .task-text.done{text-decoration:line-through;color:var(--muted)}
 /* 境界：轮回光环 + buff 概览 */
 .realm-round{font-size:11px;color:#fff;background:linear-gradient(90deg,#d4a017,#b8860b);border-radius:8px;padding:1px 7px;margin-left:6px;font-weight:600}
 .realm-buffs{font-size:12px;color:var(--wp);background:var(--panel2);border:1px solid var(--accent);border-radius:9px;padding:7px 11px;margin:10px 0}
 /* NPC 关系标签 */
-.npc-rel{font-size:11px;border-radius:8px;padding:2px 8px;font-weight:600;white-space:nowrap}
+.npc-rel{font-size:11px;border-radius:8px;padding:2px 8px;font-weight:600;white-space:nowrap;margin-left:auto;flex-shrink:0}
 .npc-rel-家人{color:#b5691f;background:rgba(181,105,31,.14);border:1px solid rgba(181,105,31,.4)}
 .npc-rel-恋慕{color:#c0397e;background:rgba(192,57,126,.14);border:1px solid rgba(192,57,126,.4)}
 .npc-rel-朋友{color:#2f7fb0;background:rgba(47,127,176,.14);border:1px solid rgba(47,127,176,.4)}
@@ -445,7 +486,143 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .wp-row.out .wp-amt{color:#c0392b}
 /* NPC 互动四档 */
 .npc-interact{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:8px 0}
+.npc-rules{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin:10px 0 4px;font-size:13px}
+.npc-rules summary{cursor:pointer;font-weight:700;color:var(--text-secondary);user-select:none}
+.npc-rules[open]{padding-bottom:14px}
+.npc-rule-line{margin-top:10px}
+.npc-rule-steps{color:var(--muted);font-size:12px;line-height:1.7;margin-top:2px}
+.npc-rule-note{margin-top:10px;color:var(--muted);font-size:12px;border-top:1px dashed var(--border);padding-top:8px}
 .npc-ib{cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;padding:10px 8px;border-radius:10px;border:1px solid var(--border);background:var(--panel2);color:var(--text);transition:.15s;line-height:1.3}
 .npc-ib small{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-top:2px}
 .npc-ib:hover{border-color:var(--accent);transform:translateY(-1px)}
+
+/* 货币统一配色工具类：愿力 WP / 幸运 LP / 天命 DP 在全站保持一致的字体与色相 */
+.c-wp{color:var(--wp);font-weight:800;font-variant-numeric:tabular-nums}
+.c-lp{color:var(--lp);font-weight:800;font-variant-numeric:tabular-nums}
+.c-dp{color:var(--dp);font-weight:800;font-variant-numeric:tabular-nums}
+
+/* 日记（迁移自主站日记库） */
+.diary-list{display:flex;flex-direction:column;gap:8px}
+.diary-entry{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:0;overflow:hidden}
+.diary-entry summary{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;list-style:none;font-size:14px}
+.diary-entry summary::-webkit-details-marker{display:none}
+.diary-entry summary::before{content:"▸";color:var(--muted);transition:transform .2s;flex:0 0 auto}
+.diary-entry[open] summary::before{transform:rotate(90deg)}
+.diary-date{flex:0 0 auto;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.diary-title{flex:1 1 auto;font-weight:700;color:var(--text)}
+.diary-mood{flex:0 0 auto;font-size:12px;padding:2px 9px;border-radius:20px;background:var(--panel2);color:var(--muted);border:1px solid var(--border)}
+.diary-body{padding:4px 16px 16px;color:var(--text);font-size:14px;line-height:1.85;white-space:normal}
+.diary-body br{content:"";display:block;margin-bottom:2px}
+
+/* 撤销 Toast */
+.undo-toast{display:flex;align-items:center;gap:12px}
+.toast-undo-btn{margin-left:auto;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:8px;padding:4px 14px;font-size:12px;cursor:pointer;font-weight:700}
+.toast-undo-btn:hover{opacity:.9}
+
+/* 我做菜记录 */
+.cook-hist{display:flex;flex-direction:column;gap:6px}
+.cook-hist-row{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+.ch-date{flex:0 0 auto;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.ch-name{flex:1 1 auto;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ch-rate{color:#e0a92b;font-size:13px;flex:0 0 auto}
+.ch-undo{flex:0 0 auto;border:1px solid var(--border);background:var(--panel2);color:var(--muted);border-radius:8px;padding:4px 12px;font-size:12px;cursor:pointer}
+.ch-undo:hover{border-color:#c0392b;color:#c0392b}
+
+/* ===== 日记模块 ===== */
+.card-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px}
+.diary-layout{display:grid;grid-template-columns:2fr 1fr;gap:18px;align-items:stretch}
+@media(max-width:760px){.diary-layout{grid-template-columns:1fr}}
+.diary-mood-pick{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;padding:0 8px;border:1px solid var(--border);border-radius:20px;background:var(--panel2);color:var(--muted);cursor:pointer;font-size:16px}
+.diary-mood-pick.selected{border-color:var(--accent);color:var(--accent);background:var(--panel)}
+.diary-mood-pick:hover{border-color:var(--accent)}
+.diary-cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.diary-cal-title{flex:1;text-align:center;font-weight:700;color:var(--text);cursor:pointer;border-radius:8px;padding:2px 6px}
+.diary-cal-title:hover{background:var(--panel2);color:var(--accent)}
+.diary-cal-title::after{content:' ▾';font-size:11px;color:var(--muted)}
+.diary-ym-picker{position:fixed;z-index:200;background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:12px;display:flex;gap:12px;width:300px}
+.diary-ym-picker .ym-years{height:220px;overflow-y:auto;width:90px;border-right:1px solid var(--border);padding-right:8px}
+.diary-ym-picker .ym-year{text-align:center;padding:6px 0;cursor:pointer;border-radius:6px;color:var(--muted)}
+.diary-ym-picker .ym-year.on{background:var(--accent);color:#fff;font-weight:700}
+.diary-ym-picker .ym-year:hover{background:var(--panel2)}
+.diary-ym-picker .ym-months{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:1}
+.diary-ym-picker .ym-month{padding:10px 0;text-align:center;cursor:pointer;border-radius:8px;background:var(--panel2);color:var(--text);font-size:13px}
+.diary-ym-picker .ym-month.on{background:var(--accent);color:#fff;font-weight:700}
+.diary-ym-picker .ym-month:hover{background:var(--accent);color:#fff}
+.diary-cal-head{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:11px;color:var(--muted);margin-bottom:4px}
+.diary-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.diary-cell{position:relative;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text);border-radius:8px;background:var(--panel2);cursor:pointer}
+.diary-cell:hover{background:rgba(138,154,91,.18)}
+.diary-cell.muted{background:transparent;cursor:default}
+.diary-cell.today{border:1px solid var(--accent);font-weight:700}
+.diary-cell.sel{background:var(--accent);color:#fff}
+.diary-cell .dot{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--accent)}
+.diary-cell.sel .dot{background:#fff}
+.diary-cal-stat{margin-top:10px;font-size:12px;color:var(--muted)}
+.diary-item{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;cursor:pointer}
+.diary-item:hover{border-color:var(--accent)}
+.diary-item-head{display:flex;align-items:center;gap:10px}
+.diary-mood-mini{font-size:13px}
+.diary-title{flex:1;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.diary-snippet{margin-top:4px;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.diary-detail-modal{max-width:640px;max-height:86vh;overflow-y:auto}
+.dd-actions{margin-bottom:8px}
+.dd-paper{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:18px 20px}
+.dd-paper-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px;border-bottom:1px dashed var(--border);padding-bottom:8px}
+.dd-paper-date{font-weight:700;color:var(--text)}
+.dd-paper-week{font-size:13px;color:var(--muted)}
+.dd-paper-mood{font-size:13px;color:var(--muted);margin-left:auto}
+.dd-paper-body{font-size:15px;line-height:1.9;color:var(--text)}
+.dd-paper-body p{margin:0 0 10px}
+.dd-paper-body blockquote{margin:0 0 10px;padding:8px 14px;background:var(--panel2);border-left:3px solid var(--accent);border-radius:6px;color:var(--muted);font-style:italic}
+.dd-sign{text-align:right;color:var(--muted);font-style:italic;margin-top:6px}
+.dd-paper-footer{margin-top:14px;text-align:center;font-size:12px;color:var(--muted)}
+.dd-mood{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;padding:0 8px;border:1px solid var(--border);border-radius:18px;background:var(--panel2);color:var(--muted);cursor:pointer;font-size:15px}
+.dd-mood.selected{border-color:var(--accent);color:var(--accent);background:var(--panel)}
+
+/* ===== 体重模块（复刻主站三件套） ===== */
+.weight-form-card .form-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.weight-form-card .form-row>span{width:48px;color:var(--muted);font-size:13px}
+.weight-form-card .hint{font-size:12px;color:var(--muted);margin:-2px 0 10px}
+.weight-chart-wrap svg{display:block}
+.weight-list .weight-item{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--border)}
+.weight-list .w-date{min-width:92px;color:var(--muted);font-size:13px}
+.weight-list .w-val{font-size:18px;font-weight:700;color:var(--wp);min-width:84px}
+.weight-list .w-val2{font-size:13px;color:var(--muted);min-width:84px}
+.weight-list .w-note{flex:1;color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.weight-list .w-del{cursor:pointer;color:#ff453a;font-size:18px;padding:0 6px}
+.weight-list .w-del:hover{opacity:.8}
+.wt-unit-toggle{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:12px}
+.wt-unit-toggle button{border:0;padding:4px 12px;background:transparent;color:var(--muted);cursor:pointer}
+.wt-unit-toggle button.on{background:var(--accent);color:#fff}
+
+/* ===== 通用管理面板 ===== */
+.mgmt-bar{display:flex;gap:8px;margin-bottom:10px}
+.mgmt-bar .btn.sm{padding:4px 12px;font-size:12px}
+.btn.sm{padding:4px 12px;font-size:12px;line-height:1.6}
+.btn.danger{background:#ff453a;color:#fff;border-color:#ff453a}
+.btn.danger:hover{opacity:.9}
+.mgmt-list{max-height:60vh;overflow:auto}
+.mgmt-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 4px;border-bottom:1px solid var(--border)}
+.mgmt-row:hover{background:var(--panel2)}
+.mgmt-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.mgmt-acts{display:flex;gap:6px;flex-shrink:0}
+.mgmt-form{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.mgmt-fld{display:flex;flex-direction:column;gap:4px}
+.mgmt-fld>span{font-size:12px;color:var(--muted)}
+.mgmt-fld .input{width:100%}
+
+/* ===== 烹饪二级 Tab ===== */
+.cook-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.cook-tab{padding:7px 14px;border:1px solid var(--border);border-radius:20px;background:var(--panel2);color:var(--muted);cursor:pointer;font-size:13px}
+.cook-tab:hover{border-color:var(--accent)}
+.cook-tab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.cook-recipe-list{display:flex;flex-direction:column;gap:8px}
+.cook-recipe-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:var(--panel);border:1px solid var(--border);border-radius:10px}
+.cook-recipe-row:hover{border-color:var(--accent)}
+.cr-info{display:flex;flex-direction:column;gap:2px}
+.cr-meta{font-size:12px;color:var(--muted)}
+.cook-wheel{display:flex;flex-direction:column;align-items:center;gap:16px;padding:24px 0}
+.cook-wheel-pick{text-align:center;background:var(--panel);border:1px solid var(--accent);border-radius:14px;padding:20px 32px;box-shadow:var(--shadow)}
+.cook-wheel-pick h2{font-size:26px;margin-bottom:6px;color:var(--accent)}
+.cook-wheel-empty{color:var(--muted);font-size:14px}
 
