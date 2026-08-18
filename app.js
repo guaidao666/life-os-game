@@ -248,58 +248,13 @@ function go(id) {
   window.scrollTo(0, 0);
 }
 
-/* ---------- 备考：中级经济师（localStorage 进度追踪） ---------- */
-const ECON_KEY = 'lifeos_econ_log';
-function econLoad() { try { return JSON.parse(localStorage.getItem(ECON_KEY) || '[]'); } catch (e) { return []; } }
-function econSave(a) { try { localStorage.setItem(ECON_KEY, JSON.stringify(a)); } catch (e) {} }
-function econStats() {
-  const log = econLoad();
-  const totalMin = log.reduce((s, x) => s + (Number(x.min) || 0), 0);
-  const days = new Set(log.map(x => x.date)).size;
-  const subjects = {};
-  log.forEach(x => { (x.subjects || []).forEach(su => { subjects[su] = (subjects[su] || 0) + (Number(x.min) || 0); }); });
-  return { log, totalMin, days, subjects, count: log.length };
-}
+/* ---------- 备考：中级经济师（iframe 承载 economist-calendar.html） ---------- */
 function renderEconomist() {
-  const st = econStats();
-  const today = todayCST();
-  const subjects = ['经济学基础', '中级微观', '中级宏观', '财政税收', '货币金融', '统计', '会计', '法律'];
-  const subOpts = subjects.map(s => '<option value="' + s + '">' + s + '</option>').join('');
-  const recent = st.log.slice(0, 8).map(x => '<div class="log-row"><span class="log-ts">' + esc(x.date) + '</span><span class="log-item">' + esc((x.subjects || []).join('/') || '学习') + ' · ' + (x.min || 0) + ' 分钟</span></div>').join('') || '<div class="game-empty">还没有学习记录，记录第一次备考吧</div>';
-  const subStats = Object.keys(st.subjects).map(s => '<div class="econ-sub"><span>' + esc(s) + '</span><b>' + st.subjects[s] + ' 分</b></div>').join('') || '<div class="game-empty">暂无科目统计</div>';
-  return '<div class="section-title">📚 中级经济师备考 <span class="game-tag">自律修行 · 本地记录</span></div>' +
-    '<div class="econ-overview">累计学习 <b>' + st.totalMin + '</b> 分钟　·　打卡 <b>' + st.days + '</b> 天　·　记录 <b>' + st.count + '</b> 次</div>' +
-    '<div class="econ-add">' +
-      '<input class="input" id="econDate" type="date" value="' + today + '">' +
-      '<select class="input" id="econSubject">' + subOpts + '</select>' +
-      '<input class="input" id="econMin" type="number" placeholder="分钟" style="max-width:110px">' +
-      '<button class="btn primary" onclick="addEconLog()">＋ 记录学习</button>' +
-    '</div>' +
-    '<div class="econ-cols">' +
-      '<div class="econ-col"><div class="game-card-title">科目投入</div>' + subStats + '</div>' +
-      '<div class="econ-col"><div class="game-card-title">近期记录</div>' + recent + '</div>' +
-    '</div>' +
-    '<div class="meta" style="margin-top:12px">进度存于本机浏览器（localStorage），不影响主站数据；换设备不互通。</div>';
-}
-async function addEconLog() {
-  const date = (document.getElementById('econDate') || {}).value || todayCST();
-  const subject = (document.getElementById('econSubject') || {}).value || '经济学基础';
-  const min = Math.max(1, parseInt((document.getElementById('econMin') || {}).value) || 0);
-  if (!min) { toast('请填写学习分钟数', 'warn'); return; }
-  const log = econLoad();
-  log.unshift({ date, subjects: [subject], min });
-  econSave(log.slice(0, 200));
-  try {
-    await grantWP(min, '中级经济师备考', subject + ' ' + min + '分钟');
-    try {
-      const f = dwpFlag('econ', date);
-      const prev = Number(localStorage.getItem(f)) || 0;
-      localStorage.setItem(f, String(prev + min));
-      localStorage.setItem(dungeonFlag('econ'), '1');
-    } catch (e) {}
-  } catch (e) {}
-  toast('📚 已记录 ' + subject + ' ' + min + ' 分钟 · +' + min + ' 愿力', 'good');
-  renderMain('economist');
+  return '<div class="econ-iframe-wrap">' +
+    '<iframe src="/economist-calendar.html" title="中级经济师备考日历" ' +
+    'loading="lazy" sandbox="allow-scripts allow-same-origin" ' +
+    'style="width:100%;height:100%;border:0;display:block;background:transparent"></iframe>' +
+    '</div>';
 }
 
 /* ---------- 日记（迁移主站三件套：写日记 / 日历 / 时间线） ---------- */
@@ -523,8 +478,6 @@ const MGMT = {
     fields:[{k:'name',label:'菜名',type:'text'},{k:'category',label:'分类',type:'text'},{k:'difficulty',label:'难度',type:'number'},{k:'cost',label:'成本',type:'text'},{k:'time',label:'时长(分)',type:'number'},{k:'ingredients',label:'食材(JSON)',type:'text'},{k:'steps',label:'步骤',type:'textarea'}] },
   fun:     { store:'local', localKey:'game_fun_log', nameF:d=>d.title||d.name||('记录'+d.id),
     fields:[{k:'title',label:'标题',type:'text'},{k:'type',label:'类型',type:'select',opts:['电视剧','电影','动漫','漫画','书','游戏','歌曲']},{k:'rating',label:'评分',type:'number'},{k:'note',label:'笔记',type:'textarea'}] },
-  economist:{ store:'econ', nameF:(d,i)=>(d.date||'')+' 学习 '+(d.min||0)+'分',
-    fields:[{k:'date',label:'日期',type:'date'},{k:'min',label:'分钟',type:'number'},{k:'subjects',label:'科目(逗号分隔)',type:'text'}] },
   sleep:   { store:'local', localKey:'game_sleep_log', nameF:d=>(d.date||'')+' '+(d.bed||''),
     fields:[{k:'date',label:'日期',type:'date'},{k:'bed',label:'就寝时间',type:'time'},{k:'tier',label:'档位',type:'select',opts:['early','ontime','late']}] },
   skill:   { store:'player', playerField:'skills', isObj:true, nameF:d=>d.name||d.id,
@@ -550,7 +503,6 @@ function mgmtList(kind) {
   const c = MGMT[kind]; if (!c) return [];
   if (c.store === 'api') { const arr = c.dataSub ? (((DATA[c.dataKey] || {})[c.dataSub]) || []) : (DATA[c.dataKey] || []); let out = arr.slice(); if (c.scope === 'weekly') out = out.filter(x => /周级/.test(x.grp || '')); return out; }
   if (c.store === 'local') { try { return JSON.parse(localStorage.getItem(c.localKey) || '[]'); } catch (e) { return []; } }
-  if (c.store === 'econ') { return econLoad().map((x, i) => Object.assign({ id: String(i) }, x)); }
   if (c.store === 'player') { const p = player(); if (c.isObj) { const o = p[c.playerField] || {}; return Object.keys(o).map(k => Object.assign({ id: k, name: k }, o[k])); } return (p[c.playerField] || []).slice(); }
   if (c.store === 'heart') { return heartCustom().slice(); }
   if (c.store === 'dailies') { return dailies().slice(); }
@@ -619,11 +571,6 @@ async function mgmtUpsert(kind, id, fields) {
       if (id !== '') { const idx = arr.findIndex(x => (x.id != null ? String(x.id) : '') === id); if (idx >= 0) arr[idx] = Object.assign({}, arr[idx], fields); }
       else { fields.id = Date.now(); arr.push(fields); }
       localStorage.setItem(c.localKey, JSON.stringify(arr));
-    } else if (c.store === 'econ') {
-      const arr = econLoad();
-      const entry = { date: fields.date || todayKey(), min: Number(fields.min || 0), subjects: (fields.subjects || '').split(',').map(s => s.trim()).filter(Boolean) };
-      if (id !== '') { const idx = arr.findIndex((x, i) => String(i) === id); if (idx >= 0) arr[idx] = entry; } else arr.unshift(entry);
-      econSave(arr.slice(0, 200));
     } else if (c.store === 'player') {
       const p = player(); let cur = p[c.playerField]; cur = c.isObj ? (cur || {}) : (cur || []);
       if (c.isObj) {
@@ -659,7 +606,6 @@ async function mgmtDel(kind, id) {
   try {
     if (c.store === 'api') { const j = await fetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: c.table, id: Number(id) }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } await loadData(); }
     else if (c.store === 'local') { const arr = JSON.parse(localStorage.getItem(c.localKey) || '[]'); const idx = arr.findIndex(x => (x.id != null ? String(x.id) : '') === id); if (idx >= 0) arr.splice(idx, 1); localStorage.setItem(c.localKey, JSON.stringify(arr)); }
-    else if (c.store === 'econ') { const arr = econLoad(); const idx = arr.findIndex((x, i) => String(i) === id); if (idx >= 0) arr.splice(idx, 1); econSave(arr); }
     else if (c.store === 'player') { const p = player(); let cur = p[c.playerField]; if (c.isObj) { cur = Object.assign({}, cur || {}); delete cur[id]; } else { cur = (cur || []).filter(x => (x.id != null ? String(x.id) : '') !== id); } if (c.playerField === 'inventory') { const j = await fetch('/api/inventory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set', inventory: cur }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } if (r.inventory) DATA.player.inventory = r.inventory; } else { const obj = {}; obj[c.playerField] = cur; const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: obj }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } await loadData(); } }
     else if (c.store === 'heart') { delHeartCustom(Number(String(id).replace('c_', ''))); return; }
     else if (c.store === 'dailies') { const arr = dailies().slice(); const idx = arr.findIndex(x => x.id === id); if (idx >= 0) arr.splice(idx, 1); saveDailies(arr); }
@@ -710,7 +656,7 @@ function dashTop5() {
     name: d.name,
     mod: dungeonNavMod(d.id),
     done: () => dungeonDoneCheck(d.id),
-    hint: d.id === 'econ' ? '按分钟愿力' : (d.realm ? d.realm + ' +1' : '日常') + (d.wp ? ' · 愿力+' + d.wp : '')
+    hint: d.id === 'econ' ? '打开备考日历' : (d.realm ? d.realm + ' +1' : '日常') + (d.wp ? ' · 愿力+' + d.wp : '')
   }));
 }
 function renderDashboard() {
@@ -994,7 +940,7 @@ function dailies() {
 function saveDailies(a) { try { localStorage.setItem(DAILY_KEY, JSON.stringify(a)); } catch (e) {} }
 function dungeonDef(id) { return dailies().find(d => d.id === id); }
 function leadEmoji(s) { const m = /^[\s]*([\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{2700}-\u{27BF}])/u.exec(s || ''); return m ? m[1] : '•'; }
-function wpBadge(id, wp) { wp = Number(wp) || 0; return id === 'econ' ? '<span class="dc-reward">按分钟</span>' : (wp > 0 ? '<span class="dc-reward">+' + wp + '愿</span>' : ''); }
+function wpBadge(id, wp) { wp = Number(wp) || 0; return wp > 0 ? '<span class="dc-reward">+' + wp + '愿</span>' : ''; }
 function dungeonMod(id) { return id === 'weight' ? 'weight' : (id === 'sleep' ? 'sleep' : 'dungeon'); }
 function dungeonDoneCheck(id) {
   if (id === 'weight') return weightLoad().some(x => x.date === todayKey());
@@ -2620,3 +2566,16 @@ function applyTheme(t) {
 })();
 
 loadData();
+
+/* ---------- 备考 iframe 愿力联动：接收 economist-calendar.html 的发愿请求 ---------- */
+window.addEventListener('message', async (e) => {
+  const d = e.data;
+  if (!d || d.type !== 'econ-wp') return;
+  if (e.origin && location.origin && e.origin !== location.origin) return;
+  const dd = Number(d.delta) || 0;
+  if (!dd) return;
+  try {
+    await grantWP(dd, d.source || '经济师备考', d.text || '');
+    toast((dd > 0 ? '+' : '') + dd + ' 愿力 · ' + (d.text || d.source || '经济师'), dd > 0 ? 'good' : 'warn');
+  } catch (err) { /* grantWP 内部已提示 */ }
+});

@@ -1,0 +1,3080 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>中级经济师 · 备考日历</title>
+<style>
+  :root{
+    --bg:#f4f1ea; --card:#ffffff; --ink:#2b2b2b; --sub:#6b6b6b; --line:#e7e2d8;
+    --blue:#2f6fed; --orange:#ef8a17; --red:#e5484d; --purple:#8b5cf6; --gray:#9aa0a6; --green:#34c759;
+    --shadow:0 2px 10px rgba(60,50,30,.08);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;font-size:16px;line-height:1.55}
+  .wrap{max-width:940px;margin:0 auto;padding:14px 14px 60px}
+  header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
+  header.top h1{font-size:20px;margin:0;font-weight:700}
+  .storage{margin-left:auto;font-size:12px;padding:3px 10px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--sub)}
+  .storage.db{color:var(--green);border-color:#bfe9cd}
+  .storage.local{color:var(--orange);border-color:#f3d9b0}
+  /* tabs */
+  .tabs{display:flex;gap:6px;background:#ece7dc;border-radius:14px;padding:5px;margin-bottom:14px}
+  .tabs button{flex:1;border:none;background:transparent;border-radius:10px;padding:10px 6px;font-size:15px;font-weight:600;color:var(--sub);cursor:pointer;transition:.15s}
+  .tabs button.on{background:#fff;color:var(--ink);box-shadow:var(--shadow)}
+  .tabpane{display:none}
+  .tabpane.on{display:block}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+  .month-nav{display:flex;align-items:center;gap:6px}
+  .month-nav button{width:34px;height:34px;border:none;border-radius:10px;background:#fff;border:1px solid var(--line);font-size:18px;cursor:pointer;box-shadow:var(--shadow)}
+  .month-label{font-weight:700;min-width:96px;text-align:center}
+  .filters{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+  .filters button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--sub)}
+  .filters button.on{color:#fff;border-color:transparent}
+  .filters button.on[data-p="all"]{background:#555}
+  .filters button.on[data-p="入门精讲"]{background:var(--blue)}
+  .filters button.on[data-p="强化刷题"]{background:var(--orange)}
+  .filters button.on[data-p="冲刺模考"]{background:var(--red)}
+  .jump{margin-left:8px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--sub)}
+  .stat-bar{background:var(--card);border-radius:14px;padding:10px 14px;box-shadow:var(--shadow);margin-bottom:14px;font-size:13px;color:var(--sub);display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .stat-bar b{color:var(--ink)}
+  .card{background:var(--card);border-radius:16px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px}
+  .card h2{font-size:16px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+  .badge{font-size:11px;padding:2px 9px;border-radius:999px;color:#fff;font-weight:600}
+  .b-blue{background:var(--blue)}.b-orange{background:var(--orange)}.b-red{background:var(--red)}.b-purple{background:var(--purple)}.b-gray{background:var(--gray)}.b-green{background:var(--green)}
+  /* today */
+  .today-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:10px}
+  .today-head .date{font-size:22px;font-weight:700}
+  .today-head .wd{color:var(--sub);font-size:14px}
+  .today-head .meta{margin-left:auto;color:var(--sub);font-size:13px}
+  .progress{height:10px;background:#eee;border-radius:999px;overflow:hidden;margin:10px 0}
+  .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--green),#5fd98a);width:0;transition:width .3s}
+  .pct{font-size:13px;color:var(--sub);text-align:right;margin-bottom:8px}
+  ul.tasks{list-style:none;margin:0;padding:0}
+  ul.tasks li{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px dashed var(--line)}
+  ul.tasks li:last-child{border-bottom:none}
+  .chk{flex:0 0 22px;width:22px;height:22px;border-radius:6px;border:2px solid #cfc8ba;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;margin-top:2px}
+  .chk.done{background:var(--green);border-color:var(--green)}
+  .task-txt{flex:1}
+  .task-txt.done{color:var(--gray);text-decoration:line-through}
+  .empty{color:var(--sub);font-size:14px;padding:8px 0}
+  /* week */
+  .week-goal{font-size:14px;color:var(--sub);margin:6px 0 10px}
+  .week-days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
+  .wd-cell{background:#faf8f3;border-radius:10px;padding:7px 4px;text-align:center;font-size:12px;position:relative}
+  .wd-cell .d{font-weight:700}
+  .wd-cell .mini{height:5px;border-radius:999px;background:#e3ddd0;margin-top:5px;overflow:hidden}
+  .wd-cell .mini > i{display:block;height:100%;background:var(--green)}
+  .wd-cell.today{outline:2px solid var(--blue)}
+  .wd-cell .ph{position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%}
+  /* calendar */
+  .cal-head{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px}
+  .cal-head span{text-align:center;font-size:13px;color:var(--sub);font-weight:600}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .cell{background:var(--card);border-radius:12px;min-height:62px;padding:6px 4px 4px;position:relative;cursor:pointer;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;transition:transform .1s}
+  .cell:hover{transform:translateY(-2px)}
+  .cell.blank{background:#f7f4ee;box-shadow:none;cursor:default;border:1px dashed #e3ddd0}
+  .cell.blank:hover{transform:none}
+  .cell.blank .num{color:#cfc8ba;font-weight:400}
+  .cell .num{font-size:13px;font-weight:600;color:var(--ink)}
+  .cell .dot{width:9px;height:9px;border-radius:50%;margin-top:5px}
+  .cell.today{border:2px solid var(--blue)}
+  .cell.done .num::after{content:"✓";color:var(--green);font-size:11px;margin-left:3px}
+  .cell.dim{opacity:.32}
+  .cell .rest{font-size:11px;color:var(--gray);margin-top:4px}
+  /* legend */
+  .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--sub);margin:6px 2px 0}
+  .legend span{display:flex;align-items:center;gap:5px}
+  .legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+  /* modal */
+  .mask{position:fixed;inset:0;background:rgba(30,25,15,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+  .mask.show{display:flex}
+  .modal{background:var(--card);border-radius:18px;max-width:560px;width:100%;max-height:86vh;overflow:auto;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+  .modal .mhead{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .modal .mhead .date{font-size:20px;font-weight:700}
+  .modal .mrow{font-size:13px;color:var(--sub);margin:3px 0}
+  .modal .mrow b{color:var(--ink)}
+  .modal .close{margin-left:auto;border:none;background:#f0ece3;border-radius:10px;width:32px;height:32px;font-size:18px;cursor:pointer}
+  .modal hr{border:none;border-top:1px dashed var(--line);margin:12px 0}
+
+  /* quiz / review */
+  .q-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .q-subject{font-size:13px;color:var(--sub)}
+  .q-body{font-size:17px;font-weight:600;line-height:1.6;margin-bottom:14px}
+  .opts{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-direction:column;gap:8px}
+  .opts li{border:1.5px solid var(--line);border-radius:12px;padding:11px 12px;cursor:pointer;display:flex;gap:10px;align-items:center;transition:.12s}
+  .opts li:hover{border-color:#cfc8ba}
+  .opts li.sel{border-color:var(--blue);background:#f0f5ff}
+  .opts li.correct{border-color:var(--green);background:#effaf1}
+  .opts li.wrong{border-color:var(--red);background:#fdeeef}
+  .opts .mark{flex:0 0 22px;width:22px;height:22px;border-radius:50%;border:2px solid #cfc8ba;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--sub)}
+  .opts li.sel .mark{border-color:var(--blue);color:var(--blue)}
+  .opts li.correct .mark{border-color:var(--green);color:var(--green)}
+  .opts li.wrong .mark{border-color:var(--red);color:var(--red)}
+  .opts .txt{flex:1}
+  .q-explain{background:#faf8f3;border-radius:12px;padding:12px;font-size:14px;color:var(--sub);margin-bottom:12px;display:none}
+  .q-explain.show{display:block}
+  .q-explain b{color:var(--ink)}
+  .btn{cursor:pointer;border:none;border-radius:12px;padding:11px 16px;font-size:15px;font-weight:600;color:#fff;background:var(--blue);box-shadow:var(--shadow)}
+  .btn.ghost{background:#fff;color:var(--sub);border:1px solid var(--line);box-shadow:none}
+  .btn.green{background:var(--green)}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap}
+  .q-result{font-size:15px;font-weight:700;margin-bottom:10px;display:none}
+  .q-result.show{display:block}
+  .q-result.ok{color:var(--green)} .q-result.no{color:var(--red)}
+  .review-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .review-filters select{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:14px;background:#fff;color:var(--ink)}
+  .review-stat{font-size:13px;color:var(--sub);margin-bottom:12px}
+  .review-stat b{color:var(--ink)}
+  .hist-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px}
+  .hist-item:last-child{border-bottom:none}
+  .hist-item .ok{color:var(--green);font-weight:700}
+  .hist-item .no{color:var(--red);font-weight:700}
+  .hist-item .qtext{flex:1;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .score-banner{background:linear-gradient(90deg,var(--blue),#5b8def);color:#fff;border-radius:14px;padding:16px;text-align:center;margin-bottom:14px}
+  .score-banner .big{font-size:30px;font-weight:800}
+  @media (max-width:600px){
+    body{font-size:15px}
+    .wrap{padding:10px 10px 50px}
+    header.top h1{font-size:18px}
+    .cell{min-height:52px}
+    .cell .num{font-size:12px}
+    .today-head .date{font-size:19px}
+    .filters button{padding:4px 9px;font-size:12px}
+    .tabs button{font-size:13px;padding:9px 4px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>📚 中级经济师 · 备考日历</h1>
+    <span id="storage" class="storage">存储：检测中…</span>
+  </header>
+
+  <div class="tabs">
+    <button data-tab="cal" class="on">🗓 学习日历</button>
+    <button data-tab="quiz">✍️ 每日一练</button>
+    <button data-tab="review">📖 题库回顾</button>
+    <button data-tab="wrong">📕 错题本</button>
+  </div>
+
+  <!-- ============ 学习日历 ============ -->
+  <div class="tabpane on" id="pane-cal">
+    <div class="toolbar">
+      <div class="month-nav">
+        <button id="prevM">‹</button>
+        <span class="month-label" id="monthLabel">—</span>
+        <button id="nextM">›</button>
+      </div>
+      <div class="filters" id="filters">
+        <button data-p="all" class="on">全部</button>
+        <button data-p="入门精讲">入门精讲</button>
+        <button data-p="强化刷题">强化刷题</button>
+        <button data-p="冲刺模考">冲刺模考</button>
+      </div>
+      <button class="jump" id="jumpWeek">⤴ 跳到本周</button>
+    </div>
+
+    <div class="stat-bar">
+      <span>备考窗口 <b id="rangeTxt">—</b>　·　共 <b id="totalDays">—</b> 天</span>
+      <span>总进度 <b id="overallTxt">—</b></span>
+    </div>
+
+    <div class="card" id="todayCard"></div>
+    <div class="card" id="weekCard"></div>
+
+    <div class="card">
+      <h2>🗓 学习日历</h2>
+      <div class="cal-head">
+        <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+      </div>
+      <div class="cal" id="cal"></div>
+      <div class="legend">
+        <span><i style="background:var(--blue)"></i>入门精讲</span>
+        <span><i style="background:var(--orange)"></i>强化刷题</span>
+        <span><i style="background:var(--red)"></i>冲刺模考</span>
+        <span><i style="background:var(--purple)"></i>考试日</span>
+        <span><i style="background:var(--gray)"></i>休息日</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 每日一练 ============ -->
+  <div class="tabpane" id="pane-quiz">
+    <div class="card" id="dailyQuiz"></div>
+  </div>
+
+  <!-- ============ 题库回顾 ============ -->
+  <div class="tabpane" id="pane-review">
+    <div class="card">
+      <h2>📖 题库回顾 <span class="badge b-purple">练过的题都在这里</span></h2>
+      <div class="review-filters">
+        <select id="revPhase"><option value="all">全部阶段</option><option value="入门精讲">入门精讲</option><option value="强化刷题">强化刷题</option><option value="冲刺模考">冲刺模考</option></select>
+        <select id="revSubject"><option value="all">全部科目</option></select>
+        <button class="btn" id="revStart">🎯 开始练习 5 道</button>
+        <button class="btn ghost" id="revReset">重置筛选</button>
+      </div>
+      <div class="review-stat" id="revStat"></div>
+      <div id="reviewArea"></div>
+    </div>
+    <div class="card">
+      <h2>📝 我的答题历史</h2>
+      <div id="histArea"><div class="empty">还没有答题记录，去「每日一练」或「开始练习」做几道吧。</div></div>
+    </div>
+  </div>
+
+  <!-- ============ 错题本 ============ -->
+  <div class="tabpane" id="pane-wrong">
+    <div class="card">
+      <h2>📕 错题本 <span class="badge b-red" id="wrongCount">0 道待攻克</span></h2>
+      <div class="btn-row" style="margin-bottom:12px">
+        <button class="btn" id="wrongStart">🎯 专攻错题（优先录入）</button>
+        <button class="btn ghost" id="wrongClear">清空错题本</button>
+      </div>
+      <div id="wrongArea"><div class="empty">还没有错题。做错的题会自动收集到这里，方便你反复回顾。</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 当日详情弹窗 -->
+<div class="mask" id="mask">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script>
+const PLAN = {
+  "generatedAt": "2026-08-18T16:27:07.615Z",
+  "startDate": "2026-08-17",
+  "endDate": "2026-11-08",
+  "examDate": "2026-11-07",
+  "totalDays": 84,
+  "weeks": {
+    "1": {
+      "range": "8/17 – 8/23",
+      "theme": "入门模块收尾 + 精讲开张",
+      "goal": "经济基础①预习②入门两个模块清零，深度精讲班正式开张"
+    },
+    "2": {
+      "range": "8/24 – 8/30",
+      "theme": "弹性重点 + 工商启动",
+      "goal": "经济基础第 2 章收尾；工商①预习②入门清零、第 1 章开张"
+    },
+    "3": {
+      "range": "8/31 – 9/6",
+      "theme": "成本与市场结构",
+      "goal": "经济基础第 3-6 章 + 工商第 2 章启动"
+    },
+    "4": {
+      "range": "9/7 – 9/13",
+      "theme": "宏观起步",
+      "goal": "经济基础第 7-8 章 + 工商第 2 章收尾、第 3 章启动"
+    },
+    "5": {
+      "range": "9/14 – 9/20",
+      "theme": "宏观核心 ⚠️ 难度提升",
+      "goal": "经济基础第 9-12 章 + 工商第 3 章收尾"
+    },
+    "6": {
+      "range": "9/21 – 9/27",
+      "theme": "财政三章",
+      "goal": "经济基础第 13-14 章 + 工商第 4 章收尾、第 5 章启动"
+    },
+    "7": {
+      "range": "9/28 – 10/4",
+      "theme": "国庆冲刺窗口 🎉",
+      "goal": "经济基础第 15-18 章 + 工商第 5、6 章（国庆每天 2-3h 加速）"
+    },
+    "8": {
+      "range": "10/5 – 10/11",
+      "theme": "货币金融",
+      "goal": "经济基础第 19-22 章 + 工商第 7 章启动"
+    },
+    "9": {
+      "range": "10/12 – 10/18",
+      "theme": "统计+会计 ⚠️ 零基础最易卡",
+      "goal": "经济基础第 23-27 章 + 工商第 7 章收尾、第 8 章启动；精讲期收官"
+    },
+    "10": {
+      "range": "10/19 – 10/25",
+      "theme": "精讲扫尾 + 真题开练",
+      "goal": "经济基础第 28-37 章（会计+法律）+ 工商第 9-11 章补完 + 真题启动"
+    },
+    "11": {
+      "range": "10/26 – 11/1",
+      "theme": "大V母题 + 真题 + 模拟",
+      "goal": "双科大V母题带练 + 历年真题 + 模拟卷；考前一周启动"
+    },
+    "12": {
+      "range": "11/2 – 11/8",
+      "theme": "冲刺模考 + 考试周",
+      "goal": "冲刺串讲 + 万人模考 + 准考证 + 出发考试"
+    }
+  },
+  "milestones": [
+    {
+      "day": 77,
+      "date": "2026-11-01",
+      "text": "🔥 考前一周倒计时开始"
+    },
+    {
+      "day": 78,
+      "date": "2026-11-02",
+      "text": "冲刺周开始"
+    },
+    {
+      "day": 79,
+      "date": "2026-11-03",
+      "text": "🔥 准考证打印开放"
+    },
+    {
+      "day": 80,
+      "date": "2026-11-04",
+      "text": "🔥 回程票"
+    },
+    {
+      "day": 82,
+      "date": "2026-11-06",
+      "text": "🔥 出发去韶关"
+    },
+    {
+      "day": 83,
+      "date": "2026-11-07",
+      "text": "🔥 考试日（批次 1/2）"
+    },
+    {
+      "day": 84,
+      "date": "2026-11-08",
+      "text": "🔥 考试日（批次 3/4）/ 备考收官"
+    }
+  ],
+  "days": [
+    {
+      "day": 1,
+      "date": "2026-08-17",
+      "weekday": "周一",
+      "week": 1,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "30 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "争学网「2026 备考预习班」第 1-2 节（路可，1.5x）"
+      ],
+      "eachWp": [
+        10
+      ],
+      "taskDone": [
+        true
+      ],
+      "resources": "争学网·备考预习班",
+      "goal": "了解两科框架和章节分布",
+      "note": "当天未学，已于 8/18 晚补上 ✅",
+      "milestone": ""
+    },
+    {
+      "day": 2,
+      "date": "2026-08-18",
+      "weekday": "周二",
+      "week": 1,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "60 分钟",
+      "subject": "通用",
+      "tasks": [
+        "备考预习班第 1-2 节（补学）",
+        "小白入门班·考试规则部分 + 整理学习笔记"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网",
+      "goal": "知道考试题型、分值、合格线、批次规则",
+      "note": "已完成；笔记存《学习笔记.md》",
+      "milestone": ""
+    },
+    {
+      "day": 3,
+      "date": "2026-08-19",
+      "weekday": "周三",
+      "week": 1,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "争学网「2026 小白入门班」剩余部分（1.5x）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·小白入门班 + 题库",
+      "goal": "小白入门班清零",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 4,
+      "date": "2026-08-20",
+      "weekday": "周四",
+      "week": 1,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "备考预习班第 3 节",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·备考预习班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 5,
+      "date": "2026-08-21",
+      "weekday": "周五",
+      "week": 1,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "备考预习班第 4 节（预习班清零 ）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·备考预习班 + 题库",
+      "goal": "能说出两科各考什么、题型分值怎么算",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 6,
+      "date": "2026-08-22",
+      "weekday": "周六",
+      "week": 1,
+      "phase": "入门精讲",
+      "type": "机动",
+      "duration": "0-45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "有余力：深度精讲班·第 1 章（社会主义基本经济制度）前 2 节（1.5x）",
+        "加班/累了就纯休息"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班",
+      "goal": "—",
+      "note": "主线在明天周日，今天养精蓄锐",
+      "milestone": ""
+    },
+    {
+      "day": 7,
+      "date": "2026-08-23",
+      "weekday": "周日",
+      "week": 1,
+      "phase": "入门精讲",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "经济基础",
+      "tasks": [
+        "深度精讲班·第 1 章剩余节看完（1.5x）",
+        "章节练习·经济基础第 1 章（做完看解析，错题标记）",
+        "深度精讲班·第 2 章前 3 节（市场需求、供给与均衡价格）"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "能复述\"需求曲线为什么向右下方倾斜\"",
+      "note": "每周日 20:00 有自动进度检查+小测",
+      "milestone": ""
+    },
+    {
+      "day": 8,
+      "date": "2026-08-24",
+      "weekday": "周一",
+      "week": 2,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "深度精讲班·第 2 章第 4-5 节"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 9,
+      "date": "2026-08-25",
+      "weekday": "周二",
+      "week": 2,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "工商管理",
+      "tasks": [
+        "工商·备考预习班（董亚蕊）上半（1.5x ≈ 1h）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·备考预习班",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 10,
+      "date": "2026-08-26",
+      "weekday": "周三",
+      "week": 2,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "工商管理",
+      "tasks": [
+        "工商·备考预习班下半",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·备考预习班",
+      "goal": "工商预习班清零",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 11,
+      "date": "2026-08-27",
+      "weekday": "周四",
+      "week": 2,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "工商管理",
+      "tasks": [
+        "工商·小白入门班（张楠，1.5x ≈ 40min）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·小白入门班",
+      "goal": "工商入门模块全部清零 ✅",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 12,
+      "date": "2026-08-28",
+      "weekday": "周五",
+      "week": 2,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 2 章弹性公式动笔算 10 道例题（点弹性/弧弹性/收入弹性/交叉弹性）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网题库 + 错题",
+      "goal": "弹性公式会默写、会代数计算",
+      "note": "⚠️ 第 2 章是全教材题量最多的章（47 题），弹性必须会算",
+      "milestone": ""
+    },
+    {
+      "day": 13,
+      "date": "2026-08-29",
+      "weekday": "周六",
+      "week": 2,
+      "phase": "入门精讲",
+      "type": "休息",
+      "duration": "0",
+      "subject": "—",
+      "tasks": [
+        "休息（加班则纯休息）"
+      ],
+      "eachWp": [
+        10
+      ],
+      "taskDone": [
+        false
+      ],
+      "resources": "—",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 14,
+      "date": "2026-08-30",
+      "weekday": "周日",
+      "week": 2,
+      "phase": "入门精讲",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "章节练习·经济基础第 2 章（47 题，限时做，错题归因）",
+        "工商·深度精讲班·第 1 章前 4 节（企业战略与经营决策）",
+        "章节练习·工商第 1 章（做 30-40 题即可）"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "能算点弹性/弧弹性/收入弹性；能讲清\"企业战略是什么、三种战略类型\"",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 15,
+      "date": "2026-08-31",
+      "weekday": "周一",
+      "week": 3,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "深度精讲班·第 3 章（生产和成本理论）前 2 节"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 16,
+      "date": "2026-09-01",
+      "weekday": "周二",
+      "week": 3,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 3 章后 2 节（成本函数/成本曲线，动笔画图）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "会画 MC/AC/AVC 曲线",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 17,
+      "date": "2026-09-02",
+      "weekday": "周三",
+      "week": 3,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 4 章（市场结构理论）前 2 节",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 18,
+      "date": "2026-09-03",
+      "weekday": "周四",
+      "week": 3,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 4 章后 2 节",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "能区分四种市场结构",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 19,
+      "date": "2026-09-04",
+      "weekday": "周五",
+      "week": 3,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "章节练习·第 3-4 章 + 错题归因",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 20,
+      "date": "2026-09-05",
+      "weekday": "周六",
+      "week": 3,
+      "phase": "入门精讲",
+      "type": "休息",
+      "duration": "0",
+      "subject": "—",
+      "tasks": [
+        "休息"
+      ],
+      "eachWp": [
+        10
+      ],
+      "taskDone": [
+        false
+      ],
+      "resources": "—",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 21,
+      "date": "2026-09-06",
+      "weekday": "周日",
+      "week": 3,
+      "phase": "入门精讲",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "深度精讲班·第 5 章（生产要素市场理论）",
+        "深度精讲班·第 6 章（市场失灵和政府的干预）",
+        "章节练习·第 5-6 章",
+        "工商·深度精讲班·第 2 章（公司法人治理结构）前 4 节"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "微观部分（1-6 章）全部过完",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 22,
+      "date": "2026-09-07",
+      "weekday": "周一",
+      "week": 4,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "深度精讲班·第 7 章（国民收入核算和简单的宏观经济模型）前 2 节"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 23,
+      "date": "2026-09-08",
+      "weekday": "周二",
+      "week": 4,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 7 章后 3 节（GDP 三种算法动笔推）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "能说出 GDP 三种计算方法",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 24,
+      "date": "2026-09-09",
+      "weekday": "周三",
+      "week": 4,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 8 章（经济增长和经济发展理论）前 2 节",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 25,
+      "date": "2026-09-10",
+      "weekday": "周四",
+      "week": 4,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 8 章后 2 节",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "能区分 GDP/CPI/基尼系数",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 26,
+      "date": "2026-09-11",
+      "weekday": "周五",
+      "week": 4,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "工商管理",
+      "tasks": [
+        "工商·深度精讲班·第 2 章后 4 节（前 2 节）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 27,
+      "date": "2026-09-12",
+      "weekday": "周六",
+      "week": 4,
+      "phase": "入门精讲",
+      "type": "休息",
+      "duration": "0",
+      "subject": "—",
+      "tasks": [
+        "休息"
+      ],
+      "eachWp": [
+        10
+      ],
+      "taskDone": [
+        false
+      ],
+      "resources": "—",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 28,
+      "date": "2026-09-13",
+      "weekday": "周日",
+      "week": 4,
+      "phase": "入门精讲",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "章节练习·经济基础第 7-8 章 + 错题归因",
+        "工商·深度精讲班·第 2 章收尾 + 章节练习·工商第 2 章",
+        "工商·深度精讲班·第 3 章（市场营销与品牌管理）前 4 节"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 29,
+      "date": "2026-09-14",
+      "weekday": "周一",
+      "week": 5,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "深度精讲班·第 9 章（价格总水平和就业失业）前 2 节"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 30,
+      "date": "2026-09-15",
+      "weekday": "周二",
+      "week": 5,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 9 章后 2 节",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 31,
+      "date": "2026-09-16",
+      "weekday": "周三",
+      "week": 5,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 10 章（国际贸易理论和政策）第 1 节",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 32,
+      "date": "2026-09-17",
+      "weekday": "周四",
+      "week": 5,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "双科",
+      "tasks": [
+        "第 10 章剩余节",
+        "工商·深度精讲班·第 3 章后 5 节（前半）"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 33,
+      "date": "2026-09-18",
+      "weekday": "周五",
+      "week": 5,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "工商管理",
+      "tasks": [
+        "工商·深度精讲班·第 3 章后 5 节（收尾）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 34,
+      "date": "2026-09-19",
+      "weekday": "周六",
+      "week": 5,
+      "phase": "入门精讲",
+      "type": "休息",
+      "duration": "0",
+      "subject": "—",
+      "tasks": [
+        "休息"
+      ],
+      "eachWp": [
+        10
+      ],
+      "taskDone": [
+        false
+      ],
+      "resources": "—",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 35,
+      "date": "2026-09-20",
+      "weekday": "周日",
+      "week": 5,
+      "phase": "入门精讲",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "章节练习·经济基础第 9-10 章",
+        "深度精讲班·第 11 章（公共物品与财政职能）",
+        "深度精讲班·第 12 章（财政支出）⚠️ 高频考点",
+        "章节练习·工商第 3 章",
+        "（机动）工商·深度精讲班·第 4 章（分销渠道管理）前 2 节"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "能列出财政支出三大类，会算购买性/转移性支出比例",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 36,
+      "date": "2026-09-21",
+      "weekday": "周一",
+      "week": 6,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "深度精讲班·第 13 章（财政收入）第 1-2 节"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 37,
+      "date": "2026-09-22",
+      "weekday": "周二",
+      "week": 6,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 13 章剩余节",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 38,
+      "date": "2026-09-23",
+      "weekday": "周三",
+      "week": 6,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "深度精讲班·第 14 章（税收，全课程最长章）第 1 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "⚠️ 增值税/消费税/所得税要分清，建对比表",
+      "milestone": ""
+    },
+    {
+      "day": 39,
+      "date": "2026-09-24",
+      "weekday": "周四",
+      "week": 6,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 14 章第 2 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 40,
+      "date": "2026-09-25",
+      "weekday": "周五",
+      "week": 6,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "工商管理",
+      "tasks": [
+        "工商·深度精讲班·第 4 章（分销渠道管理）收尾",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 41,
+      "date": "2026-09-26",
+      "weekday": "周六",
+      "week": 6,
+      "phase": "入门精讲",
+      "type": "休息",
+      "duration": "0",
+      "subject": "—",
+      "tasks": [
+        "休息"
+      ],
+      "eachWp": [
+        10
+      ],
+      "taskDone": [
+        false
+      ],
+      "resources": "—",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 42,
+      "date": "2026-09-27",
+      "weekday": "周日",
+      "week": 6,
+      "phase": "入门精讲",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "第 14 章收尾 + 章节练习·第 13-14 章",
+        "章节练习·工商第 4 章",
+        "工商·深度精讲班·第 5 章（生产管理 ⭐重点章）前 4 节"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "能区分流转税/所得税/财产税，知道 4 大税种税率",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 43,
+      "date": "2026-09-28",
+      "weekday": "周一",
+      "week": 7,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "深度精讲班·第 15 章（政府预算）第 1 批"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 44,
+      "date": "2026-09-29",
+      "weekday": "周二",
+      "week": 7,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 15 章第 2 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 45,
+      "date": "2026-09-30",
+      "weekday": "周三",
+      "week": 7,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 15 章第 3 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 46,
+      "date": "2026-10-01",
+      "weekday": "周四（国庆 🎉）",
+      "week": 7,
+      "phase": "入门精讲",
+      "type": "假期加速",
+      "duration": "2-3 小时",
+      "subject": "经济基础",
+      "tasks": [
+        "第 15 章收尾",
+        "深度精讲班·第 16 章（财政管理体制）",
+        "章节练习·第 15-16 章"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "—",
+      "note": "加班就保持 45min 原节奏，不硬撑",
+      "milestone": ""
+    },
+    {
+      "day": 47,
+      "date": "2026-10-02",
+      "weekday": "周五（国庆 🎉）",
+      "week": 7,
+      "phase": "入门精讲",
+      "type": "假期加速",
+      "duration": "2-3 小时",
+      "subject": "双科",
+      "tasks": [
+        "深度精讲班·第 17 章（财政政策）",
+        "工商·深度精讲班·第 5 章收尾",
+        "章节练习·工商第 5 章"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "能区分财政政策三大工具",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 48,
+      "date": "2026-10-03",
+      "weekday": "周六（国庆 🎉）",
+      "week": 7,
+      "phase": "入门精讲",
+      "type": "假期加速",
+      "duration": "2-3 小时",
+      "subject": "双科",
+      "tasks": [
+        "深度精讲班·第 18 章（货币供求与货币均衡）启动",
+        "工商·深度精讲班·第 6 章（质量管理与安全管理）前 4 节"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 49,
+      "date": "2026-10-04",
+      "weekday": "周日",
+      "week": 7,
+      "phase": "入门精讲",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "第 18 章收尾 + 章节练习·第 17-18 章",
+        "工商·深度精讲班·第 6 章收尾 + 章节练习·工商第 6 章"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "能复述中央银行三大货币政策工具",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 50,
+      "date": "2026-10-05",
+      "weekday": "周一",
+      "week": 8,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "深度精讲班·第 19 章（中央银行与货币政策）第 1 批"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 51,
+      "date": "2026-10-06",
+      "weekday": "周二",
+      "week": 8,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 19 章第 2 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 52,
+      "date": "2026-10-07",
+      "weekday": "周三",
+      "week": 8,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "深度精讲班·第 20 章（商业银行与金融市场）第 1 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 53,
+      "date": "2026-10-08",
+      "weekday": "周四",
+      "week": 8,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 20 章第 2 批 + 第 21 章（金融风险与金融监管）第 1 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "⚠️ 货币供求公式多，动笔算",
+      "milestone": ""
+    },
+    {
+      "day": 54,
+      "date": "2026-10-09",
+      "weekday": "周五",
+      "week": 8,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 21 章第 2 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "能区分 M0/M1/M2",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 55,
+      "date": "2026-10-10",
+      "weekday": "周六",
+      "week": 8,
+      "phase": "入门精讲",
+      "type": "休息",
+      "duration": "0",
+      "subject": "—",
+      "tasks": [
+        "休息"
+      ],
+      "eachWp": [
+        10
+      ],
+      "taskDone": [
+        false
+      ],
+      "resources": "—",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 56,
+      "date": "2026-10-11",
+      "weekday": "周日",
+      "week": 8,
+      "phase": "入门精讲",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "深度精讲班·第 22 章（对外金融关系与政策）+ 章节练习·第 19-22 章",
+        "工商·深度精讲班·第 7 章（物流与供应链管理 ⭐重点章）前 5 节"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "知道中央银行与商业银行职能区别",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 57,
+      "date": "2026-10-12",
+      "weekday": "周一",
+      "week": 9,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "深度精讲班·第 23 章（统计与统计数据）第 1 批",
+        "（可选）中国人事考试网\"模拟作答系统\"已开放，抽空练 1 次机考界面"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库 + 中国人事考试网",
+      "goal": "—",
+      "note": "🖥️ 模拟作答系统考前 4 周左右开放，练一次熟悉计算器",
+      "milestone": ""
+    },
+    {
+      "day": 58,
+      "date": "2026-10-13",
+      "weekday": "周二",
+      "week": 9,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 23 章第 2 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 59,
+      "date": "2026-10-14",
+      "weekday": "周三",
+      "week": 9,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "深度精讲班·第 24 章（描述统计）第 1 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 60,
+      "date": "2026-10-15",
+      "weekday": "周四",
+      "week": 9,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 24 章第 2 批 + 第 25 章（抽样调查）第 1 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 61,
+      "date": "2026-10-16",
+      "weekday": "周五",
+      "week": 9,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 25 章第 2 批 + 第 26 章（回归分析）速过",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 62,
+      "date": "2026-10-17",
+      "weekday": "周六",
+      "week": 9,
+      "phase": "入门精讲",
+      "type": "休息",
+      "duration": "0",
+      "subject": "—",
+      "tasks": [
+        "休息"
+      ],
+      "eachWp": [
+        10
+      ],
+      "taskDone": [
+        false
+      ],
+      "resources": "—",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 63,
+      "date": "2026-10-18",
+      "weekday": "周日",
+      "week": 9,
+      "phase": "入门精讲",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "深度精讲班·第 27 章（时间序列）",
+        "章节练习·第 23-27 章（错题重点归因）",
+        "工商·深度精讲班·第 7 章收尾 + 章节练习·工商第 7 章",
+        "（机动）工商·深度精讲班·第 8 章（技术创新管理）前 4 节"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "能区分均值/中位数/众数；知道权责发生制 vs 收付实现制",
+      "note": "🎉 精讲期基本收官，下周进入强化刷题期",
+      "milestone": ""
+    },
+    {
+      "day": 64,
+      "date": "2026-10-19",
+      "weekday": "周一",
+      "week": 10,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "深度精讲班·第 28 章（会计概论）第 1 批"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "⚠️ 会计分录动笔写至少 5 道",
+      "milestone": ""
+    },
+    {
+      "day": 65,
+      "date": "2026-10-20",
+      "weekday": "周二",
+      "week": 10,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 28 章第 2 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 66,
+      "date": "2026-10-21",
+      "weekday": "周三",
+      "week": 10,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "深度精讲班·第 29 章（会计循环）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 67,
+      "date": "2026-10-22",
+      "weekday": "周四",
+      "week": 10,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "深度精讲班·第 30 章（财务报表）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 68,
+      "date": "2026-10-23",
+      "weekday": "周五",
+      "week": 10,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 31-32 章（法律部分）1.5x 速过",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "法律部分抓高频即可",
+      "milestone": ""
+    },
+    {
+      "day": 69,
+      "date": "2026-10-24",
+      "weekday": "周六",
+      "week": 10,
+      "phase": "强化刷题",
+      "type": "机动",
+      "duration": "2-3 小时",
+      "subject": "双科",
+      "tasks": [
+        "第 33-37 章（合同法/物权法/公司法等重点法律）1.5x 速过",
+        "工商·第 9 章（人力资源）：看 2025 工商精讲班对应章节或环球网校高频考点班"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网（26版没更就看25版）+ 环球网校（备用）",
+      "goal": "—",
+      "note": "⚠️ 工商精讲班（26版）只到第 8 章，9-11 章用 25 版/环球网校补",
+      "milestone": ""
+    },
+    {
+      "day": 70,
+      "date": "2026-10-25",
+      "weekday": "周日",
+      "week": 10,
+      "phase": "强化刷题",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "工商·第 10-11 章（投融资/电子商务）补完 + 章节练习·工商第 9-11 章",
+        "历年真题·经济基础 2020 年 1 套（限时 90min）",
+        "历年真题·经济基础 2021 年 1 套（限时 90min）",
+        "错题归因"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网题库·历年真题",
+      "goal": "🎉 经济基础 37 章全部过完一遍；能复述合同效力、物权分类",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 71,
+      "date": "2026-10-26",
+      "weekday": "周一",
+      "week": 11,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "大V母题带练班·经济基础 第 1-2 节（26版没上线就看25年习题带练班）"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·大V母题带练班",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 72,
+      "date": "2026-10-27",
+      "weekday": "周二",
+      "week": 11,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "大V母题带练班·经济基础 第 3-4 节",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·大V母题带练班",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 73,
+      "date": "2026-10-28",
+      "weekday": "周三",
+      "week": 11,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "大V母题带练班·经济基础 收尾",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·大V母题带练班",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 74,
+      "date": "2026-10-29",
+      "weekday": "周四",
+      "week": 11,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "双科",
+      "tasks": [
+        "错题本回顾（高频错题区：合同法/物权法/公司法/会计分录/税收）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网题库·错题本",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 75,
+      "date": "2026-10-30",
+      "weekday": "周五",
+      "week": 11,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "工商管理",
+      "tasks": [
+        "大V母题带练班·工商（直播回放，前半）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·大V母题带练班",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 76,
+      "date": "2026-10-31",
+      "weekday": "周六",
+      "week": 11,
+      "phase": "强化刷题",
+      "type": "机动",
+      "duration": "2-3 小时",
+      "subject": "工商管理",
+      "tasks": [
+        "大V母题带练班·工商（后半）",
+        "历年真题·工商 2020 年 1 套（限时 90min）",
+        "历年真题·工商 2021 年 1 套（限时 90min）"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·大V母题带练班 + 题库·历年真题",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 77,
+      "date": "2026-11-01",
+      "weekday": "周日",
+      "week": 11,
+      "phase": "强化刷题",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "历年真题·经济基础 2023、2024 各 1 套（限时）",
+        "历年真题·工商 2022-2024 选做 1 套（限时）",
+        "（机动）模拟试卷·两科各 1 套",
+        "🔥 考前一周开始：挑 4-5 个考点附近酒店备选 + 登录 12306 关注 11/6 衡阳→韶关车次"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网题库 + 12306/酒店 App",
+      "goal": "两科真题错题率 < 30%，高频错题全部归因",
+      "note": "今晚 20:00 会收到\"考前一周\"自动提醒",
+      "milestone": "🔥 考前一周倒计时开始"
+    },
+    {
+      "day": 78,
+      "date": "2026-11-02",
+      "weekday": "周一",
+      "week": 12,
+      "phase": "冲刺模考",
+      "type": "工作日碎片",
+      "duration": "45-60 分钟",
+      "subject": "双科",
+      "tasks": [
+        "冲刺串讲班·经济基础 2-3 节（26版没上线就看25版，17 节 8.7h，1.5x）",
+        "冲刺串讲班·工商 1-2 节（22 节 8.7h，1.5x）"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·冲刺串讲班",
+      "goal": "—",
+      "note": "—",
+      "milestone": "冲刺周开始"
+    },
+    {
+      "day": 79,
+      "date": "2026-11-03",
+      "weekday": "周二",
+      "week": 12,
+      "phase": "冲刺模考",
+      "type": "关键事务日",
+      "duration": "45 分钟（学习）+ 事务",
+      "subject": "通用",
+      "tasks": [
+        "🔥 9:00 后第一件事：打印准考证（中国人事考试网 → 打印准考证，A4 黑白 2 份）",
+        "核对：姓名/证件号/考点地址/批次时间/考场号",
+        "🔥 拿到考点地址后：订酒店（考点 1km 内，11/6 入住）",
+        "🔥 买 11/6 衡阳→韶关高铁票",
+        "晚：冲刺串讲班·继续推进"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "resources": "中国人事考试网 + 12306 + 酒店 App + 争学网",
+      "goal": "准考证在手（2 份）、酒店已订、去程票已买",
+      "note": "⚠️ 打印窗口仅 11/3 9:00 – 11/6 17:00，别拖",
+      "milestone": "🔥 准考证打印开放"
+    },
+    {
+      "day": 80,
+      "date": "2026-11-04",
+      "weekday": "周三",
+      "week": 12,
+      "phase": "冲刺模考",
+      "type": "关键事务日",
+      "duration": "1-2 小时",
+      "subject": "双科",
+      "tasks": [
+        "🔥 按准考证批次订回程票（韶关→衡阳）",
+        "万人模考·两科各 1 套（限时 90min/套）",
+        "冲刺串讲班·继续推进",
+        "整理高频考点速记卡（浓缩到 1-2 张 A4）"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "resources": "12306 + 争学网/环球网校·万人模考 + 冲刺串讲班",
+      "goal": "模考完成、速记卡成型",
+      "note": "—",
+      "milestone": "🔥 回程票"
+    },
+    {
+      "day": 81,
+      "date": "2026-11-05",
+      "weekday": "周四",
+      "week": 12,
+      "phase": "冲刺模考",
+      "type": "知识梳理日",
+      "duration": "1-2 小时",
+      "subject": "双科",
+      "tasks": [
+        "错题本过一遍（重点：合同法/物权法/公司法/会计分录/税收）",
+        "公式手写一遍（弹性/会计/统计/财务）",
+        "冲刺串讲班·收尾",
+        "证件文具检查：身份证原件 + 准考证 2 份 + 黑色签字笔 2 支 + 透明笔袋（手机/智能手表不可带至座位）"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "resources": "学习笔记 + 错题本",
+      "goal": "证件齐、公式熟",
+      "note": "今晚 22:00 前必须睡觉",
+      "milestone": ""
+    },
+    {
+      "day": 82,
+      "date": "2026-11-06",
+      "weekday": "周五",
+      "week": 12,
+      "phase": "冲刺模考",
+      "type": "出发日",
+      "duration": "—",
+      "subject": "—",
+      "tasks": [
+        "上午/中午：衡阳 → 韶关高铁（约 1.5-2h），提前 1.5h 到车站",
+        "下午：入住酒店；地图查酒店→考点路线，必要时下楼踩点",
+        "晚上：不看书，错题速记卡扫一眼即可；22:00 前睡",
+        "晚餐清淡，别吃辣/海鲜/路边摊"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "resources": "—",
+      "goal": "人到韶关、路线清楚",
+      "note": "带一件外套（11 月韶关比衡阳略冷）",
+      "milestone": "🔥 出发去韶关"
+    },
+    {
+      "day": 83,
+      "date": "2026-11-07",
+      "weekday": "周六",
+      "week": 12,
+      "phase": "冲刺模考",
+      "type": "考试",
+      "duration": "—",
+      "subject": "双科",
+      "tasks": [
+        "若你的批次在 11/7：",
+        "答题策略：单选 1 分钟/题先易后难；多选/案例拿不准只选 1-2 个确定的（错选 0 分，少选每项 0.5 分）；不空题",
+        "考完不对答案"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "身份证 + 准考证 ×2 + 签字笔 ×2",
+      "goal": "两科考完",
+      "note": "题型：经济基础 70 单选+35 多选；工商 60 单选+20 多选+20 案例（共 140 分/科，84 过线）",
+      "milestone": "🔥 考试日（批次 1/2）"
+    },
+    {
+      "day": 84,
+      "date": "2026-11-08",
+      "weekday": "周日",
+      "week": 12,
+      "phase": "冲刺模考",
+      "type": "考试",
+      "duration": "—",
+      "subject": "双科",
+      "tasks": [
+        "若批次在 11/8：节奏同 11/7（上午场或下午场，以准考证为准）",
+        "若已考完：退房 → 回衡阳 → 放松；把考场上拿不准的题标一下（12 月出分前有用）",
+        "成绩 12 月上旬发布（中国人事考试网查询）"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "—",
+      "goal": "备考周期结束 🎉",
+      "note": "连续 2 个考试年度内过两科即可拿证，就算今年只过一科明年也只需补另一科",
+      "milestone": "🔥 考试日（批次 3/4）/ 备考收官"
+    }
+  ]
+};
+const QUESTIONS = {
+  "generatedAt": "2026-08-18",
+  "note": "预览版示例题库，题型仅单选/多选，按六大部分+阶段标注；后续可替换为真实题库（JSON/CSV/Excel）。",
+  "questions": [
+    {"id":"q1","phase":"入门精讲","subject":"经济学基础","chapter":"第一章 市场需求、供给与均衡价格","type":"single","q":"影响需求的最决定性因素是？","options":["消费者的偏好","商品本身的价格","消费者的收入","消费者的预期"],"answer":[1],"explain":"商品自身价格是影响需求的最关键因素，一般价格上升需求下降，呈反向变动。"},
+    {"id":"q2","phase":"入门精讲","subject":"经济学基础","chapter":"第一章 市场需求、供给与均衡价格","type":"single","q":"需求价格弹性系数 Ed 的绝对值大于 1，说明该商品需求？","options":["缺乏弹性","富有弹性","单位弹性","完全无弹性"],"answer":[1],"explain":"|Ed|>1 表示需求量变动百分数大于价格变动百分数，需求富有弹性。"},
+    {"id":"q3","phase":"入门精讲","subject":"经济学基础","chapter":"第二章 消费者行为分析","type":"single","q":"无差异曲线凸向原点的根本原因是由于？","options":["边际效用递减","边际技术替代率递减","规模报酬递减","边际替代率递增"],"answer":[1],"explain":"无差异曲线凸向原点是由于商品的边际替代率递减，表现为曲线斜率绝对值递减。"},
+    {"id":"q4","phase":"入门精讲","subject":"经济学基础","chapter":"第三章 生产和成本理论","type":"single","q":"短期总成本 TC 与生产规模无关的成本是？","options":["总可变成本 TVC","总固定成本 TFC","平均成本 AC","边际成本 MC"],"answer":[1],"explain":"总固定成本 TFC 不随产量变动而变动，如厂房租金，属于短期与规模无关的成本。"},
+    {"id":"q5","phase":"入门精讲","subject":"经济学基础","chapter":"第四章 市场结构理论","type":"single","q":"完全竞争市场上，单个厂商是？","options":["价格制定者","价格接受者","价格领导者","垄断者"],"answer":[1],"explain":"完全竞争市场厂商众多、产品同质，单个厂商只能接受市场既定价格，是价格接受者。"},
+    {"id":"q6","phase":"入门精讲","subject":"经济学基础","chapter":"第六章 市场失灵和政府的干预","type":"single","q":"下列中属于纯公共物品特征的是？","options":["竞争性与排他性","非竞争性与非排他性","竞争性与非排他性","非竞争性与排他性"],"answer":[1],"explain":"纯公共物品具有非竞争性（一人消费不减少他人）和非排他性（无法排除他人使用）。"},
+    {"id":"q7","phase":"入门精讲","subject":"财政","chapter":"第十一章 公共物品与财政职能","type":"single","q":"财政履行资源配置职能的重要手段是？","options":["税收","政府投资","国债","转移支付"],"answer":[1],"explain":"政府直接投资基础设施等公共领域，是财政实现资源配置职能的主要手段之一。"},
+    {"id":"q8","phase":"入门精讲","subject":"财政","chapter":"第十二章 财政支出","type":"single","q":"反映政府实际支出规模的指标通常采用？","options":["名义财政支出","实际财政支出（剔除物价）","财政支出增长率","财政支出占 GDP 比重"],"answer":[1],"explain":"为真实反映支出规模变动，应采用剔除物价变动后的实际财政支出指标。"},
+    {"id":"q9","phase":"入门精讲","subject":"货币与金融","chapter":"第十六章 货币供求与货币均衡","type":"single","q":"我国狭义货币供应量 M1 包括？","options":["流通中现金+单位活期存款","M0+定期存款","M0+储蓄存款","全部存款"],"answer":[0],"explain":"M1 = M0（流通中现金）+ 单位活期存款，流动性较强的货币层次。"},
+    {"id":"q10","phase":"入门精讲","subject":"货币与金融","chapter":"第十七章 中央银行与货币政策","type":"single","q":"中央银行一般性货币政策工具中，最常用的是？","options":["存款准备金率","再贴现","公开市场操作","窗口指导"],"answer":[2],"explain":"公开市场操作（买卖国债）灵活、主动，是央行日常最常用的一般性政策工具。"},
+    {"id":"q11","phase":"入门精讲","subject":"统计","chapter":"第二十一章 统计与统计数据","type":"single","q":"下列属于分类数据的是？","options":["身高（cm）","性别（男/女）","收入（元）","温度（℃）"],"answer":[1],"explain":"性别属于定类尺度，无顺序、只能分类，是分类数据（定性数据）。"},
+    {"id":"q12","phase":"入门精讲","subject":"会计","chapter":"第二十六章 会计概论","type":"single","q":"会计基本恒等式是？","options":["资产=负债+所有者权益","收入-费用=利润","资产=权益","资产+费用=负债+所有者权益+收入"],"answer":[0],"explain":"资产 = 负债 + 所有者权益是复式记账与编制资产负债表的基础恒等式。"},
+    {"id":"q13","phase":"入门精讲","subject":"法律","chapter":"第三十一章 法律对经济关系的调整","type":"single","q":"经济法调整的是？","options":["平等主体间人身关系","国家对经济的宏观调控关系","婚姻关系","继承关系"],"answer":[1],"explain":"经济法主要调整国家在宏观调控和市场规制过程中形成的经济关系。"},
+    {"id":"q14","phase":"入门精讲","subject":"法律","chapter":"第三十三章 合同法律制度","type":"single","q":"合同生效的一般要件不包括？","options":["行为人有相应民事行为能力","意思表示真实","不违反强制性规定","必须采用书面形式"],"answer":[3],"explain":"书面形式并非合同生效的一般要件，除法律特别规定外，口头合同也可生效。"},
+
+    {"id":"q15","phase":"强化刷题","subject":"经济学基础","chapter":"第一章 市场需求、供给与均衡价格","type":"multi","q":"下列因素中，会引起需求曲线向右平行移动的有？","options":["消费者收入增加（正常品）","替代品价格上升","互补品价格下降","商品本身价格下降"],"answer":[0,1,2],"explain":"需求曲线右移表示需求增加，由非价格因素引起：收入增、替代品涨价、互补品降价均使需求增加；商品本身价格变动表现为点沿曲线移动而非线移动。"},
+    {"id":"q16","phase":"强化刷题","subject":"经济学基础","chapter":"第二章 消费者行为分析","type":"multi","q":"关于边际效用递减规律，下列说法正确的有？","options":["随消费量增多，总效用先增后减","边际效用递减但可为负","基数效用论是其理论前提","边际效用恒为正"],"answer":[0,1,2],"explain":"边际效用随消费量增加而递减，甚至可为负；总效用先增后减；该规律以基数效用论为前提。边际效用并非恒为正。"},
+    {"id":"q17","phase":"强化刷题","subject":"经济学基础","chapter":"第四章 市场结构理论","type":"multi","q":"垄断竞争市场的特征包括？","options":["厂商数量较多","产品有差别","进退较容易","厂商对价格有较强控制力"],"answer":[0,1,2],"explain":"垄断竞争：厂商较多、产品有差别、进退较容易，但单个厂商控制价格能力有限。较强控制力是完全垄断的特征。"},
+    {"id":"q18","phase":"强化刷题","subject":"财政","chapter":"第十二章 财政支出","type":"multi","q":"衡量财政支出规模变化的指标有？","options":["财政支出增长率","财政支出占 GDP 比重","财政支出弹性","财政支出边际倾向"],"answer":[0,1,2,3],"explain":"四个均为衡量支出规模变动的指标：增长率、占GDP比重、弹性（增长率/GDP增长率）、边际倾向（增量支出/增量GDP）。"},
+    {"id":"q19","phase":"强化刷题","subject":"财政","chapter":"第十三章 财政收入","type":"multi","q":"税收的基本特征包括？","options":["强制性","无偿性","固定性","自愿性"],"answer":[0,1,2],"explain":"税收三特征：强制性、无偿性、固定性；自愿性不是税收特征。"},
+    {"id":"q20","phase":"强化刷题","subject":"货币与金融","chapter":"第十七章 中央银行与货币政策","type":"multi","q":"中央银行作为银行的银行，其职能包括？","options":["集中保管存款准备金","组织全国清算","充当最后贷款人","代理国库"],"answer":[0,1,2],"explain":"银行的银行职能：保管存款准备、组织清算、最后贷款人。代理国库属于政府的银行职能。"},
+    {"id":"q21","phase":"强化刷题","subject":"统计","chapter":"第二十二章 描述统计","type":"multi","q":"下列属于离散程度测度指标的有？","options":["方差","标准差","离散系数","中位数"],"answer":[0,1,2],"explain":"方差、标准差、离散系数（变异系数）均测度数据离散程度；中位数是集中趋势测度。"},
+    {"id":"q22","phase":"强化刷题","subject":"统计","chapter":"第二十三章 推断统计","type":"multi","q":"假设检验中可能犯的错误有？","options":["第一类错误（弃真）","第二类错误（取伪）","抽样误差不可避免","计算错误"],"answer":[0,1,2],"explain":"假设检验两类错误：弃真（第一类）、取伪（第二类）；抽样误差由随机性造成不可避免。"},
+    {"id":"q23","phase":"强化刷题","subject":"会计","chapter":"第二十八章 会计报表","type":"multi","q":"资产负债表反映企业在某一时点的？","options":["资产","负债","所有者权益","利润"],"answer":[0,1,2],"explain":"资产负债表是时点报表，列示资产、负债、所有者权益；利润由利润表反映。"},
+    {"id":"q24","phase":"强化刷题","subject":"法律","chapter":"第三十三章 合同法律制度","type":"multi","q":"下列合同中，属于无效合同的有？","options":["无民事行为能力人订立的","以欺诈手段损害国家利益的","恶意串通损害第三人利益的","显失公平的"],"answer":[0,1,2],"explain":"无行为能力、损害国家利益、恶意串通均属无效合同；显失公平属可撤销合同而非无效。"},
+
+    {"id":"q25","phase":"冲刺模考","subject":"经济学基础","chapter":"第七章 国民收入核算","type":"single","q":"按支出法核算 GDP，不包括下列哪一项目？","options":["消费","投资","政府购买","出口减进口（净出口）","中间产品价值"],"answer":[4],"explain":"GDP 核算最终产品价值，不计入中间产品，避免重复计算；支出法=消费+投资+政府购买+净出口。"},
+    {"id":"q26","phase":"冲刺模考","subject":"经济学基础","chapter":"第八章 经济增长和经济发展理论","type":"single","q":"索洛模型中，长期经济增长的根本源泉是？","options":["资本积累","劳动力增长","技术进步","储蓄率提高"],"answer":[2],"explain":"索洛模型表明，长期持续的人均增长只能来自外生技术进步，资本积累仅带来水平效应。"},
+    {"id":"q27","phase":"冲刺模考","subject":"财政","chapter":"第十四章 税收制度","type":"single","q":"增值税一般纳税人的基本税率（我国现行）为？","options":["3%","6%","9%","13%"],"answer":[3],"explain":"我国增值税一般纳税人基本税率为 13%（另有 9%、6% 等低税率及 3% 征收率）。"},
+    {"id":"q28","phase":"冲刺模考","subject":"货币与金融","chapter":"第十八章 商业银行与金融市场","type":"single","q":"商业银行最基本的职能是？","options":["信用中介","支付中介","信用创造","金融服务"],"answer":[0],"explain":"信用中介（吸收存款、发放贷款）是商业银行最基本的职能，其余职能由此派生。"},
+    {"id":"q29","phase":"冲刺模考","subject":"统计","chapter":"第二十四章 回归分析","type":"single","q":"一元线性回归模型中，决定系数 R² 的取值范围是？","options":["[0,1]","(-∞,+∞)","[-1,1]","[0,+∞)"],"answer":[0],"explain":"决定系数 R² 表示模型解释变差比例，取值范围 0 到 1，越接近1拟合越好。"},
+    {"id":"q30","phase":"冲刺模考","subject":"会计","chapter":"第二十七章 会计循环","type":"single","q":"企业将一笔费用误计入资产，会导致？","options":["资产高估、利润高估","资产低估、利润低估","资产高估、利润低估","资产低估、利润高估"],"answer":[0],"explain":"费用计入资产使当期费用少计，利润高估，同时资产虚增，属典型的会计差错方向。"},
+    {"id":"q31","phase":"冲刺模考","subject":"法律","chapter":"第三十四章 公司法律制度","type":"single","q":"有限责任公司股东人数上限为？","options":["20 人","50 人","100 人","200 人"],"answer":[1],"explain":"我国《公司法》规定有限责任公司由 50 个以下股东出资设立。"},
+    {"id":"q32","phase":"冲刺模考","subject":"工商管理","chapter":"企业管理概述","type":"single","q":"企业战略管理过程的起点是？","options":["战略实施","战略控制","战略分析","战略选择"],"answer":[2],"explain":"战略管理过程一般包括战略分析→战略选择→战略实施→战略控制，分析是首要环节。"},
+
+    {"id":"q33","phase":"冲刺模考","subject":"经济学基础","chapter":"第九章 价格总水平和就业","type":"multi","q":"菲利普斯曲线反映的关系包括？","options":["失业率与通货膨胀率负相关","长期是一条垂直线","短期可权衡","与利率无关"],"answer":[0,1,2],"explain":"短期菲利普斯曲线失业率与通胀率负相关可权衡；长期垂直（自然失业率），不反映与利率的直接关系。"},
+    {"id":"q34","phase":"冲刺模考","subject":"财政","chapter":"第十五章 政府预算","type":"multi","q":"我国政府预算体系包括？","options":["一般公共预算","政府性基金预算","国有资本经营预算","社会保险基金预算"],"answer":[0,1,2,3],"explain":"四本预算构成全口径政府预算体系，缺一不可。"},
+    {"id":"q35","phase":"冲刺模考","subject":"货币与金融","chapter":"第十九章 金融风险与监管","type":"multi","q":"金融风险的类型包括？","options":["信用风险","市场风险","流动性风险","操作风险"],"answer":[0,1,2,3],"explain":"金融风险涵盖信用、市场、流动性、操作、声誉等多类风险，题干四项均属典型分类。"},
+    {"id":"q36","phase":"冲刺模考","subject":"工商管理","chapter":"市场营销","type":"multi","q":"市场营销宏观环境包括？","options":["人口环境","经济环境","政治法律环境","竞争者"],"answer":[0,1,2],"explain":"宏观环境含人口、经济、自然、技术、政治法律、社会文化；竞争者属微观环境。"}
+  ]
+}
+;
+
+/* ---------- 基础数据 ---------- */
+const byDate = {}; const byDay = {};
+PLAN.days.forEach(d => { byDate[d.date] = d; byDay[d.day] = d; });
+const Q = QUESTIONS.questions;
+const QBYID = {}; Q.forEach(q => QBYID[q.id] = q);
+const SUBJECTS = [...new Set(Q.map(q => q.subject))];
+
+const PHASE_COLOR = {'入门精讲':'var(--blue)','强化刷题':'var(--orange)','冲刺模考':'var(--red)'};
+function phaseColor(rec){
+  if(rec.type==='考试') return 'var(--purple)';
+  if(rec.type==='休息') return 'var(--gray)';
+  return PHASE_COLOR[rec.phase]||'var(--gray)';
+}
+function phaseClass(rec){
+  if(rec.type==='考试') return 'b-purple';
+  if(rec.type==='休息') return 'b-gray';
+  if(rec.phase==='入门精讲') return 'b-blue';
+  if(rec.phase==='强化刷题') return 'b-orange';
+  if(rec.phase==='冲刺模考') return 'b-red';
+  return 'b-gray';
+}
+
+/* ---------- 日期工具 ---------- */
+function pad(n){ return String(n).padStart(2,'0'); }
+function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function parseDate(s){ const p=s.split('-'); return {y:+p[0],m:+p[1],d:+p[2]}; }
+
+/* ---------- 状态 ---------- */
+let checkins = {};        // 'day:idx' -> 1
+let quizRecords = {};     // qid -> 1(对)/0(错)
+let storageMode = 'local';
+let filterPhase = 'all';
+let view = parseDate(todayStr());
+
+/* ---------- 打卡读写 ---------- */
+async function loadData(){
+  // 打卡
+  try{
+    const r = await fetch('/api/econ-checkins', {cache:'no-store'});
+    if(!r.ok) throw 0; const j = await r.json(); if(!j.ok) throw 0;
+    const m = {}; (j.rows||[]).forEach(x => { if(x.checked) m[x.day+':'+x.task_idx]=1; });
+    checkins = m; storageMode='db';
+  }catch(e){ try{ checkins=JSON.parse(localStorage.getItem('econ_checkins_v1')||'{}')||{}; }catch(_){ checkins={}; } storageMode='local'; }
+  // 答题
+  try{
+    const r = await fetch('/api/econ-quiz-records', {cache:'no-store'});
+    if(!r.ok) throw 0; const j = await r.json(); if(!j.ok) throw 0;
+    const m = {}; (j.rows||[]).forEach(x => { m[x.qid] = x.correct?1:0; });
+    quizRecords = m;
+  }catch(e){ try{ quizRecords=JSON.parse(localStorage.getItem('econ_quiz_v1')||'{}')||{}; }catch(_){ quizRecords={}; } }
+}
+function isDone(rec,i){ return !!checkins[rec.day+':'+i]; }
+async function toggle(rec,i,val){
+  const was = isDone(rec,i);
+  if(val) checkins[rec.day+':'+i]=1; else delete checkins[rec.day+':'+i];
+  localStorage.setItem('econ_checkins_v1', JSON.stringify(checkins));
+  if(storageMode==='db'){
+    try{ const r=await fetch('/api/econ-checkin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({day:rec.day,task_idx:i,checked:val?1:0})}); const j=await r.json(); if(!j.ok) throw 0; }
+    catch(e){ storageMode='local'; updateStorageBadge(); }
+  }
+  // 愿力发放：仅在完成状态变化时（完成 +wp，取消 -wp）；视频时长任务按 eachWp，其余每任务 10
+  if(val !== was){
+    const wp = (rec.eachWp && rec.eachWp[i]) || 10;
+    econGrantWP(val?wp:-wp, '经济师·学习日历', 'Day'+rec.day+' '+(rec.tasks[i]||'').slice(0,12));
+  }
+  renderToday(); renderWeek(); renderCalendar();
+}
+async function saveQuiz(qid, correct){
+  const old = quizRecords[qid];
+  quizRecords[qid] = correct?1:0;
+  localStorage.setItem('econ_quiz_v1', JSON.stringify(quizRecords));
+  if(storageMode==='db'){
+    try{ await fetch('/api/econ-quiz-answer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({qid,correct:correct?1:0})}); }
+    catch(e){ /* 离线忽略 */ }
+  }
+  renderHist();
+  return old;
+}
+
+/* ---------- 愿力发放（postMessage 给父页游戏人生） ---------- */
+function econDayKey(){ return todayStr(); }
+function econDailyCount(k){ try{ return Number(localStorage.getItem(k)||'0'); }catch(e){ return 0; } }
+function econDailyInc(k){ try{ localStorage.setItem(k, String(econDailyCount(k)+1)); }catch(e){} }
+function econGrantWP(delta, source, text){
+  try{ if(window.parent && window.parent!==window){ window.parent.postMessage({type:'econ-wp', delta:delta, source:source, text:text}, location.origin); } }catch(e){}
+}
+function econConquerWrong(correct){     // 原错题做对 → 攻克 +1，每日封顶 3 道
+  if(correct!==true) return;
+  const dk='econ_wb_'+econDayKey();
+  if(econDailyCount(dk) < 3){ econDailyInc(dk); econGrantWP(1,'经济师·错题本','攻克错题'); }
+}
+
+/* ---------- 进度 ---------- */
+function dayDone(rec){ let n=0; rec.tasks.forEach((_,i)=>{ if(isDone(rec,i)) n++; }); return n; }
+function dayTotal(rec){ return rec.tasks.length; }
+function weekDays(num){ return PLAN.days.filter(d=>d.week===num); }
+function weekDone(num){ let n=0,t=0; weekDays(num).forEach(r=>{ t+=dayTotal(r); n+=dayDone(r); }); return {done:n,total:t}; }
+
+function updateStorageBadge(){
+  const el=document.getElementById('storage');
+  if(storageMode==='db'){ el.textContent='存储：数据库 ✓'; el.className='storage db'; }
+  else { el.textContent='存储：本地（离线）'; el.className='storage local'; }
+}
+
+/* ---------- 今日卡片 ---------- */
+function renderToday(){
+  const el=document.getElementById('todayCard');
+  const t=todayStr(); const rec=byDate[t];
+  let html='<h2>🌟 今日任务 <span class="badge '+(rec?phaseClass(rec):'b-gray')+'">'+(rec?rec.phase:'—')+'</span></h2>';
+  if(!rec){ html+='<div class="empty">今天（'+t+'）不在备考窗口（'+PLAN.startDate+' ~ '+PLAN.endDate+'）内，暂无计划任务。</div>'; el.innerHTML=html; return; }
+  const done=dayDone(rec), total=dayTotal(rec), pct=total?Math.round(done/total*100):0;
+  html+='<div class="today-head"><span class="date">'+rec.date+'</span><span class="wd">'+rec.weekday+'</span>'
+      +'<span class="meta">'+rec.week+'　·　'+rec.subject+'　·　'+rec.duration+'</span></div>';
+  html+=renderTaskList(rec);
+  html+='<div class="progress"><i style="width:'+pct+'%"></i></div><div class="pct">已完成 '+done+' / '+total+'（'+pct+'%）</div>';
+  el.innerHTML=html;
+}
+function renderTaskList(rec){
+  if(!rec.tasks.length) return '<div class="empty">今日休息，好好放松 🌿</div>';
+  let h='<ul class="tasks">';
+  rec.tasks.forEach((tx,i)=>{ const done=isDone(rec,i);
+    h+='<li><div class="chk '+(done?'done':'')+'" onclick="window.__toggle('+rec.day+','+i+')">'+(done?'✓':'')+'</div>'
+     + '<div class="task-txt '+(done?'done':'')+'">'+escapeHtml(tx)+'</div></li>'; });
+  h+='</ul>'; return h;
+}
+window.__toggle=function(day,i){ const rec=byDay[day]; if(!rec) return; toggle(rec,i,!isDone(rec,i)); };
+
+/* ---------- 本周概览 ---------- */
+function currentWeekNum(){ const rec=byDate[todayStr()]; if(rec) return rec.week; if(todayStr()<PLAN.startDate) return 1; return 12; }
+function renderWeek(){
+  const el=document.getElementById('weekCard');
+  const num=currentWeekNum(); const w=PLAN.weeks[num]||{range:'',theme:'',goal:''};
+  const {done,total}=weekDone(num); const pct=total?Math.round(done/total*100):0;
+  let html='<h2>📅 本周概览 <span class="badge b-blue">第 '+num+' 周</span> <span class="meta" style="font-weight:400;color:var(--sub);font-size:13px">'+w.range+'</span></h2>';
+  html+='<div class="today-head"><span class="wd" style="font-size:15px">'+w.theme+'</span></div>';
+  html+='<div class="week-goal"><b>周目标：</b>'+escapeHtml(w.goal||'—')+'</div>';
+  html+='<div class="progress"><i style="width:'+pct+'%"></i></div><div class="pct">本周完成 '+done+' / '+total+'（'+pct+'%）</div>';
+  html+='<div class="week-days">';
+  weekDays(num).forEach(r=>{ const d=dayDone(r),t=dayTotal(r),p=t?Math.round(d/t*100):0; const isT=r.date===todayStr();
+    html+='<div class="wd-cell '+(isT?'today':'')+'" onclick="window.__openDay(\''+r.date+'\')">'
+        + '<div class="ph" style="background:'+phaseColor(r)+'"></div>'
+        + '<div class="d">'+parseDate(r.date).m+'/'+parseDate(r.date).d+'</div>'
+        + '<div style="font-size:11px;color:var(--sub)">'+r.weekday+'</div>'
+        + '<div class="mini"><i style="width:'+p+'%"></i></div></div>'; });
+  html+='</div>'; el.innerHTML=html;
+}
+
+/* ---------- 日历（完整月历，空白天也显示） ---------- */
+function renderCalendar(){
+  const y=view.y, m=view.m;
+  document.getElementById('monthLabel').textContent = y+'年'+m+'月';
+  const first=new Date(y,m-1,1); let lead=(first.getDay()+6)%7;
+  const daysInMonth=new Date(y,m,0).getDate();
+  const cells=[]; for(let i=0;i<lead;i++) cells.push(null);
+  for(let d=1;d<=daysInMonth;d++) cells.push(pad(d));
+  let html='';
+  cells.forEach(c=>{
+    if(c===null){ html+='<div class="cell blank"></div>'; return; }
+    const ds=y+'-'+pad(m)+'-'+c; const rec=byDate[ds]; const isToday=ds===todayStr();
+    if(!rec){ html+='<div class="cell blank"><div class="num">'+c+'</div></div>'; return; }
+    const done=dayDone(rec), total=dayTotal(rec); const allDone=total>0&&done===total;
+    const dim=(filterPhase!=='all'&&rec.phase!==filterPhase&&rec.type!=='考试'&&rec.type!=='休息')?' dim':'';
+    const restTag=rec.type==='休息'?'<div class="rest">休息</div>':'';
+    html+='<div class="cell '+(isToday?'today':'')+(allDone?' done':'')+dim+'" onclick="window.__openDay(\''+ds+'\')">'
+        + '<div class="num">'+c+'</div>'
+        + (rec.type==='考试'?'<div class="dot" style="background:var(--purple)"></div>':(rec.type==='休息'?'':('<div class="dot" style="background:'+phaseColor(rec)+'"></div>')))
+        + restTag+'</div>';
+  });
+  document.getElementById('cal').innerHTML=html;
+}
+
+/* ---------- 弹窗 ---------- */
+window.__openDay=function(ds){ const rec=byDate[ds]; if(!rec) return;
+  const done=dayDone(rec),total=dayTotal(rec),pct=total?Math.round(done/total*100):0;
+  let h='<div class="mhead"><span class="date">'+rec.date+'</span><span class="badge '+phaseClass(rec)+'">'+rec.phase+'</span>'
+      + '<span class="badge b-gray">'+rec.type+'</span>'
+      + '<button class="close" onclick="window.__closeModal()">×</button></div>';
+  h+='<div class="mrow"><b>'+rec.weekday+'</b>　·　'+rec.week+'　·　科目：'+escapeHtml(rec.subject)+'　·　时长：'+escapeHtml(rec.duration)+'</div>';
+  if(rec.resources&&rec.resources!=='—') h+='<div class="mrow">资源：'+escapeHtml(rec.resources)+'</div>';
+  if(rec.goal&&rec.goal!=='—') h+='<div class="mrow">验收：'+escapeHtml(rec.goal)+'</div>';
+  if(rec.note&&rec.note!=='—') h+='<div class="mrow">备注：'+escapeHtml(rec.note)+'</div>';
+  h+='<hr>'+renderTaskList(rec);
+  h+='<div class="progress"><i style="width:'+pct+'%"></i></div><div class="pct">已完成 '+done+' / '+total+'（'+pct+'%）</div>';
+  document.getElementById('modal').innerHTML=h; document.getElementById('mask').classList.add('show');
+};
+window.__closeModal=function(){ document.getElementById('mask').classList.remove('show'); };
+document.getElementById('mask').addEventListener('click',e=>{ if(e.target.id==='mask') window.__closeModal(); });
+
+/* ======== 每日一练 ======== */
+function pickDailyQuestion(){
+  const rec=byDate[todayStr()];
+  const phase = rec ? rec.phase : null;
+  let pool = phase===null ? Q : Q.filter(q=>q.phase===phase && rec.type!=='休息');
+  if(!pool.length || rec.type==='休息') pool = Q;        // 休息日/窗口外 → 全库随机
+  const wrong = pool.filter(q=>quizRecords[q.id]===0);    // 优先从错题本抽
+  const use = wrong.length ? wrong : pool;
+  return use[Math.floor(Math.random()*use.length)];
+}
+function renderDailyQuiz(){
+  const el=document.getElementById('dailyQuiz');
+  const q=pickDailyQuestion();
+  const multi = q.type==='multi';
+  let html='<h2>✍️ 每日一练 <span class="badge '+(multi?'b-orange':'b-blue')+'">'+(multi?'多选':'单选')+'</span></h2>';
+  html+='<div class="q-meta"><span class="q-subject">'+q.phase+'　·　'+q.subject+'　·　'+q.chapter+'</span></div>';
+  html+='<div class="q-body">'+escapeHtml(q.q)+'</div>';
+  html+='<ul class="opts" id="dqOpts">';
+  q.options.forEach((o,i)=>{ html+='<li data-i="'+i+'" onclick="window.__dqSel('+i+')"><span class="mark">'+(String.fromCharCode(65+i))+'</span><span class="txt">'+escapeHtml(o)+'</span></li>'; });
+  html+='</ul>';
+  html+='<div class="btn-row"><button class="btn" id="dqSubmit" onclick="window.__dqSubmit()">提交答案</button>'
+      + '<button class="btn ghost" onclick="window.__dqNew()">换一题</button></div>';
+  html+='<div class="q-result" id="dqResult"></div>';
+  html+='<div class="q-explain" id="dqExplain"></div>';
+  html+='<div class="btn-row" id="dqMore" style="display:none;margin-top:10px"><button class="btn green" onclick="window.__goReview()">✅ 继续练习（题库回顾）</button></div>';
+  el.innerHTML=html; el._q=q; el._sel=[];
+}
+window.__dqSel=function(i){ const el=document.getElementById('dailyQuiz'); const q=el._q;
+  if(el._answered) return;
+  const li=document.querySelector('#dqOpts li[data-i="'+i+'"]');
+  if(q.type==='multi'){ const idx=el._sel.indexOf(i); if(idx>=0) el._sel.splice(idx,1); else el._sel.push(i); li.classList.toggle('sel'); }
+  else { el._sel=[i]; document.querySelectorAll('#dqOpts li').forEach(x=>x.classList.remove('sel')); li.classList.add('sel'); }
+};
+window.__dqSubmit=async function(){ const el=document.getElementById('dailyQuiz'); const q=el._q;
+  if(el._answered) return; if(!el._sel.length){ alert('请先选择答案'); return; }
+  const correct = JSON.stringify([...el._sel].sort((a,b)=>a-b))===JSON.stringify([...q.answer].sort((a,b)=>a-b));
+  el._answered=true;
+  document.querySelectorAll('#dqOpts li').forEach(li=>{ const i=+li.dataset.i;
+    if(q.answer.includes(i)) li.classList.add('correct'); else if(el._sel.includes(i)) li.classList.add('wrong'); });
+  const res=document.getElementById('dqResult'); res.className='q-result show '+(correct?'ok':'no');
+  res.textContent = correct ? '🎉 答对了！' : ('❌ 答错了，正确答案：'+q.answer.map(i=>String.fromCharCode(65+i)).join(q.type==='multi'?'、':' '));
+  const ex=document.getElementById('dqExplain'); ex.className='q-explain show';
+  ex.innerHTML='<b>解析：</b>'+escapeHtml(q.explain);
+  document.getElementById('dqSubmit').style.display='none';
+  document.getElementById('dqMore').style.display='flex';
+  const old=await saveQuiz(q.id, correct);
+  // 每日一练愿力：每天限 1 次（+1）
+  const dk='econ_dq_'+econDayKey();
+  if(econDailyCount(dk) < 1){ econDailyInc(dk); econGrantWP(1,'经济师·每日一练','完成每日一练'); }
+  // 错题攻克
+  if(old===0 && correct) econConquerWrong(true);
+};
+window.__dqNew=function(){ document.getElementById('dailyQuiz')._answered=false; renderDailyQuiz(); };
+window.__goReview=function(){ switchTab('review'); document.getElementById('revStart').click(); };
+
+/* ======== 题库回顾 ======== */
+function initReviewFilters(){
+  const sel=document.getElementById('revSubject');
+  SUBJECTS.forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
+}
+function filteredQuestions(){
+  const ph=document.getElementById('revPhase').value; const sj=document.getElementById('revSubject').value;
+  return Q.filter(q=>(ph==='all'||q.phase===ph)&&(sj==='all'||q.subject===sj));
+}
+function renderReviewPrompt(){
+  const pool=filteredQuestions();
+  const done=pool.filter(q=>q.id in quizRecords).length;
+  document.getElementById('revStat').innerHTML='当前筛选共 <b>'+pool.length+'</b> 题，已练 <b>'+done+'</b> 题';
+  document.getElementById('reviewArea').innerHTML='<div class="empty">点击上方「开始练习」抽取一组逐题作答，或调整筛选条件。</div>';
+}
+function startReview(){
+  const pool=filteredQuestions();
+  if(!pool.length){ document.getElementById('reviewArea').innerHTML='<div class="empty">该筛选下没有题目。</div>'; return; }
+  const n=Math.min(5, pool.length);
+  const wrong=pool.filter(q=>quizRecords[q.id]===0);          // 错题优先录入
+  const rest=pool.filter(q=>quizRecords[q.id]!==0);
+  const pickedWrong=wrong.slice(0, n);
+  const pickedRest=[...rest].sort(()=>Math.random()-0.5).slice(0, n-pickedWrong.length);
+  const shuffled=[...pickedWrong, ...pickedRest].sort(()=>Math.random()-0.5);
+  reviewSession={queue:shuffled, idx:0};
+  renderReviewQuestion();
+}
+let reviewSession=null;
+function renderReviewQuestion(){
+  if(!reviewSession || reviewSession.idx>=reviewSession.queue.length){
+    const total=reviewSession?reviewSession.queue.length:0;
+    const ok=reviewSession?reviewSession.queue.filter(q=>quizRecords[q.id]===1).length:0;
+    // 愿力：全对+2 / 对4题+1 / ≤3题0，每日限 3 组
+    let gained=0; const dk='econ_rq_'+econDayKey();
+    if(econDailyCount(dk) < 3){
+      if(ok===total && total>0) gained=2; else if(ok>=4) gained=1;
+      if(gained>0) econDailyInc(dk);
+    }
+    if(gained>0) econGrantWP(gained,'经济师·题库回顾','一组正确 '+ok+'/'+total);
+    document.getElementById('reviewArea').innerHTML=
+      '<div class="score-banner"><div class="big">'+ok+' / '+total+'</div><div>本组练习完成！正确率 '+Math.round(ok/total*100)+'%</div></div>'
+      + (gained>0?'<div style="margin-top:8px;color:var(--green,#3f9c6d);font-weight:600">💡 +'+gained+' 愿力（经济师·题库回顾）</div>':'')
+      + '<div class="btn-row"><button class="btn" onclick="window.__reviewAgain()">🔄 再来一组</button><button class="btn ghost" onclick="window.__reviewBack()">返回筛选</button></div>';
+    return;
+  }
+  const q=reviewSession.queue[reviewSession.idx]; const multi=q.type==='multi';
+  const card=document.getElementById('reviewArea');
+  let html='<div class="q-meta"><span class="q-subject">第 '+(reviewSession.idx+1)+' / '+reviewSession.queue.length+' 题　·　'+(multi?'多选':'单选')+'　·　'+q.phase+'　·　'+q.subject+'</span></div>';
+  html+='<div class="q-body">'+escapeHtml(q.q)+'</div>';
+  html+='<ul class="opts" id="rqOpts">';
+  q.options.forEach((o,i)=>{ html+='<li data-i="'+i+'" onclick="window.__rqSel('+i+')"><span class="mark">'+(String.fromCharCode(65+i))+'</span><span class="txt">'+escapeHtml(o)+'</span></li>'; });
+  html+='</ul>';
+  html+='<div class="btn-row"><button class="btn" id="rqSubmit" onclick="window.__rqSubmit()">提交</button>'
+      + '<button class="btn ghost" onclick="window.__rqSkip()">跳过</button></div>';
+  html+='<div class="q-result" id="rqResult"></div>';
+  html+='<div class="q-explain" id="rqExplain"></div>';
+  card.innerHTML=html; card._q=q; card._sel=[]; card._answered=false;
+}
+window.__rqSel=function(i){ const card=document.getElementById('reviewArea'); const q=card._q; if(card._answered) return;
+  const li=document.querySelector('#rqOpts li[data-i="'+i+'"]');
+  if(q.type==='multi'){ const idx=card._sel.indexOf(i); if(idx>=0) card._sel.splice(idx,1); else card._sel.push(i); li.classList.toggle('sel'); }
+  else { card._sel=[i]; document.querySelectorAll('#rqOpts li').forEach(x=>x.classList.remove('sel')); li.classList.add('sel'); }
+};
+window.__rqSubmit=async function(){ const card=document.getElementById('reviewArea'); const q=card._q; if(card._answered) return; if(!card._sel.length){ alert('请先选择答案'); return; }
+  const correct=JSON.stringify([...card._sel].sort((a,b)=>a-b))===JSON.stringify([...q.answer].sort((a,b)=>a-b));
+  card._answered=true;
+  document.querySelectorAll('#rqOpts li').forEach(li=>{ const i=+li.dataset.i; if(q.answer.includes(i)) li.classList.add('correct'); else if(card._sel.includes(i)) li.classList.add('wrong'); });
+  const res=document.getElementById('rqResult'); res.className='q-result show '+(correct?'ok':'no');
+  res.textContent=correct?'🎉 答对了！':'❌ 答错了，正确答案：'+q.answer.map(i=>String.fromCharCode(65+i)).join(q.type==='multi'?'、':' ');
+  const ex=document.getElementById('rqExplain'); ex.className='q-explain show'; ex.innerHTML='<b>解析：</b>'+escapeHtml(q.explain);
+  document.getElementById('rqSubmit').style.display='none';
+  const old=await saveQuiz(q.id, correct);
+  if(old===0 && correct) econConquerWrong(true);   // 原错题做对 → 攻克 +1
+  // 看完解析再手动进下一题（不直接跳）
+  const last = reviewSession.idx >= reviewSession.queue.length-1;
+  const nb=document.createElement('button'); nb.className='btn green'; nb.style.marginTop='10px';
+  nb.textContent = last ? '🏁 查看成绩' : '➡️ 下一题（看完原因再点）';
+  nb.onclick=()=>{ reviewSession.idx++; renderReviewQuestion(); };
+  card.appendChild(nb);
+};
+window.__rqSkip=function(){ reviewSession.idx++; renderReviewQuestion(); };
+window.__reviewAgain=function(){ startReview(); };
+window.__reviewBack=function(){ renderReviewPrompt(); };
+
+function renderHist(){
+  const el=document.getElementById('histArea');
+  const ids=Object.keys(quizRecords);
+  if(!ids.length){ el.innerHTML='<div class="empty">还没有答题记录，去「每日一练」或「开始练习」做几道吧。</div>'; return; }
+  let h='';
+  ids.slice().reverse().forEach(id=>{ const q=QBYID[id]; if(!q) return; const ok=quizRecords[id]===1;
+    h+='<div class="hist-item" style="cursor:pointer" onclick="window.__showDetail(\''+id+'\')"><span class="'+(ok?'ok':'no')+'">'+(ok?'✓对':'✗错')+'</span>'
+     + '<span class="qtext">'+escapeHtml(q.q)+'</span>'
+     + '<span class="q-subject">'+q.subject+'</span></div>'; });
+  el.innerHTML=h;
+}
+
+/* ---------- 错题本 ---------- */
+function wrongIds(){ return Object.keys(quizRecords).filter(id=>quizRecords[id]===0); }
+function renderWrong(){
+  const ids=wrongIds();
+  document.getElementById('wrongCount').textContent=ids.length+' 道待攻克';
+  const el=document.getElementById('wrongArea');
+  if(!ids.length){ el.innerHTML='<div class="empty">还没有错题。做错的题会自动收集到这里，方便你反复回顾。</div>'; return; }
+  let h='';
+  ids.forEach(id=>{ const q=QBYID[id]; if(!q) return;
+    h+='<div class="hist-item" style="cursor:pointer" onclick="window.__showDetail(\''+id+'\')"><span class="no">✗错</span>'
+     + '<span class="qtext">'+escapeHtml(q.q)+'</span>'
+     + '<span class="q-subject">'+q.subject+'</span></div>'; });
+  el.innerHTML=h;
+}
+function startWrong(){
+  const ids=wrongIds(); if(!ids.length){ alert('错题本还是空的，先去做几道题吧～'); return; }
+  const pool=ids.map(id=>QBYID[id]).filter(Boolean);
+  const shuffled=[...pool].sort(()=>Math.random()-0.5);
+  reviewSession={queue:shuffled, idx:0};
+  switchTab('review');
+  renderReviewQuestion();
+}
+function showQuestionDetail(id){
+  const q=QBYID[id]; if(!q) return; const ok=quizRecords[id]===1; const seen=id in quizRecords;
+  let h='<div class="mhead"><span class="date" style="font-size:17px">题目详情</span>'
+    + '<span class="badge '+(q.type==='multi'?'b-orange':'b-blue')+'">'+(q.type==='multi'?'多选':'单选')+'</span>'
+    + (seen?'<span class="badge '+(ok?'b-green':'b-red')+'">'+(ok?'已答对':'曾答错')+'</span>':'')
+    + '<button class="close" onclick="window.__closeModal()">×</button></div>';
+  h+='<div class="mrow"><b>'+q.phase+'　·　'+q.subject+'　·　'+q.chapter+'</b></div>';
+  h+='<div class="q-body" style="margin-top:8px">'+escapeHtml(q.q)+'</div>';
+  h+='<ul class="opts" style="pointer-events:none">';
+  q.options.forEach((o,i)=>{ const corr=q.answer.includes(i);
+    h+='<li class="'+(corr?'correct':'')+'"><span class="mark">'+(String.fromCharCode(65+i))+'</span><span class="txt">'+escapeHtml(o)+'</span></li>'; });
+  h+='</ul>';
+  h+='<div class="q-explain show" style="display:block"><b>解析：</b>'+escapeHtml(q.explain)+'</div>';
+  document.getElementById('modal').innerHTML=h; document.getElementById('mask').classList.add('show');
+}
+window.__showDetail=function(id){ showQuestionDetail(id); };
+window.__wrongClear=async function(){
+  const ids=wrongIds(); if(!ids.length) return;
+  ids.forEach(id=>delete quizRecords[id]);
+  localStorage.setItem('econ_quiz_v1', JSON.stringify(quizRecords));
+  if(storageMode==='db'){ try{ await fetch('/api/econ-quiz-delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({qids:ids})}); }catch(e){} }
+  renderWrong();
+};
+
+/* ---------- 统计 ---------- */
+function renderStats(){
+  document.getElementById('rangeTxt').textContent=PLAN.startDate+' ~ '+PLAN.endDate;
+  document.getElementById('totalDays').textContent=PLAN.totalDays;
+  let done=0,total=0; PLAN.days.forEach(r=>{ total+=dayTotal(r); done+=dayDone(r); });
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('overallTxt').textContent=done+'/'+total+'（'+pct+'%）';
+}
+
+/* ---------- Tab 切换 ---------- */
+function switchTab(name){
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on', b.dataset.tab===name));
+  document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('on', p.id==='pane-'+name));
+  if(name==='review'){ renderReviewPrompt(); renderHist(); }
+  if(name==='quiz'){ renderDailyQuiz(); }
+  if(name==='wrong'){ renderWrong(); }
+}
+document.querySelectorAll('.tabs button').forEach(b=> b.onclick=()=>switchTab(b.dataset.tab));
+
+/* ---------- 事件 ---------- */
+document.getElementById('prevM').onclick=()=>{ view.m--; if(view.m<1){view.m=12;view.y--;} renderCalendar(); };
+document.getElementById('nextM').onclick=()=>{ view.m++; if(view.m>12){view.m=1;view.y++;} renderCalendar(); };
+document.getElementById('jumpWeek').onclick=()=>{ const num=currentWeekNum(); const first=weekDays(num)[0]; if(first){ const p=parseDate(first.date); view={y:p.y,m:p.m,d:p.d}; renderCalendar(); } };
+document.getElementById('filters').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; filterPhase=b.dataset.p;
+  [...document.getElementById('filters').children].forEach(x=>x.classList.toggle('on',x===b)); renderCalendar(); });
+document.getElementById('revStart').onclick=startReview;
+document.getElementById('revReset').onclick=()=>{ document.getElementById('revPhase').value='all'; document.getElementById('revSubject').value='all'; renderReviewPrompt(); };
+document.getElementById('revPhase').onchange=renderReviewPrompt;
+document.getElementById('revSubject').onchange=renderReviewPrompt;
+document.getElementById('wrongStart').onclick=startWrong;
+document.getElementById('wrongClear').onclick=()=>window.__wrongClear();
+
+/* ---------- 初始化 ---------- */
+(async function init(){
+  document.getElementById('rangeTxt').textContent=PLAN.startDate+' ~ '+PLAN.endDate;
+  await loadData(); updateStorageBadge();
+  renderStats(); renderToday(); renderWeek(); renderCalendar();
+  initReviewFilters();
+})();
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+</script>
+</body>
+</html>

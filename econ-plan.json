@@ -1,0 +1,2358 @@
+{
+  "generatedAt": "2026-08-18T16:27:07.615Z",
+  "startDate": "2026-08-17",
+  "endDate": "2026-11-08",
+  "examDate": "2026-11-07",
+  "totalDays": 84,
+  "weeks": {
+    "1": {
+      "range": "8/17 – 8/23",
+      "theme": "入门模块收尾 + 精讲开张",
+      "goal": "经济基础①预习②入门两个模块清零，深度精讲班正式开张"
+    },
+    "2": {
+      "range": "8/24 – 8/30",
+      "theme": "弹性重点 + 工商启动",
+      "goal": "经济基础第 2 章收尾；工商①预习②入门清零、第 1 章开张"
+    },
+    "3": {
+      "range": "8/31 – 9/6",
+      "theme": "成本与市场结构",
+      "goal": "经济基础第 3-6 章 + 工商第 2 章启动"
+    },
+    "4": {
+      "range": "9/7 – 9/13",
+      "theme": "宏观起步",
+      "goal": "经济基础第 7-8 章 + 工商第 2 章收尾、第 3 章启动"
+    },
+    "5": {
+      "range": "9/14 – 9/20",
+      "theme": "宏观核心 ⚠️ 难度提升",
+      "goal": "经济基础第 9-12 章 + 工商第 3 章收尾"
+    },
+    "6": {
+      "range": "9/21 – 9/27",
+      "theme": "财政三章",
+      "goal": "经济基础第 13-14 章 + 工商第 4 章收尾、第 5 章启动"
+    },
+    "7": {
+      "range": "9/28 – 10/4",
+      "theme": "国庆冲刺窗口 🎉",
+      "goal": "经济基础第 15-18 章 + 工商第 5、6 章（国庆每天 2-3h 加速）"
+    },
+    "8": {
+      "range": "10/5 – 10/11",
+      "theme": "货币金融",
+      "goal": "经济基础第 19-22 章 + 工商第 7 章启动"
+    },
+    "9": {
+      "range": "10/12 – 10/18",
+      "theme": "统计+会计 ⚠️ 零基础最易卡",
+      "goal": "经济基础第 23-27 章 + 工商第 7 章收尾、第 8 章启动；精讲期收官"
+    },
+    "10": {
+      "range": "10/19 – 10/25",
+      "theme": "精讲扫尾 + 真题开练",
+      "goal": "经济基础第 28-37 章（会计+法律）+ 工商第 9-11 章补完 + 真题启动"
+    },
+    "11": {
+      "range": "10/26 – 11/1",
+      "theme": "大V母题 + 真题 + 模拟",
+      "goal": "双科大V母题带练 + 历年真题 + 模拟卷；考前一周启动"
+    },
+    "12": {
+      "range": "11/2 – 11/8",
+      "theme": "冲刺模考 + 考试周",
+      "goal": "冲刺串讲 + 万人模考 + 准考证 + 出发考试"
+    }
+  },
+  "milestones": [
+    {
+      "day": 77,
+      "date": "2026-11-01",
+      "text": "🔥 考前一周倒计时开始"
+    },
+    {
+      "day": 78,
+      "date": "2026-11-02",
+      "text": "冲刺周开始"
+    },
+    {
+      "day": 79,
+      "date": "2026-11-03",
+      "text": "🔥 准考证打印开放"
+    },
+    {
+      "day": 80,
+      "date": "2026-11-04",
+      "text": "🔥 回程票"
+    },
+    {
+      "day": 82,
+      "date": "2026-11-06",
+      "text": "🔥 出发去韶关"
+    },
+    {
+      "day": 83,
+      "date": "2026-11-07",
+      "text": "🔥 考试日（批次 1/2）"
+    },
+    {
+      "day": 84,
+      "date": "2026-11-08",
+      "text": "🔥 考试日（批次 3/4）/ 备考收官"
+    }
+  ],
+  "days": [
+    {
+      "day": 1,
+      "date": "2026-08-17",
+      "weekday": "周一",
+      "week": 1,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "30 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "争学网「2026 备考预习班」第 1-2 节（路可，1.5x）"
+      ],
+      "eachWp": [
+        10
+      ],
+      "taskDone": [
+        true
+      ],
+      "resources": "争学网·备考预习班",
+      "goal": "了解两科框架和章节分布",
+      "note": "当天未学，已于 8/18 晚补上 ✅",
+      "milestone": ""
+    },
+    {
+      "day": 2,
+      "date": "2026-08-18",
+      "weekday": "周二",
+      "week": 1,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "60 分钟",
+      "subject": "通用",
+      "tasks": [
+        "备考预习班第 1-2 节（补学）",
+        "小白入门班·考试规则部分 + 整理学习笔记"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网",
+      "goal": "知道考试题型、分值、合格线、批次规则",
+      "note": "已完成；笔记存《学习笔记.md》",
+      "milestone": ""
+    },
+    {
+      "day": 3,
+      "date": "2026-08-19",
+      "weekday": "周三",
+      "week": 1,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "争学网「2026 小白入门班」剩余部分（1.5x）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·小白入门班 + 题库",
+      "goal": "小白入门班清零",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 4,
+      "date": "2026-08-20",
+      "weekday": "周四",
+      "week": 1,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "备考预习班第 3 节",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·备考预习班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 5,
+      "date": "2026-08-21",
+      "weekday": "周五",
+      "week": 1,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "备考预习班第 4 节（预习班清零 ）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·备考预习班 + 题库",
+      "goal": "能说出两科各考什么、题型分值怎么算",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 6,
+      "date": "2026-08-22",
+      "weekday": "周六",
+      "week": 1,
+      "phase": "入门精讲",
+      "type": "机动",
+      "duration": "0-45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "有余力：深度精讲班·第 1 章（社会主义基本经济制度）前 2 节（1.5x）",
+        "加班/累了就纯休息"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班",
+      "goal": "—",
+      "note": "主线在明天周日，今天养精蓄锐",
+      "milestone": ""
+    },
+    {
+      "day": 7,
+      "date": "2026-08-23",
+      "weekday": "周日",
+      "week": 1,
+      "phase": "入门精讲",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "经济基础",
+      "tasks": [
+        "深度精讲班·第 1 章剩余节看完（1.5x）",
+        "章节练习·经济基础第 1 章（做完看解析，错题标记）",
+        "深度精讲班·第 2 章前 3 节（市场需求、供给与均衡价格）"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "能复述\"需求曲线为什么向右下方倾斜\"",
+      "note": "每周日 20:00 有自动进度检查+小测",
+      "milestone": ""
+    },
+    {
+      "day": 8,
+      "date": "2026-08-24",
+      "weekday": "周一",
+      "week": 2,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "深度精讲班·第 2 章第 4-5 节"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 9,
+      "date": "2026-08-25",
+      "weekday": "周二",
+      "week": 2,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "工商管理",
+      "tasks": [
+        "工商·备考预习班（董亚蕊）上半（1.5x ≈ 1h）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·备考预习班",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 10,
+      "date": "2026-08-26",
+      "weekday": "周三",
+      "week": 2,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "工商管理",
+      "tasks": [
+        "工商·备考预习班下半",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·备考预习班",
+      "goal": "工商预习班清零",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 11,
+      "date": "2026-08-27",
+      "weekday": "周四",
+      "week": 2,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "工商管理",
+      "tasks": [
+        "工商·小白入门班（张楠，1.5x ≈ 40min）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·小白入门班",
+      "goal": "工商入门模块全部清零 ✅",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 12,
+      "date": "2026-08-28",
+      "weekday": "周五",
+      "week": 2,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 2 章弹性公式动笔算 10 道例题（点弹性/弧弹性/收入弹性/交叉弹性）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网题库 + 错题",
+      "goal": "弹性公式会默写、会代数计算",
+      "note": "⚠️ 第 2 章是全教材题量最多的章（47 题），弹性必须会算",
+      "milestone": ""
+    },
+    {
+      "day": 13,
+      "date": "2026-08-29",
+      "weekday": "周六",
+      "week": 2,
+      "phase": "入门精讲",
+      "type": "休息",
+      "duration": "0",
+      "subject": "—",
+      "tasks": [
+        "休息（加班则纯休息）"
+      ],
+      "eachWp": [
+        10
+      ],
+      "taskDone": [
+        false
+      ],
+      "resources": "—",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 14,
+      "date": "2026-08-30",
+      "weekday": "周日",
+      "week": 2,
+      "phase": "入门精讲",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "章节练习·经济基础第 2 章（47 题，限时做，错题归因）",
+        "工商·深度精讲班·第 1 章前 4 节（企业战略与经营决策）",
+        "章节练习·工商第 1 章（做 30-40 题即可）"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "能算点弹性/弧弹性/收入弹性；能讲清\"企业战略是什么、三种战略类型\"",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 15,
+      "date": "2026-08-31",
+      "weekday": "周一",
+      "week": 3,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "深度精讲班·第 3 章（生产和成本理论）前 2 节"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 16,
+      "date": "2026-09-01",
+      "weekday": "周二",
+      "week": 3,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 3 章后 2 节（成本函数/成本曲线，动笔画图）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "会画 MC/AC/AVC 曲线",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 17,
+      "date": "2026-09-02",
+      "weekday": "周三",
+      "week": 3,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 4 章（市场结构理论）前 2 节",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 18,
+      "date": "2026-09-03",
+      "weekday": "周四",
+      "week": 3,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 4 章后 2 节",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "能区分四种市场结构",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 19,
+      "date": "2026-09-04",
+      "weekday": "周五",
+      "week": 3,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "章节练习·第 3-4 章 + 错题归因",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 20,
+      "date": "2026-09-05",
+      "weekday": "周六",
+      "week": 3,
+      "phase": "入门精讲",
+      "type": "休息",
+      "duration": "0",
+      "subject": "—",
+      "tasks": [
+        "休息"
+      ],
+      "eachWp": [
+        10
+      ],
+      "taskDone": [
+        false
+      ],
+      "resources": "—",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 21,
+      "date": "2026-09-06",
+      "weekday": "周日",
+      "week": 3,
+      "phase": "入门精讲",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "深度精讲班·第 5 章（生产要素市场理论）",
+        "深度精讲班·第 6 章（市场失灵和政府的干预）",
+        "章节练习·第 5-6 章",
+        "工商·深度精讲班·第 2 章（公司法人治理结构）前 4 节"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "微观部分（1-6 章）全部过完",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 22,
+      "date": "2026-09-07",
+      "weekday": "周一",
+      "week": 4,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "深度精讲班·第 7 章（国民收入核算和简单的宏观经济模型）前 2 节"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 23,
+      "date": "2026-09-08",
+      "weekday": "周二",
+      "week": 4,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 7 章后 3 节（GDP 三种算法动笔推）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "能说出 GDP 三种计算方法",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 24,
+      "date": "2026-09-09",
+      "weekday": "周三",
+      "week": 4,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 8 章（经济增长和经济发展理论）前 2 节",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 25,
+      "date": "2026-09-10",
+      "weekday": "周四",
+      "week": 4,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 8 章后 2 节",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "能区分 GDP/CPI/基尼系数",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 26,
+      "date": "2026-09-11",
+      "weekday": "周五",
+      "week": 4,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "工商管理",
+      "tasks": [
+        "工商·深度精讲班·第 2 章后 4 节（前 2 节）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 27,
+      "date": "2026-09-12",
+      "weekday": "周六",
+      "week": 4,
+      "phase": "入门精讲",
+      "type": "休息",
+      "duration": "0",
+      "subject": "—",
+      "tasks": [
+        "休息"
+      ],
+      "eachWp": [
+        10
+      ],
+      "taskDone": [
+        false
+      ],
+      "resources": "—",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 28,
+      "date": "2026-09-13",
+      "weekday": "周日",
+      "week": 4,
+      "phase": "入门精讲",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "章节练习·经济基础第 7-8 章 + 错题归因",
+        "工商·深度精讲班·第 2 章收尾 + 章节练习·工商第 2 章",
+        "工商·深度精讲班·第 3 章（市场营销与品牌管理）前 4 节"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 29,
+      "date": "2026-09-14",
+      "weekday": "周一",
+      "week": 5,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "深度精讲班·第 9 章（价格总水平和就业失业）前 2 节"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 30,
+      "date": "2026-09-15",
+      "weekday": "周二",
+      "week": 5,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 9 章后 2 节",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 31,
+      "date": "2026-09-16",
+      "weekday": "周三",
+      "week": 5,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 10 章（国际贸易理论和政策）第 1 节",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 32,
+      "date": "2026-09-17",
+      "weekday": "周四",
+      "week": 5,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "双科",
+      "tasks": [
+        "第 10 章剩余节",
+        "工商·深度精讲班·第 3 章后 5 节（前半）"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 33,
+      "date": "2026-09-18",
+      "weekday": "周五",
+      "week": 5,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "工商管理",
+      "tasks": [
+        "工商·深度精讲班·第 3 章后 5 节（收尾）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 34,
+      "date": "2026-09-19",
+      "weekday": "周六",
+      "week": 5,
+      "phase": "入门精讲",
+      "type": "休息",
+      "duration": "0",
+      "subject": "—",
+      "tasks": [
+        "休息"
+      ],
+      "eachWp": [
+        10
+      ],
+      "taskDone": [
+        false
+      ],
+      "resources": "—",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 35,
+      "date": "2026-09-20",
+      "weekday": "周日",
+      "week": 5,
+      "phase": "入门精讲",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "章节练习·经济基础第 9-10 章",
+        "深度精讲班·第 11 章（公共物品与财政职能）",
+        "深度精讲班·第 12 章（财政支出）⚠️ 高频考点",
+        "章节练习·工商第 3 章",
+        "（机动）工商·深度精讲班·第 4 章（分销渠道管理）前 2 节"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "能列出财政支出三大类，会算购买性/转移性支出比例",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 36,
+      "date": "2026-09-21",
+      "weekday": "周一",
+      "week": 6,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "深度精讲班·第 13 章（财政收入）第 1-2 节"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 37,
+      "date": "2026-09-22",
+      "weekday": "周二",
+      "week": 6,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 13 章剩余节",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 38,
+      "date": "2026-09-23",
+      "weekday": "周三",
+      "week": 6,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "深度精讲班·第 14 章（税收，全课程最长章）第 1 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "⚠️ 增值税/消费税/所得税要分清，建对比表",
+      "milestone": ""
+    },
+    {
+      "day": 39,
+      "date": "2026-09-24",
+      "weekday": "周四",
+      "week": 6,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 14 章第 2 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 40,
+      "date": "2026-09-25",
+      "weekday": "周五",
+      "week": 6,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "工商管理",
+      "tasks": [
+        "工商·深度精讲班·第 4 章（分销渠道管理）收尾",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 41,
+      "date": "2026-09-26",
+      "weekday": "周六",
+      "week": 6,
+      "phase": "入门精讲",
+      "type": "休息",
+      "duration": "0",
+      "subject": "—",
+      "tasks": [
+        "休息"
+      ],
+      "eachWp": [
+        10
+      ],
+      "taskDone": [
+        false
+      ],
+      "resources": "—",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 42,
+      "date": "2026-09-27",
+      "weekday": "周日",
+      "week": 6,
+      "phase": "入门精讲",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "第 14 章收尾 + 章节练习·第 13-14 章",
+        "章节练习·工商第 4 章",
+        "工商·深度精讲班·第 5 章（生产管理 ⭐重点章）前 4 节"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "能区分流转税/所得税/财产税，知道 4 大税种税率",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 43,
+      "date": "2026-09-28",
+      "weekday": "周一",
+      "week": 7,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "深度精讲班·第 15 章（政府预算）第 1 批"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 44,
+      "date": "2026-09-29",
+      "weekday": "周二",
+      "week": 7,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 15 章第 2 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 45,
+      "date": "2026-09-30",
+      "weekday": "周三",
+      "week": 7,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 15 章第 3 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 46,
+      "date": "2026-10-01",
+      "weekday": "周四（国庆 🎉）",
+      "week": 7,
+      "phase": "入门精讲",
+      "type": "假期加速",
+      "duration": "2-3 小时",
+      "subject": "经济基础",
+      "tasks": [
+        "第 15 章收尾",
+        "深度精讲班·第 16 章（财政管理体制）",
+        "章节练习·第 15-16 章"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "—",
+      "note": "加班就保持 45min 原节奏，不硬撑",
+      "milestone": ""
+    },
+    {
+      "day": 47,
+      "date": "2026-10-02",
+      "weekday": "周五（国庆 🎉）",
+      "week": 7,
+      "phase": "入门精讲",
+      "type": "假期加速",
+      "duration": "2-3 小时",
+      "subject": "双科",
+      "tasks": [
+        "深度精讲班·第 17 章（财政政策）",
+        "工商·深度精讲班·第 5 章收尾",
+        "章节练习·工商第 5 章"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "能区分财政政策三大工具",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 48,
+      "date": "2026-10-03",
+      "weekday": "周六（国庆 🎉）",
+      "week": 7,
+      "phase": "入门精讲",
+      "type": "假期加速",
+      "duration": "2-3 小时",
+      "subject": "双科",
+      "tasks": [
+        "深度精讲班·第 18 章（货币供求与货币均衡）启动",
+        "工商·深度精讲班·第 6 章（质量管理与安全管理）前 4 节"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 49,
+      "date": "2026-10-04",
+      "weekday": "周日",
+      "week": 7,
+      "phase": "入门精讲",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "第 18 章收尾 + 章节练习·第 17-18 章",
+        "工商·深度精讲班·第 6 章收尾 + 章节练习·工商第 6 章"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "能复述中央银行三大货币政策工具",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 50,
+      "date": "2026-10-05",
+      "weekday": "周一",
+      "week": 8,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "深度精讲班·第 19 章（中央银行与货币政策）第 1 批"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 51,
+      "date": "2026-10-06",
+      "weekday": "周二",
+      "week": 8,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 19 章第 2 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 52,
+      "date": "2026-10-07",
+      "weekday": "周三",
+      "week": 8,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "深度精讲班·第 20 章（商业银行与金融市场）第 1 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 53,
+      "date": "2026-10-08",
+      "weekday": "周四",
+      "week": 8,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 20 章第 2 批 + 第 21 章（金融风险与金融监管）第 1 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "⚠️ 货币供求公式多，动笔算",
+      "milestone": ""
+    },
+    {
+      "day": 54,
+      "date": "2026-10-09",
+      "weekday": "周五",
+      "week": 8,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 21 章第 2 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "能区分 M0/M1/M2",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 55,
+      "date": "2026-10-10",
+      "weekday": "周六",
+      "week": 8,
+      "phase": "入门精讲",
+      "type": "休息",
+      "duration": "0",
+      "subject": "—",
+      "tasks": [
+        "休息"
+      ],
+      "eachWp": [
+        10
+      ],
+      "taskDone": [
+        false
+      ],
+      "resources": "—",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 56,
+      "date": "2026-10-11",
+      "weekday": "周日",
+      "week": 8,
+      "phase": "入门精讲",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "深度精讲班·第 22 章（对外金融关系与政策）+ 章节练习·第 19-22 章",
+        "工商·深度精讲班·第 7 章（物流与供应链管理 ⭐重点章）前 5 节"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "知道中央银行与商业银行职能区别",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 57,
+      "date": "2026-10-12",
+      "weekday": "周一",
+      "week": 9,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "深度精讲班·第 23 章（统计与统计数据）第 1 批",
+        "（可选）中国人事考试网\"模拟作答系统\"已开放，抽空练 1 次机考界面"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库 + 中国人事考试网",
+      "goal": "—",
+      "note": "🖥️ 模拟作答系统考前 4 周左右开放，练一次熟悉计算器",
+      "milestone": ""
+    },
+    {
+      "day": 58,
+      "date": "2026-10-13",
+      "weekday": "周二",
+      "week": 9,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 23 章第 2 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 59,
+      "date": "2026-10-14",
+      "weekday": "周三",
+      "week": 9,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "深度精讲班·第 24 章（描述统计）第 1 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 60,
+      "date": "2026-10-15",
+      "weekday": "周四",
+      "week": 9,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 24 章第 2 批 + 第 25 章（抽样调查）第 1 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 61,
+      "date": "2026-10-16",
+      "weekday": "周五",
+      "week": 9,
+      "phase": "入门精讲",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 25 章第 2 批 + 第 26 章（回归分析）速过",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 62,
+      "date": "2026-10-17",
+      "weekday": "周六",
+      "week": 9,
+      "phase": "入门精讲",
+      "type": "休息",
+      "duration": "0",
+      "subject": "—",
+      "tasks": [
+        "休息"
+      ],
+      "eachWp": [
+        10
+      ],
+      "taskDone": [
+        false
+      ],
+      "resources": "—",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 63,
+      "date": "2026-10-18",
+      "weekday": "周日",
+      "week": 9,
+      "phase": "入门精讲",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "深度精讲班·第 27 章（时间序列）",
+        "章节练习·第 23-27 章（错题重点归因）",
+        "工商·深度精讲班·第 7 章收尾 + 章节练习·工商第 7 章",
+        "（机动）工商·深度精讲班·第 8 章（技术创新管理）前 4 节"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 章节练习",
+      "goal": "能区分均值/中位数/众数；知道权责发生制 vs 收付实现制",
+      "note": "🎉 精讲期基本收官，下周进入强化刷题期",
+      "milestone": ""
+    },
+    {
+      "day": 64,
+      "date": "2026-10-19",
+      "weekday": "周一",
+      "week": 10,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "深度精讲班·第 28 章（会计概论）第 1 批"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "⚠️ 会计分录动笔写至少 5 道",
+      "milestone": ""
+    },
+    {
+      "day": 65,
+      "date": "2026-10-20",
+      "weekday": "周二",
+      "week": 10,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 28 章第 2 批",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 66,
+      "date": "2026-10-21",
+      "weekday": "周三",
+      "week": 10,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "深度精讲班·第 29 章（会计循环）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 67,
+      "date": "2026-10-22",
+      "weekday": "周四",
+      "week": 10,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "深度精讲班·第 30 章（财务报表）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 68,
+      "date": "2026-10-23",
+      "weekday": "周五",
+      "week": 10,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "第 31-32 章（法律部分）1.5x 速过",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·深度精讲班 + 题库",
+      "goal": "—",
+      "note": "法律部分抓高频即可",
+      "milestone": ""
+    },
+    {
+      "day": 69,
+      "date": "2026-10-24",
+      "weekday": "周六",
+      "week": 10,
+      "phase": "强化刷题",
+      "type": "机动",
+      "duration": "2-3 小时",
+      "subject": "双科",
+      "tasks": [
+        "第 33-37 章（合同法/物权法/公司法等重点法律）1.5x 速过",
+        "工商·第 9 章（人力资源）：看 2025 工商精讲班对应章节或环球网校高频考点班"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网（26版没更就看25版）+ 环球网校（备用）",
+      "goal": "—",
+      "note": "⚠️ 工商精讲班（26版）只到第 8 章，9-11 章用 25 版/环球网校补",
+      "milestone": ""
+    },
+    {
+      "day": 70,
+      "date": "2026-10-25",
+      "weekday": "周日",
+      "week": 10,
+      "phase": "强化刷题",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "工商·第 10-11 章（投融资/电子商务）补完 + 章节练习·工商第 9-11 章",
+        "历年真题·经济基础 2020 年 1 套（限时 90min）",
+        "历年真题·经济基础 2021 年 1 套（限时 90min）",
+        "错题归因"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网题库·历年真题",
+      "goal": "🎉 经济基础 37 章全部过完一遍；能复述合同效力、物权分类",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 71,
+      "date": "2026-10-26",
+      "weekday": "周一",
+      "week": 11,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "每日一练 10 题",
+        "大V母题带练班·经济基础 第 1-2 节（26版没上线就看25年习题带练班）"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·大V母题带练班",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 72,
+      "date": "2026-10-27",
+      "weekday": "周二",
+      "week": 11,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "大V母题带练班·经济基础 第 3-4 节",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·大V母题带练班",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 73,
+      "date": "2026-10-28",
+      "weekday": "周三",
+      "week": 11,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "经济基础",
+      "tasks": [
+        "大V母题带练班·经济基础 收尾",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·大V母题带练班",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 74,
+      "date": "2026-10-29",
+      "weekday": "周四",
+      "week": 11,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "双科",
+      "tasks": [
+        "错题本回顾（高频错题区：合同法/物权法/公司法/会计分录/税收）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网题库·错题本",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 75,
+      "date": "2026-10-30",
+      "weekday": "周五",
+      "week": 11,
+      "phase": "强化刷题",
+      "type": "工作日碎片",
+      "duration": "45 分钟",
+      "subject": "工商管理",
+      "tasks": [
+        "大V母题带练班·工商（直播回放，前半）",
+        "每日一练 10 题"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·大V母题带练班",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 76,
+      "date": "2026-10-31",
+      "weekday": "周六",
+      "week": 11,
+      "phase": "强化刷题",
+      "type": "机动",
+      "duration": "2-3 小时",
+      "subject": "工商管理",
+      "tasks": [
+        "大V母题带练班·工商（后半）",
+        "历年真题·工商 2020 年 1 套（限时 90min）",
+        "历年真题·工商 2021 年 1 套（限时 90min）"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网·大V母题带练班 + 题库·历年真题",
+      "goal": "—",
+      "note": "—",
+      "milestone": ""
+    },
+    {
+      "day": 77,
+      "date": "2026-11-01",
+      "weekday": "周日",
+      "week": 11,
+      "phase": "强化刷题",
+      "type": "周末集中",
+      "duration": "4-5 小时",
+      "subject": "双科",
+      "tasks": [
+        "历年真题·经济基础 2023、2024 各 1 套（限时）",
+        "历年真题·工商 2022-2024 选做 1 套（限时）",
+        "（机动）模拟试卷·两科各 1 套",
+        "🔥 考前一周开始：挑 4-5 个考点附近酒店备选 + 登录 12306 关注 11/6 衡阳→韶关车次"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "resources": "争学网题库 + 12306/酒店 App",
+      "goal": "两科真题错题率 < 30%，高频错题全部归因",
+      "note": "今晚 20:00 会收到\"考前一周\"自动提醒",
+      "milestone": "🔥 考前一周倒计时开始"
+    },
+    {
+      "day": 78,
+      "date": "2026-11-02",
+      "weekday": "周一",
+      "week": 12,
+      "phase": "冲刺模考",
+      "type": "工作日碎片",
+      "duration": "45-60 分钟",
+      "subject": "双科",
+      "tasks": [
+        "冲刺串讲班·经济基础 2-3 节（26版没上线就看25版，17 节 8.7h，1.5x）",
+        "冲刺串讲班·工商 1-2 节（22 节 8.7h，1.5x）"
+      ],
+      "eachWp": [
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false
+      ],
+      "resources": "争学网·冲刺串讲班",
+      "goal": "—",
+      "note": "—",
+      "milestone": "冲刺周开始"
+    },
+    {
+      "day": 79,
+      "date": "2026-11-03",
+      "weekday": "周二",
+      "week": 12,
+      "phase": "冲刺模考",
+      "type": "关键事务日",
+      "duration": "45 分钟（学习）+ 事务",
+      "subject": "通用",
+      "tasks": [
+        "🔥 9:00 后第一件事：打印准考证（中国人事考试网 → 打印准考证，A4 黑白 2 份）",
+        "核对：姓名/证件号/考点地址/批次时间/考场号",
+        "🔥 拿到考点地址后：订酒店（考点 1km 内，11/6 入住）",
+        "🔥 买 11/6 衡阳→韶关高铁票",
+        "晚：冲刺串讲班·继续推进"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "resources": "中国人事考试网 + 12306 + 酒店 App + 争学网",
+      "goal": "准考证在手（2 份）、酒店已订、去程票已买",
+      "note": "⚠️ 打印窗口仅 11/3 9:00 – 11/6 17:00，别拖",
+      "milestone": "🔥 准考证打印开放"
+    },
+    {
+      "day": 80,
+      "date": "2026-11-04",
+      "weekday": "周三",
+      "week": 12,
+      "phase": "冲刺模考",
+      "type": "关键事务日",
+      "duration": "1-2 小时",
+      "subject": "双科",
+      "tasks": [
+        "🔥 按准考证批次订回程票（韶关→衡阳）",
+        "万人模考·两科各 1 套（限时 90min/套）",
+        "冲刺串讲班·继续推进",
+        "整理高频考点速记卡（浓缩到 1-2 张 A4）"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "resources": "12306 + 争学网/环球网校·万人模考 + 冲刺串讲班",
+      "goal": "模考完成、速记卡成型",
+      "note": "—",
+      "milestone": "🔥 回程票"
+    },
+    {
+      "day": 81,
+      "date": "2026-11-05",
+      "weekday": "周四",
+      "week": 12,
+      "phase": "冲刺模考",
+      "type": "知识梳理日",
+      "duration": "1-2 小时",
+      "subject": "双科",
+      "tasks": [
+        "错题本过一遍（重点：合同法/物权法/公司法/会计分录/税收）",
+        "公式手写一遍（弹性/会计/统计/财务）",
+        "冲刺串讲班·收尾",
+        "证件文具检查：身份证原件 + 准考证 2 份 + 黑色签字笔 2 支 + 透明笔袋（手机/智能手表不可带至座位）"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "resources": "学习笔记 + 错题本",
+      "goal": "证件齐、公式熟",
+      "note": "今晚 22:00 前必须睡觉",
+      "milestone": ""
+    },
+    {
+      "day": 82,
+      "date": "2026-11-06",
+      "weekday": "周五",
+      "week": 12,
+      "phase": "冲刺模考",
+      "type": "出发日",
+      "duration": "—",
+      "subject": "—",
+      "tasks": [
+        "上午/中午：衡阳 → 韶关高铁（约 1.5-2h），提前 1.5h 到车站",
+        "下午：入住酒店；地图查酒店→考点路线，必要时下楼踩点",
+        "晚上：不看书，错题速记卡扫一眼即可；22:00 前睡",
+        "晚餐清淡，别吃辣/海鲜/路边摊"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "resources": "—",
+      "goal": "人到韶关、路线清楚",
+      "note": "带一件外套（11 月韶关比衡阳略冷）",
+      "milestone": "🔥 出发去韶关"
+    },
+    {
+      "day": 83,
+      "date": "2026-11-07",
+      "weekday": "周六",
+      "week": 12,
+      "phase": "冲刺模考",
+      "type": "考试",
+      "duration": "—",
+      "subject": "双科",
+      "tasks": [
+        "若你的批次在 11/7：",
+        "答题策略：单选 1 分钟/题先易后难；多选/案例拿不准只选 1-2 个确定的（错选 0 分，少选每项 0.5 分）；不空题",
+        "考完不对答案"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "身份证 + 准考证 ×2 + 签字笔 ×2",
+      "goal": "两科考完",
+      "note": "题型：经济基础 70 单选+35 多选；工商 60 单选+20 多选+20 案例（共 140 分/科，84 过线）",
+      "milestone": "🔥 考试日（批次 1/2）"
+    },
+    {
+      "day": 84,
+      "date": "2026-11-08",
+      "weekday": "周日",
+      "week": 12,
+      "phase": "冲刺模考",
+      "type": "考试",
+      "duration": "—",
+      "subject": "双科",
+      "tasks": [
+        "若批次在 11/8：节奏同 11/7（上午场或下午场，以准考证为准）",
+        "若已考完：退房 → 回衡阳 → 放松；把考场上拿不准的题标一下（12 月出分前有用）",
+        "成绩 12 月上旬发布（中国人事考试网查询）"
+      ],
+      "eachWp": [
+        10,
+        10,
+        10
+      ],
+      "taskDone": [
+        false,
+        false,
+        false
+      ],
+      "resources": "—",
+      "goal": "备考周期结束 🎉",
+      "note": "连续 2 个考试年度内过两科即可拿证，就算今年只过一科明年也只需补另一科",
+      "milestone": "🔥 考试日（批次 3/4）/ 备考收官"
+    }
+  ]
+}
