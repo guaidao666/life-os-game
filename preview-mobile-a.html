@@ -3,8 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>拾光 · 人生修行</title>
+<title>拾光 · 人生修行（手机预览 · 方案A 轻量）</title>
 <link rel="stylesheet" href="style.css">
+<style>
+/* ===== 方案A 手机预览：无媒体查询，永远按手机紧凑布局渲染，并约束成手机宽度居中列 ===== */
+body{max-width:430px;margin:0 auto;box-shadow:0 0 50px rgba(0,0,0,.18)}
+.topbar{padding:10px 12px;gap:10px;align-items:center}
+.brand{font-size:15px;flex:0 0 auto}
+.resbar{width:100%;margin-left:0;order:3;gap:8px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.res{flex:1 1 0;min-width:0;padding:6px 4px;border-radius:9px}
+.res .k{font-size:10px}
+.res .v{font-size:15px}
+.themes{margin-left:0;order:2}
+.themes button{padding:5px 8px;font-size:11px}
+.layout{padding:10px;gap:10px;grid-template-columns:1fr}
+.nav{padding:10px;gap:4px}
+.nav a{font-size:13px;padding:7px 9px}
+.nav h4{font-size:12px;margin:6px 0 2px}
+.cards{grid-template-columns:1fr 1fr;gap:10px}
+.card{padding:13px}
+.section-title{font-size:15px}
+.top5{flex-wrap:wrap;gap:8px}
+.top5-item{min-width:140px;flex:1 1 140px}
+.todo-grid{grid-template-columns:1fr}
+</style>
 </head>
 <body>
 <header class="topbar">
