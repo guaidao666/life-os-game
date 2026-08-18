@@ -1,0 +1,16 @@
+{
+  "name": "拾光 · 人生修行",
+  "short_name": "拾光",
+  "description": "游戏人生独立站 · 修行数据系统",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5ecd9",
+  "theme_color": "#2f4a47",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
