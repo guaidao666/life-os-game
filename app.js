@@ -708,6 +708,120 @@ function dashTop5() {
     hint: d.id === 'econ' ? '打开备考日历' : (d.realm ? d.realm + ' +1' : '日常') + (d.wp ? ' · 愿力+' + d.wp : '')
   }));
 }
+/* ---------- 今日待办（localStorage 纯待办工具，不发愿力） ---------- */
+const DAILY_TODO_KEY = 'game_daily_todos_v1';
+const TODO_PRIO = { high: { label: '高', cls: 'high' }, mid: { label: '中', cls: 'mid' }, low: { label: '低', cls: 'low' } };
+function dailyTodoLoad() {
+  try { return JSON.parse(localStorage.getItem(DAILY_TODO_KEY) || '[]'); } catch (e) { return []; }
+}
+function dailyTodoSave(a) {
+  try { localStorage.setItem(DAILY_TODO_KEY, JSON.stringify(a)); } catch (e) {}
+}
+/* 日清：昨天未完成的待办移到今天；8 天前已完成的清理掉。 */
+function dailyTodoCarry() {
+  const today = todayKey();
+  let arr = dailyTodoLoad();
+  let changed = false;
+  arr = arr.map(it => {
+    if (it.date && it.date < today && !it.done) { changed = true; return Object.assign({}, it, { date: today }); }
+    return it;
+  });
+  const cut = cstDateKey(new Date(Date.now() - 8 * 86400000));
+  const filtered = arr.filter(it => !(it.done && it.date && it.date < cut));
+  if (filtered.length !== arr.length) changed = true;
+  arr = filtered;
+  if (changed) dailyTodoSave(arr);
+  return arr;
+}
+function dailyTodoToday() {
+  const today = todayKey();
+  const arr = dailyTodoCarry().filter(it => it.date === today);
+  const order = { high: 0, mid: 1, low: 2 };
+  return arr.slice().sort((a, b) => (order[a.priority] - order[b.priority]) || (Number(a.createdAt) - Number(b.createdAt)));
+}
+function addDailyTodo() {
+  const inp = document.getElementById('todoInput');
+  const sel = document.getElementById('todoPriority');
+  const text = (inp && inp.value || '').trim();
+  if (!text) { toast('待办内容不能为空', 'warn'); return; }
+  const prio = (sel && sel.value) || 'mid';
+  const arr = dailyTodoLoad();
+  arr.push({ id: Date.now() + '_' + Math.random().toString(36).slice(2, 7), text: text, priority: prio, done: false, date: todayKey(), createdAt: Date.now() });
+  dailyTodoSave(arr);
+  if (inp) inp.value = '';
+  renderMain('dashboard');
+}
+function toggleDailyTodo(id) {
+  const arr = dailyTodoLoad();
+  const it = arr.find(x => x.id === id);
+  if (!it) return;
+  it.done = !it.done;
+  dailyTodoSave(arr);
+  renderMain('dashboard');
+}
+function deleteDailyTodo(id) {
+  const arr = dailyTodoLoad().filter(x => x.id !== id);
+  dailyTodoSave(arr);
+  renderMain('dashboard');
+}
+function moveDailyTodo(id, dir) {
+  const today = dailyTodoLoad().filter(x => x.date === todayKey());
+  const order = { high: 0, mid: 1, low: 2 };
+  today.sort((a, b) => (order[a.priority] - order[b.priority]) || (Number(a.createdAt) - Number(b.createdAt)));
+  const idx = today.findIndex(x => x.id === id);
+  if (idx < 0) return;
+  const swap = idx + (dir === 'up' ? -1 : 1);
+  if (swap < 0 || swap >= today.length) return;
+  const a = today[idx], b = today[swap];
+  const ta = Number(a.createdAt), tb = Number(b.createdAt);
+  a.createdAt = tb; b.createdAt = ta;
+  const all = dailyTodoLoad();
+  all.forEach(x => { if (x.id === a.id) x.createdAt = a.createdAt; if (x.id === b.id) x.createdAt = b.createdAt; });
+  dailyTodoSave(all);
+  renderMain('dashboard');
+}
+function renderDailyTodos() {
+  const list = dailyTodoToday();
+  const total = list.length;
+  const done = list.filter(x => x.done).length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  const prioSel = '<select id="todoPriority" class="todo-sel">' +
+    '<option value="high">高</option>' +
+    '<option value="mid" selected>中</option>' +
+    '<option value="low">低</option>' +
+    '</select>';
+  const inputRow = '<div class="todo-input-row">' +
+    '<input id="todoInput" class="todo-input" type="text" placeholder="添加一个待办事项…" maxlength="60" onkeydown="if(event.key===\'Enter\')addDailyTodo()">' +
+    prioSel +
+    '<button class="btn primary" onclick="addDailyTodo()">添加</button>' +
+    '</div>';
+  const leftList = list.length ? list.map(it => {
+    const pr = TODO_PRIO[it.priority] || TODO_PRIO.mid;
+    return '<div class="todo-item' + (it.done ? ' done' : '') + '">' +
+      '<input type="checkbox" ' + (it.done ? 'checked' : '') + ' onchange="toggleDailyTodo(\'' + it.id + '\')">' +
+      '<span class="prio-badge ' + pr.cls + '">' + pr.label + '</span>' +
+      '<span class="todo-text">' + esc(it.text) + '</span>' +
+      '<span class="todo-acts">' +
+      '<button class="todo-mini" title="上移" onclick="moveDailyTodo(\'' + it.id + '\',\'up\')">▲</button>' +
+      '<button class="todo-mini" title="下移" onclick="moveDailyTodo(\'' + it.id + '\',\'down\')">▼</button>' +
+      '<button class="todo-mini del" title="删除" onclick="deleteDailyTodo(\'' + it.id + '\')">✕</button>' +
+      '</span></div>';
+  }).join('') : '<div class="todo-empty">今天还没有待办，添加一条吧 ✍️</div>';
+  const doneItems = list.filter(x => x.done);
+  const rightList = doneItems.length ? doneItems.map(it =>
+    '<div class="completion-item"><span class="comp-check">✅</span><span class="todo-text">' + esc(it.text) + '</span><button class="todo-mini del" title="删除" onclick="deleteDailyTodo(\'' + it.id + '\')">✕</button></div>'
+  ).join('') : '<div class="todo-empty">今天还没有完成的待办</div>';
+  return '<div class="section-title">📝 今日待办 <span class="game-tag">随手记 · 纯待办</span></div>' +
+    '<div class="todo-grid">' +
+    '<div class="card todo-card-left">' + inputRow + '<div class="todo-list">' + leftList + '</div></div>' +
+    '<div class="card todo-card-right">' +
+    '<div class="comp-head">✅ 今日完成率</div>' +
+    '<div class="todo-rate-num">' + pct + '%</div>' +
+    '<div class="bar"><i style="width:' + pct + '%;background:var(--lp)"></i></div>' +
+    '<div class="comp-sub">' + done + '/' + total + ' 已完成</div>' +
+    '<div class="completion-list">' + rightList + '</div>' +
+    '</div></div>';
+}
 function renderDashboard() {
   const p = player();
   const recipes = food().recipes || [];
@@ -745,7 +859,7 @@ function renderDashboard() {
       <div><b>${skillTotalLevel()}</b><span>技能</span></div>
       <div><b>${realmTotalLayers()}</b><span>境界</span></div>
     </div></div>`;
-  return hero + top5Wrap + `<div class="section-title">📊 修行概览</div>` + cards + snap;
+  return hero + top5Wrap + renderDailyTodos() + `<div class="section-title">📊 修行概览</div>` + cards + snap;
 }
 
 function demonDanger(d) {
