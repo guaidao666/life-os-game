@@ -628,4 +628,18 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .cook-wheel-pick{text-align:center;background:var(--panel);border:1px solid var(--accent);border-radius:14px;padding:20px 32px;box-shadow:var(--shadow)}
 .cook-wheel-pick h2{font-size:26px;margin-bottom:6px;color:var(--accent)}
 .cook-wheel-empty{color:var(--muted);font-size:14px}
+.cook-form{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;max-width:520px;margin:6px auto 0}
+.cook-form .section-title{margin-bottom:12px}
+.cf-row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.cf-row>label{font-size:13px;color:var(--muted)}
+.cf-row .input{width:100%}
+.cf-row .rate{display:flex;gap:4px}
+.cf-row .rate button{font-size:22px;background:transparent;border:0;color:var(--border);cursor:pointer;line-height:1;padding:2px}
+.cf-row .rate button.on{color:#ffb400}
+.cook-form>.btn.primary{width:100%;margin-top:4px}
+.cook-search{margin:10px 0 14px}
+.cook-search .input{width:100%}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.cook-card{display:flex;flex-direction:column;gap:6px}
+.cook-card h3{font-size:16px;margin:2px 0}
 

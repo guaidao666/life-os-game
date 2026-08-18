@@ -20,31 +20,6 @@
   <nav class="nav" id="nav"></nav>
   <main class="main" id="main"></main>
 </div>
-<div class="modal" id="cookModal">
-  <div class="modal-card">
-    <div class="modal-title" id="cookModalTitle">🍳 记录今天做的菜</div>
-    <div class="form">
-      <label>关联菜谱</label>
-      <select class="input" id="cookRecipe"></select>
-      <label>菜名</label>
-      <input class="input" id="cookDish" placeholder="菜名，如 凉拌黄瓜">
-      <label>评分</label>
-      <div class="rate" id="cookRating">
-        <button type="button" data-v="1" onclick="setCookRating(1)">★</button>
-        <button type="button" data-v="2" onclick="setCookRating(2)">★</button>
-        <button type="button" data-v="3" class="on" onclick="setCookRating(3)">★</button>
-        <button type="button" data-v="4" onclick="setCookRating(4)">★</button>
-        <button type="button" data-v="5" onclick="setCookRating(5)">★</button>
-      </div>
-      <label>感受（可选）</label>
-      <input class="input" id="cookFeeling" placeholder="今天做这道菜的心情">
-    </div>
-    <div class="modal-actions">
-      <button class="btn ghost" onclick="closeCookModal()">取消</button>
-      <button class="btn primary" onclick="saveCookPost()">🍳 做菜并结算</button>
-    </div>
-  </div>
-</div>
 <div class="modal" id="bagAddModal">
   <div class="modal-card">
     <div class="modal-title">➕ 添加物品到背包/仓库</div>

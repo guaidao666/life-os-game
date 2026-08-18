@@ -1027,8 +1027,15 @@ async function revokeDungeonWp(id, day) {
   }
   return amt;
 }
-function todayKey() { return new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }).replace(/\//g, '-'); }
-function yesterdayKey() { const d = new Date(); d.setDate(d.getDate() - 1); const p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
+function cstDateKey(d) {
+  const dt = d || new Date();
+  const s = dt.toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' });
+  const parts = s.split('/');
+  const p = n => String(n).padStart(2, '0');
+  return parts[0] + '-' + p(parts[1]) + '-' + p(parts[2]);
+}
+function todayKey() { return cstDateKey(new Date()); }
+function yesterdayKey() { return cstDateKey(new Date(Date.now() - 86400000)); }
 function dungeonFlag(id) { return 'game_dungeon_' + todayKey() + '_' + id; }
 function dungeonDone(id) { try { return localStorage.getItem(dungeonFlag(id)) === '1'; } catch (e) { return false; } }
 function xinmoHpFromDungeons() { const all = dailies(); const done = all.filter(d => dungeonDone(d.id)).length; return Math.max(0, 100 - Math.round(done / all.length * 100)); }
@@ -1072,6 +1079,8 @@ async function top5Click(id) {
   if (id === 'weight') { go('weight'); return; }
   if (id === 'sleep') { go('sleep'); return; }
   if (id === 'econ') { go('economist'); return; }
+  if (id === 'diary') { go('diary'); return; }
+  if (id === 'cook') { cookTab = 'wheel'; go('cook'); return; }
   if (dungeonDone(id)) await setDungeonOff(id); else await clearDungeon(id);
 }
 async function setDungeonOff(id) {
@@ -1131,6 +1140,8 @@ async function toggleWeeklyTask(id, done) {
 }
 async function clearDungeon(id) {
   if (id === 'econ') { go('economist'); return; }
+  if (id === 'diary') { go('diary'); return; }
+  if (id === 'cook') { cookTab = 'wheel'; go('cook'); return; }
   try { localStorage.setItem(dungeonFlag(id), '1'); } catch (e) {}
   const xm = (demons() || []).find(d => d.key === 'xinmo');
   if (xm) xm.hp = xinmoHpFromDungeons();
@@ -1166,7 +1177,7 @@ function weightStreak() {
   const log = weightLoad().slice().sort((a, b) => a.date < b.date ? 1 : -1);
   let s = 0;
   for (let i = 0; i < log.length; i++) {
-    const exp = new Date(Date.now() - i * 86400000).toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }).replace(/\//g, '-');
+    const exp = cstDateKey(new Date(Date.now() - i * 86400000));
     if (log[i].date === exp) s++; else break;
   }
   return s;
@@ -1297,7 +1308,7 @@ function sleepStreak() {
   const log = sleepLoad().slice().sort((a, b) => a.date < b.date ? 1 : -1);
   let s = 0;
   for (let i = 0; i < log.length; i++) {
-    const exp = new Date(Date.now() - i * 86400000).toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }).replace(/\//g, '-');
+    const exp = cstDateKey(new Date(Date.now() - i * 86400000));
     if (log[i].date === exp) { if (log[i].tier === 'early') s++; else break; } else break;
   }
   return s;
@@ -1409,55 +1420,58 @@ async function saveFun() {
   renderMain('fun');
 }
 
-let cookTab = 'cook';
+let cookTab = 'wheel';
 let cookWheelPick = null;
+let cookPrefillId = null;
 function renderCook() {
   const recipes = food().recipes || [];
-  const tabs = [['cook', '🍳 做一道菜'], ['recipes', '📚 菜谱库'], ['wheel', '🎲 今天吃什么'], ['log', '📝 饮食日志']];
+  const tabs = [['wheel', '🎲 今天吃什么'], ['recipes', '📚 菜谱库'], ['log', '📝 饮食日志']];
   const tabBar = '<div class="cook-tabs">' + tabs.map(t => '<div class="cook-tab' + (cookTab === t[0] ? ' on' : '') + '" onclick="cookTab=\'' + t[0] + '\';renderMain(\'cook\')">' + t[1] + '</div>').join('') + '</div>';
   let body = '';
   if (cookTab === 'recipes') body = cookRecipesHtml(recipes);
-  else if (cookTab === 'wheel') body = cookWheelHtml(recipes);
   else if (cookTab === 'log') body = cookLogHtml();
-  else body = cookCookHtml(recipes);
+  else body = cookWheelHtml(recipes);
   return tabBar + body;
-}
-function cookCookHtml(recipes) {
-  if (!recipes.length) return renderPlaceholder('烹饪', '暂无菜谱数据。');
-  const cards = recipes.map(r => {
-    const lv = num(r.level, 1), prof = num(r.proficiency, 0);
-    const q = QUA[r.quality] || QUA[1];
-    const pct = Math.max(0, Math.min(100, Math.round(prof / 10 * 100)));
-    return '<div class="card cook-card"><span class="tag">' + q.label + ' ' + stars(r.quality) + '</span>' +
-      '<h3>' + esc(r.name) + '</h3>' +
-      '<div class="meta">Lv.' + lv + ' · 熟练度 ' + prof + '/10' + (r.activated ? '' : ' · 未激活') + '</div>' +
-      '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
-      '<button class="btn primary sm" onclick="cookDish(' + r.id + ')">🍳 做一道</button></div>';
-  }).join('');
-  const meals = (DATA.meals || []).slice(0, 15);
-  const hist = meals.length ? meals.map(m => {
-    const r = (food().recipes || []).find(x => x.id === m.recipeId);
-    return '<div class="cook-hist-row"><span class="ch-date">' + esc(m.date || '') + '</span>' +
-      '<span class="ch-name">' + esc(m.name || '(未关联菜谱)') + '</span>' +
-      (m.rating ? '<span class="ch-rate">' + '★'.repeat(m.rating) + '</span>' : '') +
-      '<button class="ch-undo" onclick="undoCook(' + m.id + ')">撤销</button></div>';
-  }).join('') : '<div class="game-empty">还没有做菜记录</div>';
-  return '<div class="mod-toolbar"><div class="section-title">🍳 烹饪 · 菜谱 ' + recipes.length + ' 道</div>' +
-    '<button class="btn primary" onclick="openCookModal()">🍳 记录做菜</button></div>' +
-    '<div class="cards">' + cards + '</div>' +
-    '<div class="section-title" style="margin-top:18px">📜 我做菜记录 <span class="game-tag">点「撤销」回退奖励与境界经验</span></div>' +
-    '<div class="cook-hist">' + hist + '</div>';
 }
 function cookRecipesHtml(recipes) {
   if (!recipes.length) return renderPlaceholder('菜谱库', '暂无菜谱。去主站烟火食记加菜谱会同步过来。');
-  const rows = recipes.map(r => '<div class="cook-recipe-row"><div class="cr-info"><b>' + esc(r.name) + '</b><span class="cr-meta">' + esc(r.category || '') + ' · 难度 ' + (r.difficulty || '?') + (r.activated ? ' · 已激活' : '') + '</span></div><button class="btn sm" onclick="cookDish(' + r.id + ')">做一道</button></div>').join('');
-  return '<div class="section-title">📚 菜谱库 · 共 ' + recipes.length + ' 道</div><div class="cook-recipe-list">' + rows + '</div>';
+  let term = ''; try { term = localStorage.getItem('cookSearch') || ''; } catch (e) {}
+  const q = term.trim().toLowerCase();
+  const list = q ? recipes.filter(r => (r.name || '').toLowerCase().includes(q) || (r.category || '').toLowerCase().includes(q)) : recipes;
+  const cards = list.map(r => {
+    const lv = num(r.level, 1), prof = num(r.proficiency, 0);
+    const qd = QUA[r.quality] || QUA[1];
+    const pct = Math.max(0, Math.min(100, Math.round(prof / 10 * 100)));
+    return '<div class="card cook-card"><span class="tag">' + qd.label + ' ' + stars(r.quality) + '</span>' +
+      '<h3>' + esc(r.name) + '</h3>' +
+      '<div class="meta">' + esc(r.category || '') + ' · 难度 ' + (r.difficulty || '?') + (r.activated ? ' · 已激活' : '') + '</div>' +
+      '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
+      '<button class="btn primary sm" onclick="cookDish(' + r.id + ')">🍳 做这道</button></div>';
+  }).join('');
+  const search = '<div class="cook-search"><input class="input" id="cookSearchBox" value="' + esc(term) + '" placeholder="🔍 搜索菜名 / 分类" oninput="cookSearchOn(this.value)"></div>';
+  return '<div class="section-title" style="display:flex;align-items:center;gap:10px">📚 菜谱库 · 共 ' + recipes.length + ' 道<span style="margin-left:auto;font-size:13px;color:var(--muted)">' + (q ? list.length + ' 命中' : '') + '</span></div>' +
+    search +
+    '<div class="cards">' + (cards || '<div class="game-empty">没有匹配的菜谱</div>') + '</div>';
 }
+function cookSearchOn(v) { try { localStorage.setItem('cookSearch', v); } catch (e) {} renderMain('cook'); }
 function cookWheelHtml(recipes) {
   if (!recipes.length) return renderPlaceholder('今天吃什么', '暂无菜谱可抽。');
   const pick = cookWheelPick ? (recipes.find(x => x.id === cookWheelPick) || null) : null;
-  const card = pick ? '<div class="cook-wheel-pick"><h2>' + esc(pick.name) + '</h2><div class="meta">' + esc(pick.category || '') + ' · 难度 ' + (pick.difficulty || '?') + '</div><button class="btn primary" onclick="cookDish(' + pick.id + ')">🍳 就做这道</button></div>' : '<div class="cook-wheel-empty">点击下方按钮，让命运替你决定今晚吃什么 🎲</div>';
-  return '<div class="section-title">🎲 今天吃什么</div><div class="cook-wheel">' + card + '<button class="btn primary" onclick="cookWheelSpin()">🎲 帮我选一道</button></div>';
+  const wheel = pick ? '<div class="cook-wheel-pick"><h2>' + esc(pick.name) + '</h2><div class="meta">' + esc(pick.category || '') + ' · 难度 ' + (pick.difficulty || '?') + '</div><button class="btn primary" onclick="cookDish(' + pick.id + ')">🍳 就做这道</button></div>' : '<div class="cook-wheel-empty">点击下方按钮，让命运替你决定今晚吃什么 🎲</div>';
+  return '<div class="section-title">🎲 今天吃什么</div><div class="cook-wheel">' + wheel + '<button class="btn primary" onclick="cookWheelSpin()">🎲 帮我选一道</button></div>' + cookWheelFormHtml(recipes);
+}
+function cookWheelFormHtml(recipes) {
+  const opts = '<option value="">（不关联菜谱）</option>' + recipes.map(r => '<option value="' + r.id + '">' + esc(r.name) + '</option>').join('');
+  const pre = (cookPrefillId != null) ? (recipes.find(x => x.id === cookPrefillId) || null) : null;
+  const feelOpts = ['', '超满足😋', '还不错🙂', '一般般😶', '翻车了😭', '很有成就感💪'].map(f => '<option value="' + f + '">' + (f || '不选') + '</option>').join('');
+  const dish = pre ? pre.name : '';
+  const formStars = [1, 2, 3, 4, 5].map(v => '<button type="button" data-v="' + v + '" class="' + (v === cookRatingVal ? 'on' : '') + '" onclick="setCookRating(' + v + ')">★</button>').join('');
+  return '<div class="cook-form"><div class="section-title" style="margin-top:16px">🍽️ 记录做菜</div>' +
+    '<div class="cf-row"><label>关联菜谱</label><select class="input" id="cookRecipe">' + opts + '</select></div>' +
+    '<div class="cf-row"><label>菜名</label><input class="input" id="cookDish" value="' + esc(dish) + '" placeholder="菜名，如 凉拌黄瓜"></div>' +
+    '<div class="cf-row"><label>评分</label><div class="rate" id="cookRating">' + formStars + '</div></div>' +
+    '<div class="cf-row"><label>感受</label><select class="input" id="cookFeeling">' + feelOpts + '</select></div>' +
+    '<button class="btn primary" onclick="saveCookPost()">🍳 做菜并结算</button></div>';
 }
 function cookWheelSpin() { const rs = food().recipes || []; if (!rs.length) return; cookWheelPick = rs[Math.floor(Math.random() * rs.length)].id; renderMain('cook'); }
 function cookLogHtml() {
@@ -1470,26 +1484,14 @@ function cookLogHtml() {
 /* ---------- 烹饪交互 ---------- */
 let cookRatingVal = 3;
 function todayStr() { const d = new Date(); const p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
-function openCookModal() {
-  const sel = document.getElementById('cookRecipe');
-  if (sel) sel.innerHTML = '<option value="">（不关联菜谱）</option>' + (food().recipes || []).map(r => '<option value="' + r.id + '">' + esc(r.name) + '</option>').join('');
-  const dish = document.getElementById('cookDish'); if (dish) dish.value = '';
-  const feel = document.getElementById('cookFeeling'); if (feel) feel.value = '';
-  setCookRating(3);
-  const m = document.getElementById('cookModal'); if (m) m.classList.add('open');
-}
-function closeCookModal() { const m = document.getElementById('cookModal'); if (m) m.classList.remove('open'); }
 function setCookRating(v) {
   cookRatingVal = v;
   document.querySelectorAll('#cookRating button').forEach(b => b.classList.toggle('on', +b.dataset.v === v));
 }
 function cookDish(id) {
-  openCookModal();
-  const sel = document.getElementById('cookRecipe');
-  if (sel) sel.value = id || '';
-  const r = (food().recipes || []).find(x => x.id === id);
-  const dish = document.getElementById('cookDish');
-  if (dish && r) dish.value = r.name;
+  cookPrefillId = id;
+  cookTab = 'wheel';
+  renderMain('cook');
 }
 async function saveCookPost() {
   const dish = document.getElementById('cookDish').value.trim();
@@ -1497,26 +1499,50 @@ async function saveCookPost() {
   const recipeId = parseInt(document.getElementById('cookRecipe').value) || null;
   const rating = cookRatingVal;
   const feeling = document.getElementById('cookFeeling').value.trim();
-  if (recipeId && DATA) {
-    try {
-      const res = await fetch('/api/cook', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dish, date: todayStr(), rating, feeling, recipeId, images: [] }) });
-      const j = await res.json();
-      if (j.ok) {
-        closeCookModal();
-        await loadData();   // 重新拉真数据，刷新资源条+菜谱进度+背包
-        showCookReward(j.gains, dish);
-        // 灶神录：新菜 +5 经验、重复做 +1 经验（不耗愿力，直接记境界）
-        if (j.gains && typeof j.gains.activated === 'boolean') {
-          await grantRealmXp('灶神录', j.gains.activated ? 5 : 1, {});
-        }
-        renderMain('cook');
-        toastUndo('🍳 已记录「' + (dish || '') + '」，点此可撤销', () => undoCook(j.id));
-        return;
-      } else { toast('做菜结算失败：' + (j.error || '未知错误'), 'warn'); }
-    } catch (e) { toast('请求失败：' + e.message, 'warn'); }
+  if (!DATA) { toast('数据未就绪，请稍候', 'warn'); return; }
+  try {
+    const res = await fetch('/api/cook', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dish, date: todayKey(), rating, feeling, recipeId, images: [] }) });
+    const j = await res.json();
+    if (j.ok) {
+      cookPrefillId = null;
+      await loadData();   // 重新拉真数据，刷新资源条+菜谱进度+背包
+      showCookReward(j.gains, dish);
+      // 灶神录：新菜 +5 经验、重复做 +1 经验（不耗愿力，直接记境界）
+      if (j.gains && typeof j.gains.activated === 'boolean') {
+        await grantRealmXp('灶神录', j.gains.activated ? 5 : 1, {});
+      }
+      await completeCookDungeon();   // 标记烟火做饭完成 + 发愿力（每日封顶 5 道）
+      renderMain('cook');
+      toastUndo('🍳 已记录「' + dish + '」，点此可撤销', () => undoCook(j.id));
+      return;
+    } else { toast('做菜结算失败：' + (j.error || '未知错误'), 'warn'); }
+  } catch (e) { toast('请求失败：' + e.message, 'warn'); }
+}
+/* 做菜联动每日秘境「烟火做饭」：当天首次做菜标记完成并发配置愿力；当天做菜 ≤5 道才计愿力（防刷）。 */
+async function completeCookDungeon() {
+  const date = todayKey();
+  let count = 0; try { count = Number(localStorage.getItem('game_cookCount_' + date)) || 0; } catch (e) {}
+  count++; try { localStorage.setItem('game_cookCount_' + date, String(count)); } catch (e) {}
+  if (!dungeonDone('cook')) { try { localStorage.setItem(dungeonFlag('cook'), '1'); } catch (e) {} }
+  const def = dungeonDef('cook');
+  const wp = def ? (Number(def.wp) || 0) : 0;
+  if (wp && count <= 5) {
+    await grantDungeonWp('cook', date, wp);
+    toast('🍳 烟火做饭完成 · 愿力 +' + wp, 'good');
+  } else if (wp && count > 5) {
+    toast('今日做菜已满 5 道，烟火做饭完成但不再额外发愿力', 'warn');
   }
-  toast('已记录（未关联菜谱，不参与结算）', '');
-  closeCookModal();
+}
+async function maybeUncompleteCook() {
+  const date = todayKey();
+  let count = 0; try { count = Number(localStorage.getItem('game_cookCount_' + date)) || 0; } catch (e) {}
+  count = Math.max(0, count - 1);
+  try { localStorage.setItem('game_cookCount_' + date, String(count)); } catch (e) {}
+  if (count === 0) {
+    try { localStorage.setItem(dungeonFlag('cook'), '0'); } catch (e) {}
+    const refunded = await revokeDungeonWp('cook', date);
+    if (refunded > 0) toast('↩️ 烟火做饭已取消，扣回 ' + refunded + ' 愿力', 'warn');
+  }
 }
 function showCookReward(gains, dish) {
   if (!gains) return;
@@ -1587,6 +1613,7 @@ async function undoCook(mealId) {
     if (!r.ok) { toast('撤销失败：' + (r.error || ''), 'warn'); return; }
     await loadData();
     if (r.rollback && r.rollback.realmXp) await rollbackRealmXp('灶神录', r.rollback.realmXp);
+    await maybeUncompleteCook();   // 当天无其余做菜记录则取消烟火做饭并扣回愿力
     renderMain('cook');
     const rb = r.rollback || {};
     const parts = ['已撤销做菜'];
