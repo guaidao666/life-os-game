@@ -177,23 +177,30 @@ function renderResbar() {
     ['dp', '天命 DP', num(p.destiny, 0)],
   ];
   document.getElementById('resbar').innerHTML = items.map(([c, k, v]) =>
-    `<div class="res ${c}"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+    `<div class="res ${c}" onclick="showLedgerModal('${c}')" title="点击查看${LEDGER_LABELS[c]}收支明细" style="cursor:pointer"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
 }
 
-/* ---------- 愿力明细账（统一收口所有加/扣愿力，落本地流水） ---------- */
-const WP_LEDGER_KEY = 'game_wp_ledger';
-function wpLedgerLoad() { try { return JSON.parse(localStorage.getItem(WP_LEDGER_KEY) || '[]'); } catch (e) { return []; } }
-function wpLedgerSave(a) { try { localStorage.setItem(WP_LEDGER_KEY, JSON.stringify(a)); } catch (e) {} }
-let wpLedgerFilt = 'all';   // 'all' | 'in' | 'out'
+/* ---------- 三货币明细账（WP/LP/DP 统一流水） ---------- */
+const LEDGER_KEYS = { wp: 'game_wp_ledger', lp: 'game_lp_ledger', dp: 'game_dp_ledger' };
+const LEDGER_LABELS = { wp: '愿力点', lp: '幸运点', dp: '天命点' };
+const LEDGER_ABBR = { wp: 'WP', lp: 'LP', dp: 'DP' };
+const LEDGER_BAL_KEY = { wp: 'willpower', lp: 'lucky', dp: 'destiny' };
+function ledgerLoad(cur) { try { return JSON.parse(localStorage.getItem(LEDGER_KEYS[cur]) || '[]'); } catch (e) { return []; } }
+function ledgerSave(cur, a) { try { localStorage.setItem(LEDGER_KEYS[cur], JSON.stringify(a)); } catch (e) {} }
 /* 仅记账：在本地明细账追加一笔（不发起请求），余额取当前 player。 */
-function wpLedgerAppend(delta, source, text) {
+function ledgerAppend(cur, delta, source, text) {
   delta = Number(delta) || 0;
   if (!delta) return;
-  const bal = num(player().willpower, 0);
-  const ledger = wpLedgerLoad();
+  const bal = num(player()[LEDGER_BAL_KEY[cur]], 0);
+  const ledger = ledgerLoad(cur);
   ledger.unshift({ ts: Date.now(), delta: delta, balance: bal, source: source || '日常', text: text || '' });
-  wpLedgerSave(ledger.slice(0, 500));
+  ledgerSave(cur, ledger.slice(0, 500));
 }
+/* 兼容旧调用（愿力明细账） */
+function wpLedgerLoad() { return ledgerLoad('wp'); }
+function wpLedgerSave(a) { ledgerSave('wp', a); }
+function wpLedgerAppend(delta, source, text) { ledgerAppend('wp', delta, source, text); }
+let wpLedgerFilt = 'all';   // 'all' | 'in' | 'out'
 /* 统一发放/扣除愿力：实时写后端 + 记本地明细账 + 刷新资源条。返回最新 WP。 */
 async function grantWP(delta, source, text) {
   delta = Number(delta) || 0;
@@ -209,7 +216,7 @@ async function grantWP(delta, source, text) {
   } catch (e) { toast('愿力结算失败：' + e.message, 'warn'); throw e; }
 }
 function renderWpLedgerHtml() {
-  const ledger = wpLedgerLoad();
+  const ledger = ledgerLoad('wp');
   const bal = num(player().willpower, 0);
   const filtered = ledger.filter(e => wpLedgerFilt === 'all' ? true : (wpLedgerFilt === 'in' ? e.delta > 0 : e.delta < 0));
   const rows = filtered.length ? filtered.map(e => {
@@ -224,6 +231,48 @@ function renderWpLedgerHtml() {
     '<div class="wp-balance">当前余额 <b>' + bal + '</b> WP</div>' +
     '<div class="wp-filts">' + f('all', '全部') + f('in', '收入') + f('out', '支出') + '</div>' +
     '<div class="wp-ledger">' + rows + '</div>';
+}
+
+/* ---------- 资源条点击弹窗：三货币收支明细 ---------- */
+let _ledgerModalCur = null;
+let _ledgerModalFilt = 'all';
+function showLedgerModal(cur) {
+  _ledgerModalCur = cur;
+  _ledgerModalFilt = 'all';
+  renderLedgerModal();
+}
+function closeLedgerModal() {
+  const el = document.getElementById('ledgerModalOverlay');
+  if (el) el.remove();
+  _ledgerModalCur = null;
+}
+function renderLedgerModal() {
+  const cur = _ledgerModalCur || 'wp';
+  const ledger = ledgerLoad(cur);
+  const bal = num(player()[LEDGER_BAL_KEY[cur]], 0);
+  const filtered = ledger.filter(e => _ledgerModalFilt === 'all' ? true : (_ledgerModalFilt === 'in' ? e.delta > 0 : e.delta < 0));
+  const rows = filtered.length ? filtered.slice(0, 50).map(e => {
+    const sign = e.delta > 0 ? '+' : '';
+    const cls = e.delta > 0 ? 'in' : 'out';
+    const dt = new Date(e.ts);
+    const dstr = (dt.getMonth() + 1) + '/' + dt.getDate() + ' ' + String(dt.getHours()).padStart(2, '0') + ':' + String(dt.getMinutes()).padStart(2, '0');
+    const full = esc(e.source + (e.text ? ' · ' + e.text : ''));
+    return '<div class="wp-row ' + cls + '"><span class="wp-time">' + dstr + '</span><span class="wp-src" title="' + full + '">' + esc(e.source) + (e.text ? ' · ' + esc(e.text) : '') + '</span><span class="wp-amt">' + (sign + e.delta) + '</span></div>';
+  }).join('') : '<div class="game-empty">暂无流水</div>';
+  const f = (k, l) => '<button class="wp-filt' + (_ledgerModalFilt === k ? ' on' : '') + '" onclick="_ledgerModalFilt=\'' + k + '\';renderLedgerModal()">' + l + '</button>';
+  const html = '<div class="modal open" id="ledgerModalOverlay" onclick="if(event.target===this)closeLedgerModal()">' +
+    '<div class="modal-card" style="max-width:520px;max-height:80vh;display:flex;flex-direction:column" onclick="event.stopPropagation()">' +
+    '<div class="modal-title">📊 ' + LEDGER_LABELS[cur] + ' 收支明细 <span style="font-size:13px;font-weight:500;color:var(--muted)">(' + LEDGER_ABBR[cur] + ')</span></div>' +
+    '<div class="wp-balance">当前余额 <b>' + bal + '</b> ' + LEDGER_ABBR[cur] + '</div>' +
+    '<div class="wp-filts">' + f('all', '全部') + f('in', '收入') + f('out', '支出') + '</div>' +
+    '<div class="wp-ledger" style="flex:1">' + rows + '</div>' +
+    '<div class="modal-actions"><button class="btn" onclick="closeLedgerModal()">关闭</button></div>' +
+    '</div></div>';
+  let existing = document.getElementById('ledgerModalOverlay');
+  if (existing) existing.remove();
+  const wrap = document.createElement('div');
+  wrap.innerHTML = html;
+  document.body.appendChild(wrap.firstElementChild);
 }
 
 /* ---------- 渲染：导航树 ---------- */
@@ -827,11 +876,15 @@ async function shopBuy(id) {
   if (it.stock != null && Number(it.stock) <= 0) { toast('该商品已兑完', 'warn'); return; }
   showConfirm('确认兑换', '确定兑换【' + it.name + '】吗？\n消耗 ' + price + ' ' + CUR_LABEL[cur] + '（' + CUR_ABBR[cur] + '）。', async function () {
     try {
+      const oldBal = shopBal()[cur];
       const r = await fetch('/api/shop-buy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }) });
       const j = await r.json();
       if (j.ok) {
-        toast('兑换成功：' + it.name + '（-' + price + ' ' + CUR_ABBR[cur] + '）', 'good');
         await loadData();
+        const newBal = shopBal()[cur];
+        const delta = newBal - oldBal;
+        if (delta) ledgerAppend(cur, delta, '命愿祈铺·兑换', it.name);
+        toast('兑换成功：' + it.name + '（-' + price + ' ' + CUR_ABBR[cur] + '）', 'good');
         renderResbar(); renderAltar();
       } else { toast('兑换失败：' + (j.error || '未知错误'), 'warn'); }
     } catch (e) { toast('兑换失败：' + e.message, 'warn'); }
@@ -879,10 +932,15 @@ async function condenseLucky() {
   showConfirm('⚠ 化命台凝结确认', '将把 ' + (gain * 100) + ' 愿力点凝结为 ' + gain + ' 幸运点。\n此过程不可逆，确定凝结？', function () {
     showConfirm('⚠ 仍要凝结？', '再次确认：消耗 ' + (gain * 100) + ' WP，获得 ' + gain + ' LP。\n（凝结后剩余 ' + (wp - gain * 100) + ' WP，' + (lp + gain) + ' LP）', async function () {
       try {
+        const oldWP = num(player().willpower, 0), oldLP = num(player().lucky, 0);
         const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ willpower: wp - gain * 100, lucky: lp + gain }) });
         const r = await j.json();
         if (!r.ok) { toast('凝结失败：' + (r.error || ''), 'warn'); return; }
         DATA.player.willpower = r.player.willpower; DATA.player.lucky = r.player.lucky;
+        const dWP = num(r.player.willpower, 0) - oldWP;
+        const dLP = num(r.player.lucky, 0) - oldLP;
+        if (dWP) ledgerAppend('wp', dWP, '化命台·凝结', '100 WP → 1 LP');
+        if (dLP) ledgerAppend('lp', dLP, '化命台·凝结', '100 WP → 1 LP');
         renderResbar(); renderAltar();
         toast('🔥 凝结成功：+' + gain + ' LP', 'good');
       } catch (e) { toast('凝结失败：' + e.message, 'warn'); }
@@ -898,10 +956,15 @@ async function condenseDestiny() {
   showConfirm('⚠ 化命台凝结确认', '将把 ' + (gain * 10) + ' 幸运点凝结为 ' + gain + ' 天命点。\n此过程不可逆，确定凝结？', function () {
     showConfirm('⚠ 仍要凝结？', '再次确认：消耗 ' + (gain * 10) + ' LP，获得 ' + gain + ' DP。\n（凝结后剩余 ' + (lp - gain * 10) + ' LP，' + (dp + gain) + ' DP）', async function () {
       try {
+        const oldLP = num(player().lucky, 0), oldDP = num(player().destiny, 0);
         const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lucky: lp - gain * 10, destiny: dp + gain }) });
         const r = await j.json();
         if (!r.ok) { toast('凝结失败：' + (r.error || ''), 'warn'); return; }
         DATA.player.lucky = r.player.lucky; DATA.player.destiny = r.player.destiny;
+        const dLP = num(r.player.lucky, 0) - oldLP;
+        const dDP = num(r.player.destiny, 0) - oldDP;
+        if (dLP) ledgerAppend('lp', dLP, '化命台·凝结', '10 LP → 1 DP');
+        if (dDP) ledgerAppend('dp', dDP, '化命台·凝结', '10 LP → 1 DP');
         renderResbar(); renderAltar();
         toast('🔥 凝结成功：+' + gain + ' DP', 'good');
       } catch (e) { toast('凝结失败：' + e.message, 'warn'); }
@@ -2272,10 +2335,18 @@ function closeRealm() { document.querySelectorAll('.realm-modal').forEach(m => m
     }
     async function encounterSuccubus(result) {
       try {
+        const old = { wp: num(player().willpower, 0), lp: num(player().lucky, 0), dp: num(player().destiny, 0) };
         const j = await (await fetch('/api/succubus', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'encounter', result }) })).json();
         if (j.ok) {
           DATA.succubus = j.succubus;
           if (DATA.player) { DATA.player.willpower = j.willpower; DATA.player.lucky = j.lucky; DATA.player.destiny = j.destiny; }
+          const label = result === 'success' ? '抵御成功' : '抵御失败';
+          const dWP = num(j.willpower, 0) - old.wp;
+          const dLP = num(j.lucky, 0) - old.lp;
+          const dDP = num(j.destiny, 0) - old.dp;
+          if (dWP) ledgerAppend('wp', dWP, '魅魔·遭遇', label);
+          if (dLP) ledgerAppend('lp', dLP, '魅魔·遭遇', label);
+          if (dDP) ledgerAppend('dp', dDP, '魅魔·遭遇', label);
           renderResbar();
           toast(j.msg + '（愿力 ' + j.willpower + ' · 幸运 ' + j.lucky + ' · 天命 ' + j.destiny + '）', result === 'success' ? 'good' : 'warn');
           renderMain('demon');
