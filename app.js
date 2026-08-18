@@ -278,7 +278,8 @@ function renderLedgerModal() {
 /* ---------- 渲染：导航树 ---------- */
 function renderNav() {
   const nav = document.getElementById('nav');
-  nav.innerHTML = GROUPS.map(g => {
+  const navHead = '<div class="nav-head"><span>🎮 拾光</span><button class="nav-close" onclick="closeNav()">✕</button></div>';
+  nav.innerHTML = navHead + GROUPS.map(g => {
     const ms = MODULES.filter(m => m.group === g);
     if (!ms.length) return '';
     return `<h4>${g}</h4>` + ms.map(m => `<a href="#" data-id="${m.id}">${m.icon} ${esc(m.name)}</a>`).join('');
@@ -2764,3 +2765,17 @@ window.addEventListener('message', async (e) => {
     toast((dd > 0 ? '+' : '') + dd + ' 愿力 · ' + (d.text || d.source || '经济师'), dd > 0 ? 'good' : 'warn');
   } catch (err) { /* grantWP 内部已提示 */ }
 });
+
+/* ---------- 手机端汉堡抽屉导航 ---------- */
+function closeNav() { document.body.classList.remove('nav-open'); }
+function initDrawer() {
+  const btn = document.getElementById('hambBtn');
+  const mask = document.getElementById('navMask');
+  const nav = document.getElementById('nav');
+  if (btn) btn.addEventListener('click', function (e) { e.stopPropagation(); document.body.classList.toggle('nav-open'); });
+  if (mask) mask.addEventListener('click', function () { closeNav(); });
+  if (nav) nav.addEventListener('click', function (e) {
+    if (e.target.closest('a') || e.target.closest('.nav-close')) { setTimeout(closeNav, 60); }
+  });
+}
+initDrawer();
