@@ -747,23 +747,27 @@ function addDailyTodo() {
   if (!text) { toast('待办内容不能为空', 'warn'); return; }
   const prio = (sel && sel.value) || 'mid';
   const arr = dailyTodoLoad();
-  arr.push({ id: Date.now() + '_' + Math.random().toString(36).slice(2, 7), text: text, priority: prio, done: false, date: todayKey(), createdAt: Date.now() });
+  arr.push({ id: Date.now() + '_' + Math.random().toString(36).slice(2, 7), text: text, priority: prio, done: false, date: todayKey(), createdAt: Date.now(), ts: Date.now() });
   dailyTodoSave(arr);
   if (inp) inp.value = '';
   renderMain('dashboard');
+  syncTodos(true);
 }
 function toggleDailyTodo(id) {
   const arr = dailyTodoLoad();
   const it = arr.find(x => x.id === id);
   if (!it) return;
   it.done = !it.done;
+  it.ts = Date.now();
   dailyTodoSave(arr);
   renderMain('dashboard');
+  syncTodos(true);
 }
 function deleteDailyTodo(id) {
   const arr = dailyTodoLoad().filter(x => x.id !== id);
   dailyTodoSave(arr);
   renderMain('dashboard');
+  syncTodos(true);
 }
 function moveDailyTodo(id, dir) {
   const today = dailyTodoLoad().filter(x => x.date === todayKey());
@@ -780,6 +784,7 @@ function moveDailyTodo(id, dir) {
   all.forEach(x => { if (x.id === a.id) x.createdAt = a.createdAt; if (x.id === b.id) x.createdAt = b.createdAt; });
   dailyTodoSave(all);
   renderMain('dashboard');
+  syncTodos(true);
 }
 function renderDailyTodos() {
   const list = dailyTodoToday();
@@ -812,7 +817,7 @@ function renderDailyTodos() {
   const rightList = doneItems.length ? doneItems.map(it =>
     '<div class="completion-item"><span class="comp-check">✅</span><span class="todo-text">' + esc(it.text) + '</span><button class="todo-mini del" title="删除" onclick="deleteDailyTodo(\'' + it.id + '\')">✕</button></div>'
   ).join('') : '<div class="todo-empty">今天还没有完成的待办</div>';
-  return '<div class="section-title">📝 今日待办 <span class="game-tag">随手记 · 纯待办</span></div>' +
+  return '<div class="section-title">📝 今日待办 <span class="game-tag">随手记 · 纯待办</span>' + '<button class="btn ghost todo-sync-btn" onclick="syncTodos(false)">🔄 同步</button>' + '<span id="todoSyncStatus" class="todo-sync-status">同步中…</span></div>' +
     '<div class="todo-grid">' +
     '<div class="card todo-card-left">' + inputRow + '<div class="todo-list">' + leftList + '</div></div>' +
     '<div class="card todo-card-right">' +
@@ -823,6 +828,58 @@ function renderDailyTodos() {
     '<div class="completion-list">' + rightList + '</div>' +
     '</div></div>';
 }
+
+/* ---------- 今日待办 服务端同步（localStorage 为缓存，game_todos 表为跨设备真源） ---------- */
+let todoSyncStarted = false;
+let lastTodoSync = 0;
+function fmtTodoTime(t) { const d = new Date(t); const p = n => (n < 10 ? '0' : '') + n; return p(d.getHours()) + ':' + p(d.getMinutes()); }
+function setTodoSyncStatus(ok) {
+  const el = document.getElementById('todoSyncStatus');
+  if (!el) return;
+  if (ok) { lastTodoSync = Date.now(); el.textContent = '已同步 ' + fmtTodoTime(lastTodoSync); el.className = 'todo-sync-status ok'; }
+  else { el.textContent = '未连接，点同步重试'; el.className = 'todo-sync-status err'; }
+}
+function mergeTodosFromServer(remote) {
+  const local = dailyTodoLoad();
+  const map = {};
+  local.forEach(it => map[it.id] = it);
+  (remote || []).forEach(r => {
+    const ex = map[r.id];
+    const rts = Number(r.ts) || 0;
+    const lts = ex ? (Number(ex.ts) || 0) : -1;
+    if (!ex || rts >= lts) {
+      map[r.id] = { id: r.id, text: r.text, priority: r.priority, done: !!r.done, date: r.day || todayKey(), createdAt: ex ? ex.createdAt : (r.ts || Date.now()), ts: rts, ord: r.ord || 0 };
+    }
+  });
+  dailyTodoSave(Object.values(map));
+}
+async function syncTodos(silent) {
+  try {
+    const remote = await fetch('/api/game-todos');
+    if (!remote.ok) throw new Error('HTTP ' + remote.status);
+    const rj = await remote.json();
+    if (rj && rj.ok) mergeTodosFromServer(rj.items || []);
+    const local = dailyTodoLoad();
+    local.forEach(it => { if (!it.ts) it.ts = Number(it.createdAt) || Date.now(); });
+    const resp = await fetch('/api/game-todos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: local.map(it => ({ id: it.id, text: it.text, priority: it.priority, done: it.done ? 1 : 0, ord: it.ord || 0, day: it.date || '', ts: it.ts || 0 })) })
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    setTodoSyncStatus(true);
+  } catch (e) {
+    setTodoSyncStatus(false);
+    if (!silent) toast('同步失败：' + (e && e.message ? e.message : e), 'warn');
+  }
+}
+function initTodoSync() {
+  if (todoSyncStarted) return;
+  todoSyncStarted = true;
+  syncTodos(true);
+  setInterval(() => syncTodos(true), 30 * 60 * 1000);
+}
+
 function renderDashboard() {
   const p = player();
   const recipes = food().recipes || [];
@@ -860,7 +917,8 @@ function renderDashboard() {
       <div><b>${skillTotalLevel()}</b><span>技能</span></div>
       <div><b>${realmTotalLayers()}</b><span>境界</span></div>
     </div></div>`;
-  return hero + top5Wrap + renderDailyTodos() + `<div class="section-title">📊 修行概览</div>` + cards + snap;
+  initTodoSync();
+  return hero + renderDailyTodos() + top5Wrap + `<div class="section-title">📊 修行概览</div>` + cards + snap;
 }
 
 function demonDanger(d) {
