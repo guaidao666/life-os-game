@@ -192,8 +192,9 @@ function readData() {
   const taskboard = db.prepare('SELECT id,grp,text,depth,done,points,done_at,ord FROM taskboard ORDER BY grp, ord, id').all()
     .map(r => ({ id: r.id, grp: r.grp, text: r.text, depth: r.depth, done: !!r.done, points: r.points, done_at: r.done_at || '', ord: r.ord || 0 }));
 
-  const diary = db.prepare('SELECT id,date,title,content,mood,aside,created_at FROM diary ORDER BY date DESC, id DESC').all()
-    .map(r => ({ id: r.id, date: r.date || '', title: r.title || '', content: r.content || '', mood: r.mood || '', aside: r.aside || '', created_at: r.created_at || '' }));
+  // 日记摘要（正文按需加载，避免 /api/data 携带全部 200 篇全文拖慢手机）
+  const diary = db.prepare('SELECT id,date,title,mood,aside,created_at,content FROM diary ORDER BY date DESC, id DESC').all()
+    .map(r => ({ id: r.id, date: r.date || '', title: r.title || '', mood: r.mood || '', aside: r.aside || '', created_at: r.created_at || '', summary: (r.content || '').replace(/\s+/g, ' ').trim().slice(0, 80) }));
 
   const rewardLog = db.prepare('SELECT id,ts,source,text,dw,dsw,bw,bsw FROM reward_log ORDER BY ts DESC, id DESC LIMIT 200').all()
     .map(r => ({ id: r.id, ts: r.ts || '', source: r.source || '', text: r.text || '', dw: wpFromStored(r.dw || 0), dsw: r.dsw || 0, bw: wpFromStored(r.bw || 0), bsw: r.bsw || 0 }));
@@ -303,6 +304,18 @@ export async function apiHandler(req, res) {
   if (req.method === 'GET' && url === '/api/data') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(readData()));
+    return;
+  }
+
+  // 日记单篇全文（按需加载，避免 /api/data 携带 200 篇正文拖慢手机）
+  if (req.method === 'GET' && url === '/api/diary') {
+    const q = new URL(req.url, 'http://x');
+    const id = Number(q.searchParams.get('id'));
+    if (!id) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: 'id 必填' })); return; }
+    const r = db.prepare('SELECT id,date,title,content,mood,aside,created_at FROM diary WHERE id=?').get(id);
+    if (!r) { res.writeHead(404, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: '未找到该日记' })); return; }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, diary: { id: r.id, date: r.date || '', title: r.title || '', content: r.content || '', mood: r.mood || '', aside: r.aside || '', created_at: r.created_at || '' } }));
     return;
   }
 

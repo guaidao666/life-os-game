@@ -152,17 +152,23 @@ function safeParse(s, d) { try { return JSON.parse(s); } catch (e) { return d; }
 /* ---------- 数据加载 ---------- */
 async function loadData() {
   const loading = document.getElementById('loading');
+  // 超时兜底：走 Tailscale 中继/慢网络时，15s 未完成则提示，避免无限转圈
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 15000);
   try {
-    const r = await fetch('/api/data');
+    const r = await fetch('/api/data', { signal: ctl.signal });
+    clearTimeout(timer);
     if (!r.ok) throw new Error('HTTP ' + r.status);
     DATA = await r.json();
     if (loading) loading.style.display = 'none';
   } catch (e) {
+    clearTimeout(timer);
     DATA = null;
     if (loading) {
-      loading.textContent = '⚠️ 无法连接后端（' + e.message + '），仅显示骨架。请确认 server.mjs 已启动并提供 /api/data。';
+      loading.textContent = '⚠️ ' + (e.name === 'AbortError' ? '连接超时（15s）' : '无法连接后端（' + e.message + '）') + '，点这里重试。';
       loading.classList.add('err');
-      setTimeout(() => { loading.style.display = 'none'; }, 4000);
+      loading.onclick = () => { loading.classList.remove('err'); loading.textContent = '正在连接修行数据…'; loading.onclick = null; loadData(); };
+      setTimeout(() => { loading.style.display = 'none'; }, 8000);
     }
   }
   render();
@@ -391,7 +397,7 @@ function diaryTimelineHtml() {
     '<div class="diary-item-head"><span class="diary-date">' + esc(d.date) + '</span>' +
     (d.mood ? '<span class="diary-mood-mini">' + esc(d.mood) + '</span>' : '') +
     '<span class="diary-title">' + esc(d.title || '无标题') + '</span></div>' +
-    '<div class="diary-snippet">' + esc((d.content || '').slice(0, 90)) + ((d.content || '').length > 90 ? '…' : '') + '</div></div>').join('');
+    '<div class="diary-snippet">' + esc((d.summary || d.content || '').slice(0, 90)) + ((d.summary || d.content || '').length > 90 ? '…' : '') + '</div></div>').join('');
 }
 function renderDiary() {
   diaryCalInit();
@@ -465,14 +471,22 @@ function diaryReadHtml(content) {
   flush();
   return html;
 }
-function openDiary(id) {
+async function openDiary(id) {
   const d = (DATA.diary || []).find(x => x.id === id); if (!d) return;
+  // 正文按需加载：摘要模式下先拉全文（缓存到 DATA.diary 对应项）
+  let full = d.content;
+  if (!full) {
+    try {
+      const r = await (await fetch('/api/diary?id=' + id)).json();
+      if (r.ok && r.diary) { full = r.diary.content || ''; d.content = full; }
+    } catch (e) { full = ''; }
+  }
   ddMood = d.mood || '';
-  const readView = '<div class="dd-paper"><div class="dd-paper-head"><div class="dd-paper-date">' + esc(fmtDateCN(d.date)) + '</div><div class="dd-paper-week">' + weekdayCN(d.date) + '</div>' + (d.mood ? '<div class="dd-paper-mood">心情：' + esc(d.mood) + '</div>' : '') + '</div><div class="dd-paper-body">' + diaryReadHtml(d.content) + '</div><div class="dd-paper-footer">— 拾光 · ' + esc(d.date) + ' —</div></div>';
+  const readView = '<div class="dd-paper"><div class="dd-paper-head"><div class="dd-paper-date">' + esc(fmtDateCN(d.date)) + '</div><div class="dd-paper-week">' + weekdayCN(d.date) + '</div>' + (d.mood ? '<div class="dd-paper-mood">心情：' + esc(d.mood) + '</div>' : '') + '</div><div class="dd-paper-body">' + diaryReadHtml(full) + '</div><div class="dd-paper-footer">— 拾光 · ' + esc(d.date) + ' —</div></div>';
   const editView = '<div id="ddEdit" style="display:none;">' +
     '<div style="display:flex;gap:10px;margin-bottom:12px;"><input class="input" id="ddDate" type="date" value="' + esc(d.date || '') + '" style="max-width:170px;"><input class="input" id="ddTitle" type="text" value="' + esc(d.title || '') + '" placeholder="标题（可选）" style="flex:1;"></div>' +
     '<div style="margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;"><span style="color:var(--muted);font-size:13px;">心情</span>' + DIARY_MOODS.map(m => '<span class="dd-mood" data-m="' + m + '" onclick="selectDdMood(this)">' + (m || '😐') + '</span>').join('') + '</div>' +
-    '<textarea class="input" id="ddContent" rows="14" style="margin-bottom:12px;">' + esc(d.content || '') + '</textarea>' +
+    '<textarea class="input" id="ddContent" rows="14" style="margin-bottom:12px;">' + esc(full || '') + '</textarea>' +
     '<div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="btn primary" onclick="saveDiaryDetail(' + d.id + ')">保存</button><button class="btn" onclick="if(confirm(\'删除这篇日记？\'))delDiary(' + d.id + ')">删除</button></div></div>';
   const box = document.createElement('div');
   box.className = 'realm-modal';
