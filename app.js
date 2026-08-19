@@ -735,7 +735,7 @@ async function mgmtDel(kind, id) {
   if (!confirm('确定删除该条目？')) return;
   try {
     if (c.store === 'api') { const j = await fetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: c.table, id: Number(id) }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } await loadData(); }
-    else if (c.store === 'local') { const arr = JSON.parse(lsGet(c.localKey) || '[]'); const idx = arr.findIndex(x => (x.id != null ? String(x.id) : '') === id); if (idx >= 0) arr.splice(idx, 1); lsSet(c.localKey, JSON.stringify(arr)); }
+    else if (c.store === 'local') { const arr = JSON.parse(lsGet(c.localKey) || '[]'); const idx = arr.findIndex(x => (x.id != null ? String(x.id) : (x.date || '')) === id); if (idx >= 0) arr.splice(idx, 1); lsSet(c.localKey, JSON.stringify(arr)); }
     else if (c.store === 'player') { const p = player(); let cur = p[c.playerField]; if (c.isObj) { cur = Object.assign({}, cur || {}); delete cur[id]; } else { cur = (cur || []).filter(x => (x.id != null ? String(x.id) : '') !== id); } if (c.playerField === 'inventory') { const j = await fetch('/api/inventory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set', inventory: cur }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } if (r.inventory) DATA.player.inventory = r.inventory; } else { const obj = {}; obj[c.playerField] = cur; const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: obj }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } await loadData(); } }
     else if (c.store === 'heart') { delHeartCustom(Number(String(id).replace('c_', ''))); return; }
     else if (c.store === 'dailies') { const arr = dailies().slice(); const idx = arr.findIndex(x => x.id === id); if (idx >= 0) arr.splice(idx, 1); saveDailies(arr); }
@@ -1683,7 +1683,7 @@ async function saveFun() {
   if (!title) { toast('请填写作品名', 'warn'); return; }
   const t = todayKey();
   const log = funLoad();
-  log.push({ date: t, type: type, title: title, rating: rating, url: url });
+  log.push({ id: Date.now() + '_' + (log.length || 0), date: t, type: type, title: title, rating: rating, url: url });
   funSave(log);
   const firstToday = log.filter(x => x.date === t).length === 1;
   if (firstToday) {
