@@ -348,21 +348,26 @@ export async function apiHandler(req, res) {
         try {
           const data = JSON.parse(body || '{}');
           const entries = (data && typeof data.entries === 'object' && data.entries) ? data.entries : {};
+          const deleteKeys = (data && Array.isArray(data.deleteKeys)) ? data.deleteKeys : [];
           const now = Date.now();
           db.exec('BEGIN');
           try {
-            // 整表替换：前端每次全量推送镜像，删除本地已移除的 key
-            db.prepare('DELETE FROM localstore').run();
-            const upsert = db.prepare('INSERT INTO localstore (key,value,ts) VALUES (?,?,?)');
+            // upsert：按 key 合并（不动其他 key），避免多设备互相覆盖整表
+            const upsert = db.prepare('INSERT INTO localstore (key,value,ts) VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value, ts=excluded.ts');
             for (const [k, v] of Object.entries(entries)) {
               let val = v, ts = now;
               if (v && typeof v === 'object' && ('value' in v)) { val = v.value; ts = Number(v.ts) || now; }
               upsert.run(String(k), String(val == null ? '' : val), ts);
             }
+            // 显式删除（前端 lsRemove 时带上）
+            if (deleteKeys.length) {
+              const del = db.prepare('DELETE FROM localstore WHERE key=?');
+              for (const k of deleteKeys) del.run(String(k));
+            }
             db.exec('COMMIT');
           } catch (e2) { try { db.exec('ROLLBACK'); } catch (e3) {} throw e2; }
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ ok: true, count: Object.keys(entries).length }));
+          res.end(JSON.stringify({ ok: true, count: Object.keys(entries).length, deleted: deleteKeys.length }));
         } catch (e) {
           res.writeHead(500, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ ok: false, error: String(e && e.message || e) }));

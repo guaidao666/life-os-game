@@ -158,6 +158,7 @@ function safeParse(s, d) { try { return JSON.parse(s); } catch (e) { return d; }
  */
 let LS_MIRROR = null;   // null = 尚未从服务端拉取（此时读写回退 localStorage）
 let LS_PUSH_TIMER = null;
+const LS_PENDING_DELETE = new Set();   // 待同步删除的 key（推送成功后清空）
 const LS_EXCLUDE = new Set(['game_daily_todos_v1']);
 function lsGet(k, d) {
   if (LS_MIRROR && k in LS_MIRROR && LS_MIRROR[k] !== undefined) return LS_MIRROR[k];
@@ -172,39 +173,52 @@ function lsSet(k, v) {
 function lsRemove(k) {
   try { localStorage.removeItem(k); } catch (e) {}
   if (LS_MIRROR) delete LS_MIRROR[k];
+  // 记录待删除 key（推送时通知服务端删除，upsert 不会自己清 key）
+  LS_PENDING_DELETE.add(k);
   lsPush();
 }
 // 立即推送（每次 lsSet 同步发出，无防抖，确保手机端立刻看到；高频操作成本可接受）
 function lsPush() {
-  if (!LS_MIRROR) return;
+  if (!LS_MIRROR && !LS_PENDING_DELETE.size) return;
   clearTimeout(LS_PUSH_TIMER);
   // 用微任务异步跑，避免阻塞当前操作；setTimeout(0) 等价于尽快 flush
   LS_PUSH_TIMER = setTimeout(lsPushNow, 0);
 }
 function lsPushNow() {
   clearTimeout(LS_PUSH_TIMER);
-  if (!LS_MIRROR) return;
   const entries = {};
-  for (const [k, v] of Object.entries(LS_MIRROR)) {
-    if (LS_EXCLUDE.has(k)) continue;
-    if (v !== undefined) entries[k] = String(v);
+  let hasEntries = false;
+  if (LS_MIRROR) {
+    for (const [k, v] of Object.entries(LS_MIRROR)) {
+      if (LS_EXCLUDE.has(k)) continue;
+      if (v !== undefined) { entries[k] = String(v); hasEntries = true; }
+    }
   }
-  const body = JSON.stringify({ entries });
+  const deleteKeys = Array.from(LS_PENDING_DELETE);
+  if (!hasEntries && !deleteKeys.length) return;
+  const body = JSON.stringify({ entries, deleteKeys });
   try {
-    fetch('/api/localstore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }).catch(() => {});
+    fetch('/api/localstore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body })
+      .then(r => { if (r.ok) LS_PENDING_DELETE.clear(); })
+      .catch(() => {});
   } catch (e) {}
 }
 // 页面卸载场景：单独用 sendBeacon（保证送达，fetch 在卸载时可能被取消）
 function lsPushBeacon() {
-  if (!LS_MIRROR) return;
   const entries = {};
-  for (const [k, v] of Object.entries(LS_MIRROR)) {
-    if (LS_EXCLUDE.has(k)) continue;
-    if (v !== undefined) entries[k] = String(v);
+  let hasEntries = false;
+  if (LS_MIRROR) {
+    for (const [k, v] of Object.entries(LS_MIRROR)) {
+      if (LS_EXCLUDE.has(k)) continue;
+      if (v !== undefined) { entries[k] = String(v); hasEntries = true; }
+    }
   }
+  const deleteKeys = Array.from(LS_PENDING_DELETE);
+  if (!hasEntries && !deleteKeys.length) return;
   try {
     if (navigator.sendBeacon) {
-      navigator.sendBeacon('/api/localstore', new Blob([JSON.stringify({ entries })], { type: 'application/json' }));
+      navigator.sendBeacon('/api/localstore', new Blob([JSON.stringify({ entries, deleteKeys })], { type: 'application/json' }));
+      LS_PENDING_DELETE.clear();
     }
   } catch (e) {}
 }
