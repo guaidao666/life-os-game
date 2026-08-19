@@ -203,6 +203,26 @@ function lsPushNow() {
       .catch(() => {});
   } catch (e) {}
 }
+// 跨设备合并读：写数组型 key 前，先拉服务端最新值，与本地按 id 字段去重合并后写回本地（并推送）
+// 解决"两端各持有快照、后写覆盖先写"的互相覆盖问题
+async function lsMergeArray(key, idField) {
+  let local = [];
+  try { local = JSON.parse(lsGet(key) || '[]'); } catch (e) { local = []; }
+  try {
+    const r = await fetch('/api/localstore');
+    const j = await r.json();
+    const srv = (j && j.ok && j.entries && j.entries[key] && j.entries[key].value) ? JSON.parse(j.entries[key].value) : null;
+    if (!Array.isArray(srv) || !srv.length) return local;
+    // 本地优先（可能是刚写的），服务端补充本地没有的 id
+    const seen = new Set();
+    local.forEach(x => { if (x && x[idField] != null) seen.add(String(x[idField])); });
+    srv.forEach(x => {
+      if (x && x[idField] != null && !seen.has(String(x[idField]))) { local.push(x); seen.add(String(x[idField])); }
+    });
+    lsSet(key, JSON.stringify(local));
+    return local;
+  } catch (e) { return local; }
+}
 // 页面卸载场景：单独用 sendBeacon（保证送达，fetch 在卸载时可能被取消）
 function lsPushBeacon() {
   const entries = {};
@@ -737,7 +757,9 @@ async function mgmtUpsert(kind, id, fields) {
       else { const f2 = Object.assign({}, fields); if (c.scope === 'weekly') f2.grp = '周级'; const j = await fetch('/api/insert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: c.table, fields: f2 }) }); const r = await j.json(); if (!r.ok) { toast('新增失败：' + (r.error || ''), 'warn'); return; } }
       await loadData();
     } else if (c.store === 'local') {
-      const arr = JSON.parse(lsGet(c.localKey) || '[]');
+      // 跨设备合并：先拉服务端最新，避免覆盖手机端刚加的记录
+      const idFld = c.localKey === 'game_fun_log' ? 'id' : (c.localKey === 'game_sleep_log' ? 'date' : 'id');
+      const arr = await lsMergeArray(c.localKey, idFld);
       if (id !== '') { const idx = arr.findIndex(x => (x.id != null ? String(x.id) : (x.date || '')) === id); if (idx >= 0) arr[idx] = Object.assign({}, arr[idx], fields); }
       else { fields.id = Date.now(); arr.push(fields); }
       lsSet(c.localKey, JSON.stringify(arr));
@@ -783,7 +805,7 @@ async function mgmtDel(kind, id) {
   if (!confirm('确定删除该条目？')) return;
   try {
     if (c.store === 'api') { const j = await fetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: c.table, id: Number(id) }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } await loadData(); }
-    else if (c.store === 'local') { const arr = JSON.parse(lsGet(c.localKey) || '[]'); const idx = arr.findIndex(x => (x.id != null ? String(x.id) : (x.date || '')) === id); if (idx >= 0) arr.splice(idx, 1); lsSet(c.localKey, JSON.stringify(arr)); }
+    else if (c.store === 'local') { const idFld = c.localKey === 'game_fun_log' ? 'id' : (c.localKey === 'game_sleep_log' ? 'date' : 'id'); const arr = await lsMergeArray(c.localKey, idFld); const idx = arr.findIndex(x => (x.id != null ? String(x.id) : (x.date || '')) === id); if (idx >= 0) arr.splice(idx, 1); lsSet(c.localKey, JSON.stringify(arr)); }
     else if (c.store === 'player') { const p = player(); let cur = p[c.playerField]; if (c.isObj) { cur = Object.assign({}, cur || {}); delete cur[id]; } else if (c.playerField === 'inventory' && id.includes(':')) { const keyId = id; cur = (cur || []).filter(x => (x.item_type || 'x') + ':' + (x.item_key || x.name || '') !== keyId); } else { cur = (cur || []).filter(x => (x.id != null ? String(x.id) : '') !== id); } if (c.playerField === 'inventory') { const j = await fetch('/api/inventory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set', inventory: cur }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } if (r.inventory) DATA.player.inventory = r.inventory; } else { const obj = {}; obj[c.playerField] = cur; const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: obj }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } await loadData(); } }
     else if (c.store === 'heart') { delHeartCustom(Number(String(id).replace('c_', ''))); return; }
     else if (c.store === 'dailies') { const arr = dailies().slice(); const idx = arr.findIndex(x => x.id === id); if (idx >= 0) arr.splice(idx, 1); saveDailies(arr); }
@@ -1660,7 +1682,8 @@ async function saveSleep() {
   const bed = bedEl ? bedEl.value : '';
   const tier = sleepTier(bed);
   if (!tier) { toast('请选择有效时间', 'warn'); return; }
-  const log = sleepLoad();
+  // 跨设备合并：先拉服务端最新，避免覆盖手机端刚加的记录
+  const log = await lsMergeArray('game_sleep_log', 'date');
   const idx = log.findIndex(x => x.date === date);
   const isNew = idx < 0;
   const rest = tier === 'early' ? 1 : 0;
@@ -1683,7 +1706,7 @@ async function saveSleep() {
 async function cancelSleep() {
   const dateEl = document.getElementById('slDate');
   const date = dateEl ? dateEl.value : yesterdayKey();
-  const log = sleepLoad();
+  const log = await lsMergeArray('game_sleep_log', 'date');
   const idx = log.findIndex(x => x.date === date);
   if (idx < 0) { toast('该日无睡眠记录', 'warn'); return; }
   const rec = log[idx];
@@ -1735,7 +1758,8 @@ async function saveFun() {
   const url = uEl ? uEl.value.trim() : '';
   if (!title) { toast('请填写作品名', 'warn'); return; }
   const t = todayKey();
-  const log = funLoad();
+  // 跨设备合并：先拉服务端最新，避免覆盖手机端刚加的记录
+  const log = await lsMergeArray('game_fun_log', 'id');
   log.push({ id: Date.now() + '_' + (log.length || 0), date: t, type: type, title: title, rating: rating, url: url });
   funSave(log);
   const firstToday = log.filter(x => x.date === t).length === 1;
