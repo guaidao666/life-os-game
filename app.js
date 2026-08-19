@@ -868,8 +868,11 @@ function mergeTodosFromServer(remote) {
   dailyTodoSave(Object.values(map));
 }
 async function syncTodos(silent) {
+  // 超时兜底：慢速中继/断网时 15s 未完成则标记失败，避免一直卡「同步中…」
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 15000);
   try {
-    const remote = await fetch('/api/game-todos');
+    const remote = await fetch('/api/game-todos', { signal: ctl.signal });
     if (!remote.ok) throw new Error('HTTP ' + remote.status);
     const rj = await remote.json();
     if (rj && rj.ok) mergeTodosFromServer(rj.items || []);
@@ -880,9 +883,11 @@ async function syncTodos(silent) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ items: local.map(it => ({ id: it.id, text: it.text, priority: it.priority, done: it.done ? 1 : 0, ord: it.ord || 0, day: it.date || '', ts: it.ts || 0 })) })
     });
+    clearTimeout(timer);
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     setTodoSyncStatus(true);
   } catch (e) {
+    clearTimeout(timer);
     setTodoSyncStatus(false);
     if (!silent) toast('同步失败：' + (e && e.message ? e.message : e), 'warn');
   }
@@ -891,7 +896,9 @@ function initTodoSync() {
   if (todoSyncStarted) return;
   todoSyncStarted = true;
   syncTodos(true);
-  setInterval(() => syncTodos(true), 30 * 60 * 1000);
+  // 自动同步间隔：3 小时一次（默认 30 分钟太频繁，慢速中继下易卡顿）；
+  // 需要时随时点「🔄 同步」按钮手动更新，不会自动打扰
+  setInterval(() => syncTodos(true), 3 * 60 * 60 * 1000);
 }
 
 function renderDashboard() {
