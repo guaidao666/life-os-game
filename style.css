@@ -492,6 +492,9 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 /* 娱乐网格 */
 .fun-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:10px}
 .fun-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:4px}
+.fun-card.has-link{cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s}
+.fun-card.has-link:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg,0 6px 18px rgba(0,0,0,.15));border-color:var(--accent)}
+.fun-link-badge{font-size:12px;opacity:.85}
 .fun-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .fun-type{font-size:11px;color:var(--wp);background:var(--panel2);border:1px solid var(--accent);border-radius:8px;padding:2px 8px}
 .fun-rate{font-size:13px;color:#E0B040;white-space:nowrap}

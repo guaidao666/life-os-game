@@ -541,7 +541,7 @@ const MGMT = {
   cook:    { store:'api', table:'recipes', dataKey:'food', dataSub:'recipes', nameF:d=>d.name||('菜谱'+d.id),
     fields:[{k:'name',label:'菜名',type:'text'},{k:'category',label:'分类',type:'text'},{k:'difficulty',label:'难度',type:'number'},{k:'cost',label:'成本',type:'text'},{k:'time',label:'时长(分)',type:'number'},{k:'ingredients',label:'食材(JSON)',type:'text'},{k:'steps',label:'步骤',type:'textarea'}] },
   fun:     { store:'local', localKey:'game_fun_log', nameF:d=>d.title||d.name||('记录'+d.id),
-    fields:[{k:'title',label:'标题',type:'text'},{k:'type',label:'类型',type:'select',opts:['电视剧','电影','动漫','漫画','书','游戏','歌曲']},{k:'rating',label:'评分',type:'number'},{k:'note',label:'笔记',type:'textarea'}] },
+    fields:[{k:'title',label:'标题',type:'text'},{k:'type',label:'类型',type:'select',opts:['电视剧','电影','动漫','漫画','书','游戏','歌曲']},{k:'rating',label:'评分',type:'number'},{k:'url',label:'链接(可选)',type:'text'},{k:'note',label:'笔记',type:'textarea'}] },
   sleep:   { store:'local', localKey:'game_sleep_log', nameF:d=>(d.date||'')+' '+(d.bed||''),
     fields:[{k:'date',label:'日期',type:'date'},{k:'bed',label:'就寝时间',type:'time'},{k:'tier',label:'档位',type:'select',opts:['early','ontime','late']}] },
   skill:   { store:'player', playerField:'skills', isObj:true, nameF:d=>d.name||d.id,
@@ -1590,26 +1590,34 @@ function renderFun() {
   const filtered = funFilt === 'all' ? log : log.filter(x => x.type === funFilt);
   const ordered = filtered.slice().sort((a, b) => a.date < b.date ? 1 : -1);
   const chips = ['all'].concat(FUN_TYPES).map(t => '<button class="wp-filt' + (funFilt === t ? ' on' : '') + '" onclick="funFilt=\'' + t + '\';renderMain(\'fun\')">' + (t === 'all' ? '全部' : t) + '</button>').join('');
-  const cards = ordered.length ? ordered.map(x => '<div class="fun-card"><div class="fun-top"><span class="fun-type">' + esc(x.type) + '</span><span class="fun-rate">' + funStars(x.rating) + '</span></div><div class="fun-title">' + esc(x.title) + '</div><div class="fun-date">' + x.date + '</div></div>').join('') : '<div class="game-empty">还没有娱乐记录，添一部好作品吧</div>';
+  const cards = ordered.length ? ordered.map(x => {
+    const link = x.url && /^https?:\/\//.test(String(x.url)) ? ' onclick="window.open(\'' + esc(String(x.url).replace(/'/g, '\\\'')) + '\',\'_blank\')" title="点击打开观看"' : '';
+    return '<div class="fun-card' + (x.url ? ' has-link' : '') + '"' + link + '>' +
+      '<div class="fun-top"><span class="fun-type">' + esc(x.type) + '</span><span class="fun-rate">' + funStars(x.rating) + '</span></div>' +
+      '<div class="fun-title">' + esc(x.title) + (x.url ? ' <span class="fun-link-badge">🔗</span>' : '') + '</div>' +
+      '<div class="fun-date">' + x.date + '</div></div>';
+  }).join('') : '<div class="game-empty">还没有娱乐记录，添一部好作品吧</div>';
   const opts = FUN_TYPES.map(t => '<option value="' + t + '">' + t + '</option>').join('');
   return '<div class="section-title">🎬 娱乐 <span class="game-tag">对应境界 · 娱心录</span></div>' +
     '<div class="wf-form"><select class="input" id="funType">' + opts + '</select>' +
     '<input class="input" id="funTitle" placeholder="作品名">' +
+    '<input class="input" id="funUrl" placeholder="🔗 链接（可选，点击卡片跳转）">' +
     '<select class="input" id="funRating"><option value="5">★★★★★</option><option value="4">★★★★☆</option><option value="3" selected>★★★☆☆</option><option value="2">★★☆☆☆</option><option value="1">★☆☆☆☆</option></select>' +
     '<button class="btn primary" onclick="saveFun()">🎬 记录</button></div>' +
-    '<div class="meta" style="margin:6px 0">录入一部作品：每日首次 +1 愿力；书 → 万卷书 +1，其余 → 娱心录 +1（每日每境限一次）。</div>' +
+    '<div class="meta" style="margin:6px 0">录入一部作品：每日首次 +1 愿力；书 → 万卷书 +1，其余 → 娱心录 +1（每日每境限一次）。填了链接的卡片可点击直接打开观看。</div>' +
     '<div class="wp-filts">' + chips + '</div>' +
     '<div class="fun-grid">' + cards + '</div>';
 }
 async function saveFun() {
-  const tEl = document.getElementById('funType'), nEl = document.getElementById('funTitle'), rEl = document.getElementById('funRating');
+  const tEl = document.getElementById('funType'), nEl = document.getElementById('funTitle'), rEl = document.getElementById('funRating'), uEl = document.getElementById('funUrl');
   const type = tEl ? tEl.value : '电视剧';
   const title = nEl ? nEl.value.trim() : '';
   const rating = rEl ? parseInt(rEl.value) || 3 : 3;
+  const url = uEl ? uEl.value.trim() : '';
   if (!title) { toast('请填写作品名', 'warn'); return; }
   const t = todayKey();
   const log = funLoad();
-  log.push({ date: t, type: type, title: title, rating: rating });
+  log.push({ date: t, type: type, title: title, rating: rating, url: url });
   funSave(log);
   const firstToday = log.filter(x => x.date === t).length === 1;
   if (firstToday) {
