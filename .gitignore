@@ -16,4 +16,6 @@ backups/
 tools/cpolar*
 tools/*.zip
 tools/*.exe
+tools/*.apk
+tools/tailscale/
 tools/inspect-db.mjs
