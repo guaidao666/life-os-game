@@ -125,7 +125,7 @@ async function grantRealmXp(key, amount, opts) {
   while (s.xp >= REALM_XP_NEEDED) { s.xp -= REALM_XP_NEEDED; s.layer += 1; leveled = true; if (s.layer % REALM_STAGES === 0) { s.round += 1; rounded = true; } }
   realms[key] = s;
   try {
-    const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { realms: JSON.stringify(realms) } }) });
+    const j = await jfetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { realms: JSON.stringify(realms) } }) });
     const r = await j.json();
     if (r.ok && r.player) DATA.player = r.player; else DATA.player.realms = realms;
     renderResbar();
@@ -141,6 +141,16 @@ let DATA = null;
 function num(v, d) { const n = Number(v); return Number.isFinite(n) ? n : (d || 0); }
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+// 统一 fetch 包装：默认 15s 超时（走慢速中继/断网时不无限转圈），可选传第三参覆盖超时
+async function jfetch(url, opt, timeoutMs) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), timeoutMs || 15000);
+  try {
+    return await jfetch(url, Object.assign({}, opt || {}, { signal: ctl.signal }));
+  } finally {
+    clearTimeout(t);
+  }
 }
 function player() { return (DATA && DATA.player) || {}; }
 function food() { return (DATA && DATA.food) || {}; }
@@ -209,7 +219,7 @@ async function lsMergeArray(key, idField) {
   let local = [];
   try { local = JSON.parse(lsGet(key) || '[]'); } catch (e) { local = []; }
   try {
-    const r = await fetch('/api/localstore');
+    const r = await jfetch('/api/localstore');
     const j = await r.json();
     const srv = (j && j.ok && j.entries && j.entries[key] && j.entries[key].value) ? JSON.parse(j.entries[key].value) : null;
     if (!Array.isArray(srv) || !srv.length) return local;
@@ -250,7 +260,7 @@ if (typeof window !== 'undefined') {
 // 初始化：拉服务端镜像 + 一次性迁移（本地有而服务端没有 → 推上去）
 async function initLocalStore() {
   try {
-    const r = await fetch('/api/localstore');
+    const r = await jfetch('/api/localstore');
     const j = await r.json();
     LS_MIRROR = {};
     if (j && j.ok && j.entries) {
@@ -280,7 +290,7 @@ async function loadData() {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 15000);
   try {
-    const r = await fetch('/api/data', { signal: ctl.signal });
+    const r = await jfetch('/api/data', { signal: ctl.signal });
     clearTimeout(timer);
     if (!r.ok) throw new Error('HTTP ' + r.status);
     DATA = await r.json();
@@ -338,7 +348,7 @@ async function grantWP(delta, source, text) {
   delta = Number(delta) || 0;
   if (!delta) return num(player().willpower, 0);
   try {
-    const j = await fetch('/api/reward', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ willpower: delta, source: source || '日常', text: text || '' }) });
+    const j = await jfetch('/api/reward', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ willpower: delta, source: source || '日常', text: text || '' }) });
     const r = await j.json();
     const newWP = (r.ok && r.player && r.player.willpower != null) ? r.player.willpower : (num(player().willpower, 0) + delta);
     DATA.player.willpower = newWP;
@@ -560,9 +570,17 @@ async function saveDiary() {
   if (!content) { showDiaryMsg('日记内容不能为空', true); return; }
   const fields = Object.assign({ date: date, title: title, content: content, mood: diaryMoodSel }, { created_at: new Date().toISOString() });
   try {
-    const j = await fetch('/api/insert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'diary', fields: fields }) });
-    const r = await j.json();
-    if (!r.ok) { showDiaryMsg('保存失败：' + (r.error || ''), true); return; }
+    // 同日期去重：当天已有日记则走 update（避免重复插入多条，编辑时只改第一条的旧问题）
+    const existing = (DATA.diary || []).find(x => x.date === date);
+    if (existing) {
+      const j = await jfetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'diary', id: existing.id, fields }) });
+      const r = await j.json();
+      if (!r.ok) { showDiaryMsg('保存失败：' + (r.error || ''), true); return; }
+    } else {
+      const j = await jfetch('/api/insert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'diary', fields: fields }) });
+      const r = await j.json();
+      if (!r.ok) { showDiaryMsg('保存失败：' + (r.error || ''), true); return; }
+    }
     await loadData();
     diaryMoodSel = '';
     closeRealm();
@@ -573,7 +591,7 @@ async function saveDiary() {
 async function syncDiary() {
   showDiaryMsg('同步中…');
   try {
-    const j = await fetch('/api/sync-diary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    const j = await jfetch('/api/sync-diary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
     const r = await j.json();
     if (r.ok) { await loadData(); renderMain('diary'); showDiaryMsg('已同步：新增 ' + (r.inserted || 0) + ' 篇，更新 ' + (r.updated || 0) + ' 篇 ✓'); }
     else showDiaryMsg('同步失败：' + (r.error || ''), true);
@@ -603,7 +621,7 @@ async function openDiary(id) {
   let full = d.content;
   if (!full) {
     try {
-      const r = await (await fetch('/api/diary?id=' + id)).json();
+      const r = await (await jfetch('/api/diary?id=' + id)).json();
       if (r.ok && r.diary) { full = r.diary.content || ''; d.content = full; }
     } catch (e) { full = ''; }
   }
@@ -634,7 +652,7 @@ function selectDdMood(el) { document.querySelectorAll('.dd-mood').forEach(m => m
 async function saveDiaryDetail(id) {
   const fields = { date: document.getElementById('ddDate').value, title: document.getElementById('ddTitle').value.trim(), content: document.getElementById('ddContent').value, mood: ddMood };
   try {
-    const j = await fetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'diary', id: id, fields: fields }) });
+    const j = await jfetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'diary', id: id, fields: fields }) });
     const r = await j.json();
     if (!r.ok) { alert('保存失败：' + (r.error || '')); return; }
     await loadData(); closeRealm(); renderMain('diary'); showDiaryMsg('已保存 ✓');
@@ -642,7 +660,7 @@ async function saveDiaryDetail(id) {
 }
 async function delDiary(id) {
   try {
-    const j = await fetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'diary', id: id }) });
+    const j = await jfetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'diary', id: id }) });
     const r = await j.json();
     if (!r.ok) { alert('删除失败：' + (r.error || '')); return; }
     await loadData(); closeRealm(); renderMain('diary'); showDiaryMsg('已删除');
@@ -753,8 +771,8 @@ async function mgmtUpsert(kind, id, fields) {
   const c = MGMT[kind];
   try {
     if (c.store === 'api') {
-      if (id !== '') { const j = await fetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: c.table, id: Number(id), fields }) }); const r = await j.json(); if (!r.ok) { toast('更新失败：' + (r.error || ''), 'warn'); return; } }
-      else { const f2 = Object.assign({}, fields); if (c.scope === 'weekly') f2.grp = '周级'; const j = await fetch('/api/insert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: c.table, fields: f2 }) }); const r = await j.json(); if (!r.ok) { toast('新增失败：' + (r.error || ''), 'warn'); return; } }
+      if (id !== '') { const j = await jfetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: c.table, id: Number(id), fields }) }); const r = await j.json(); if (!r.ok) { toast('更新失败：' + (r.error || ''), 'warn'); return; } }
+      else { const f2 = Object.assign({}, fields); if (c.scope === 'weekly') f2.grp = '周级'; const j = await jfetch('/api/insert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: c.table, fields: f2 }) }); const r = await j.json(); if (!r.ok) { toast('新增失败：' + (r.error || ''), 'warn'); return; } }
       await loadData();
     } else if (c.store === 'local') {
       // 跨设备合并：先拉服务端最新，避免覆盖手机端刚加的记录
@@ -782,10 +800,10 @@ async function mgmtUpsert(kind, id, fields) {
       }
       const obj = {}; obj[c.playerField] = cur;
       if (c.playerField === 'inventory') {
-        const j = await fetch('/api/inventory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set', inventory: cur }) });
+        const j = await jfetch('/api/inventory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set', inventory: cur }) });
         const r = await j.json(); if (!r.ok) { toast('保存失败：' + (r.error || ''), 'warn'); return; } if (r.inventory) DATA.player.inventory = r.inventory;
       } else {
-        const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: obj }) });
+        const j = await jfetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: obj }) });
         const r = await j.json(); if (!r.ok) { toast('保存失败：' + (r.error || ''), 'warn'); return; } await loadData();
       }
     } else if (c.store === 'heart') {
@@ -804,9 +822,9 @@ async function mgmtDel(kind, id) {
   const c = MGMT[kind];
   if (!confirm('确定删除该条目？')) return;
   try {
-    if (c.store === 'api') { const j = await fetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: c.table, id: Number(id) }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } await loadData(); }
+    if (c.store === 'api') { const j = await jfetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: c.table, id: Number(id) }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } await loadData(); }
     else if (c.store === 'local') { const idFld = c.localKey === 'game_fun_log' ? 'id' : (c.localKey === 'game_sleep_log' ? 'date' : 'id'); const arr = await lsMergeArray(c.localKey, idFld); const idx = arr.findIndex(x => (x.id != null ? String(x.id) : (x.date || '')) === id); if (idx >= 0) arr.splice(idx, 1); lsSet(c.localKey, JSON.stringify(arr)); }
-    else if (c.store === 'player') { const p = player(); let cur = p[c.playerField]; if (c.isObj) { cur = Object.assign({}, cur || {}); delete cur[id]; } else if (c.playerField === 'inventory' && id.includes(':')) { const keyId = id; cur = (cur || []).filter(x => (x.item_type || 'x') + ':' + (x.item_key || x.name || '') !== keyId); } else { cur = (cur || []).filter(x => (x.id != null ? String(x.id) : '') !== id); } if (c.playerField === 'inventory') { const j = await fetch('/api/inventory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set', inventory: cur }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } if (r.inventory) DATA.player.inventory = r.inventory; } else { const obj = {}; obj[c.playerField] = cur; const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: obj }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } await loadData(); } }
+    else if (c.store === 'player') { const p = player(); let cur = p[c.playerField]; if (c.isObj) { cur = Object.assign({}, cur || {}); delete cur[id]; } else if (c.playerField === 'inventory' && id.includes(':')) { const keyId = id; cur = (cur || []).filter(x => (x.item_type || 'x') + ':' + (x.item_key || x.name || '') !== keyId); } else { cur = (cur || []).filter(x => (x.id != null ? String(x.id) : '') !== id); } if (c.playerField === 'inventory') { const j = await jfetch('/api/inventory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set', inventory: cur }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } if (r.inventory) DATA.player.inventory = r.inventory; } else { const obj = {}; obj[c.playerField] = cur; const j = await jfetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: obj }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } await loadData(); } }
     else if (c.store === 'heart') { delHeartCustom(Number(String(id).replace('c_', ''))); return; }
     else if (c.store === 'dailies') { const arr = dailies().slice(); const idx = arr.findIndex(x => x.id === id); if (idx >= 0) arr.splice(idx, 1); saveDailies(arr); }
     else { toast('该模块不可删除', 'warn'); return; }
@@ -917,7 +935,7 @@ async function deleteDailyTodo(id) {
   // 必须先删服务端：syncTodos 会 merge 服务端记录到本地，若服务端仍保留，
   // 删除会被"复活"（merge 逻辑：本地没有的 remote 条目会被加回来）
   try {
-    await fetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'game_todos', id: id }) });
+    await jfetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'game_todos', id: id }) });
   } catch (e) {}
   const arr = dailyTodoLoad().filter(x => x.id !== id);
   dailyTodoSave(arr);
@@ -1013,13 +1031,13 @@ async function syncTodos(silent) {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 15000);
   try {
-    const remote = await fetch('/api/game-todos', { signal: ctl.signal });
+    const remote = await jfetch('/api/game-todos', { signal: ctl.signal });
     if (!remote.ok) throw new Error('HTTP ' + remote.status);
     const rj = await remote.json();
     if (rj && rj.ok) mergeTodosFromServer(rj.items || []);
     const local = dailyTodoLoad();
     local.forEach(it => { if (!it.ts) it.ts = Number(it.createdAt) || Date.now(); });
-    const resp = await fetch('/api/game-todos', {
+    const resp = await jfetch('/api/game-todos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ items: local.map(it => ({ id: it.id, text: it.text, priority: it.priority, done: it.done ? 1 : 0, ord: it.ord || 0, day: it.date || '', ts: it.ts || 0 })) })
@@ -1212,7 +1230,7 @@ async function shopBuy(id) {
   showConfirm('确认兑换', '确定兑换【' + it.name + '】吗？\n消耗 ' + price + ' ' + CUR_LABEL[cur] + '（' + CUR_ABBR[cur] + '）。', async function () {
     try {
       const oldBal = shopBal()[cur];
-      const r = await fetch('/api/shop-buy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }) });
+      const r = await jfetch('/api/shop-buy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }) });
       const j = await r.json();
       if (j.ok) {
         await loadData();
@@ -1268,7 +1286,7 @@ async function condenseLucky() {
     showConfirm('⚠ 仍要凝结？', '再次确认：消耗 ' + (gain * 100) + ' WP，获得 ' + gain + ' LP。\n（凝结后剩余 ' + (wp - gain * 100) + ' WP，' + (lp + gain) + ' LP）', async function () {
       try {
         const oldWP = num(player().willpower, 0), oldLP = num(player().lucky, 0);
-        const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ willpower: wp - gain * 100, lucky: lp + gain }) });
+        const j = await jfetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ willpower: wp - gain * 100, lucky: lp + gain }) });
         const r = await j.json();
         if (!r.ok) { toast('凝结失败：' + (r.error || ''), 'warn'); return; }
         DATA.player.willpower = r.player.willpower; DATA.player.lucky = r.player.lucky;
@@ -1292,7 +1310,7 @@ async function condenseDestiny() {
     showConfirm('⚠ 仍要凝结？', '再次确认：消耗 ' + (gain * 10) + ' LP，获得 ' + gain + ' DP。\n（凝结后剩余 ' + (lp - gain * 10) + ' LP，' + (dp + gain) + ' DP）', async function () {
       try {
         const oldLP = num(player().lucky, 0), oldDP = num(player().destiny, 0);
-        const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lucky: lp - gain * 10, destiny: dp + gain }) });
+        const j = await jfetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lucky: lp - gain * 10, destiny: dp + gain }) });
         const r = await j.json();
         if (!r.ok) { toast('凝结失败：' + (r.error || ''), 'warn'); return; }
         DATA.player.lucky = r.player.lucky; DATA.player.destiny = r.player.destiny;
@@ -1453,7 +1471,7 @@ function weeklyTasksHtml() {
 }
 async function toggleWeeklyTask(id, done) {
   try {
-    const j = await fetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'taskboard', id: id, fields: { done: done ? 1 : 0 } }) });
+    const j = await jfetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'taskboard', id: id, fields: { done: done ? 1 : 0 } }) });
     const r = await j.json();
     if (!r.ok) { toast('任务更新失败：' + (r.error || ''), 'warn'); return; }
     const t = (DATA.taskboard || []).find(x => x.id === id); if (t) t.done = done ? 1 : 0;
@@ -1499,7 +1517,7 @@ async function clearDungeon(id) {
       lsSet(f, '1');
       try {
         const bonus = 5 + Math.min(20, realmBuffSum('taskBonus'));
-        const j = await fetch('/api/reward', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ willpower: bonus, source: '心魔击败', text: '每日秘境全完成' }) });
+        const j = await jfetch('/api/reward', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ willpower: bonus, source: '心魔击败', text: '每日秘境全完成' }) });
         const r = await j.json();
         if (r.ok && r.player) { if (r.player.willpower != null) DATA.player.willpower = r.player.willpower; renderResbar(); }
         if (bonus) wpLedgerAppend(bonus, '心魔击败', '每日秘境全完成');
@@ -1562,7 +1580,7 @@ function weightListHtml(rows) {
 async function deleteWeight(id) {
   if (!confirm('确定删除这条体重记录？')) return;
   try {
-    const j = await fetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'weight', id: id }) });
+    const j = await jfetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'weight', id: id }) });
     const r = await j.json();
     if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; }
     await loadData(); renderMain('weight'); toast('已删除', 'good');
@@ -1618,9 +1636,9 @@ async function saveWeight() {
   const isNew = !Existing;
   try {
     if (isNew) {
-      await fetch('/api/insert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'weight', fields: { date: t, weight: v, note: note, created_at: new Date().toISOString() } }) });
+      await jfetch('/api/insert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'weight', fields: { date: t, weight: v, note: note, created_at: new Date().toISOString() } }) });
     } else {
-      await fetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'weight', id: Existing.id, fields: { weight: v, note: note } }) });
+      await jfetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'weight', id: Existing.id, fields: { weight: v, note: note } }) });
     }
     await loadData();
   } catch (e) { toast('体重保存失败：' + e.message, 'warn'); return; }
@@ -1855,7 +1873,7 @@ async function saveCookPost() {
   const feeling = document.getElementById('cookFeeling').value.trim();
   if (!DATA) { toast('数据未就绪，请稍候', 'warn'); return; }
   try {
-    const res = await fetch('/api/cook', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dish, date: todayKey(), rating, feeling, recipeId, images: [] }) });
+    const res = await jfetch('/api/cook', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dish, date: todayKey(), rating, feeling, recipeId, images: [] }) });
     const j = await res.json();
     if (j.ok) {
       cookPrefillId = null;
@@ -1954,7 +1972,7 @@ async function rollbackRealmXp(key, amount) {
   s.round = Math.floor(s.layer / REALM_STAGES);
   realms[key] = s;
   try {
-    const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { realms: JSON.stringify(realms) } }) });
+    const j = await jfetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { realms: JSON.stringify(realms) } }) });
     const r = await j.json();
     if (r.ok && r.player) DATA.player = r.player; else DATA.player.realms = realms;
     renderResbar();
@@ -1962,7 +1980,7 @@ async function rollbackRealmXp(key, amount) {
 }
 async function undoCook(mealId) {
   try {
-    const j = await fetch('/api/cook-undo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mealId }) });
+    const j = await jfetch('/api/cook-undo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mealId }) });
     const r = await j.json();
     if (!r.ok) { toast('撤销失败：' + (r.error || ''), 'warn'); return; }
     await loadData();
@@ -1995,7 +2013,7 @@ function getWhCap() {
 async function invUpsert(item) {
   item = Object.assign({ item_type:'ingredient', item_key:(item.name||'item')+'', name:item.name||'物品', qty:1, rarity:3, location:'bag', zone:null }, item);
   try {
-    const j = await fetch('/api/inventory', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'upsert', item }) });
+    const j = await jfetch('/api/inventory', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'upsert', item }) });
     const r = await j.json();
     if (r.ok && r.inventory) DATA.player.inventory = r.inventory;
     else throw new Error('no inventory');
@@ -2003,7 +2021,7 @@ async function invUpsert(item) {
 }
 async function invSet(arr) {
   try {
-    const j = await fetch('/api/inventory', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'set', inventory: arr }) });
+    const j = await jfetch('/api/inventory', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'set', inventory: arr }) });
     const r = await j.json();
     if (r.ok && r.inventory) { DATA.player.inventory = r.inventory; return r.inventory; }
     throw new Error('no inventory');
@@ -2031,7 +2049,7 @@ async function expandWarehouse() {
   if (wp < cost) { toast('愿力不足，需 ' + cost + ' 点', 'warn'); return; }
   if (!confirm('花费 ' + cost + ' 愿力，将仓库扩容 +20 格？')) return;
   try {
-    const j = await fetch('/api/reward', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ willpower: -cost, source:'仓库扩容', text:'+20 格' }) });
+    const j = await jfetch('/api/reward', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ willpower: -cost, source:'仓库扩容', text:'+20 格' }) });
     const r = await j.json();
     if (!r.ok) { toast('扩容失败', 'warn'); return; }
     DATA.player.willpower = r.player.willpower; renderResbar();
@@ -2148,7 +2166,7 @@ async function cultivateSkill(name) {
   if (lv >= SKILL_MAX) { toast(name + ' 已满级', ''); return; }
   try {
     skills[name] = lv + 1;
-    const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { skills: JSON.stringify(skills) } }) });
+    const j = await jfetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { skills: JSON.stringify(skills) } }) });
     const r = await j.json();
     if (!r.ok) { toast('修炼失败：' + (r.error || ''), 'warn'); return; }
     if (r.player && r.player.skills) DATA.player.skills = r.player.skills;
@@ -2262,7 +2280,7 @@ function closeRealm() { document.querySelectorAll('.realm-modal').forEach(m => m
         const log = (meta.visitLog || []); log.unshift({ date: todayCST(), note: '任务勾选 · 好感+5' });
         const newMeta = Object.assign({}, meta, { affinity: aff, visitLog: log.slice(0, 30) });
         try {
-          const j = await fetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'npcs', id: n.id, fields: { meta: JSON.stringify(newMeta) } }) });
+          const j = await jfetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'npcs', id: n.id, fields: { meta: JSON.stringify(newMeta) } }) });
           const r = await j.json();
           if (r.ok) { await loadData(); toast('💗 ' + nm + ' 好感 +5（' + aff + '）', 'good'); }
           else toast('好感更新失败：' + (r.error || ''), 'warn');
@@ -2368,7 +2386,7 @@ function closeRealm() { document.querySelectorAll('.realm-modal').forEach(m => m
       const newMeta = Object.assign({}, meta, { affinity: aff, lastVisit: todayCST(), lastVisitTs: Date.now(), visitLog: log.slice(0, 30) });
       try {
         await grantWP(cfg.wp, 'NPC·' + cfg.label, n.name);
-        const j = await fetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'npcs', id: id, fields: { status: next, meta: JSON.stringify(newMeta) } }) });
+        const j = await jfetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'npcs', id: id, fields: { status: next, meta: JSON.stringify(newMeta) } }) });
         const r = await j.json();
         if (r.ok) { await loadData(); go('npc'); openNpcDetail(id); toast('💗 与 ' + n.name + ' ' + cfg.label + '：好感 +' + cfg.aff + ' · 愿力 +' + cfg.wp, 'good'); }
         else toast('互动记录失败：' + (r.error || ''), 'warn');
@@ -2390,7 +2408,7 @@ function closeRealm() { document.querySelectorAll('.realm-modal').forEach(m => m
         meta: JSON.stringify({ rel: rel, affinity: 0, visitLog: [] }),
         created_at: new Date().toISOString()
       };
-      fetch('/api/insert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'npcs', fields }) })
+      jfetch('/api/insert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'npcs', fields }) })
         .then(r => r.json()).then(j => {
           if (j.ok) { toast('🪪 已建卡：' + fields.name, 'good'); loadData().then(() => go('npc')); }
           else toast('建卡失败：' + (j.error || ''), 'warn');
@@ -2399,7 +2417,7 @@ function closeRealm() { document.querySelectorAll('.realm-modal').forEach(m => m
     async function delNpc(id) {
       showConfirm('⚠ 删除 NPC', '确定删除该人物档案？此操作不可恢复。', async function () {
         try {
-          const j = await fetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'npcs', id: id }) });
+          const j = await jfetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'npcs', id: id }) });
           const r = await j.json();
           if (r.ok) { toast('已删除', 'warn'); await loadData(); go('npc'); }
           else toast('删除失败：' + (r.error || ''), 'warn');
@@ -2632,26 +2650,6 @@ function closeRealm() { document.querySelectorAll('.realm-modal').forEach(m => m
         '</div>';
     }
 
-    function renderSuccubus() {
-      const sc = (DATA && DATA.succubus) || {};
-      if (!sc || !sc.weekKey) return renderPlaceholder('魅魔', '暂无魅魔状态（player.succubus 为空）。');
-      const sed = Number(sc.seductions) || 0;
-      const sunk = !!sc.sunk;
-      let form = '初诱（新手护盾）';
-      if (sunk) form = '终焉 · 沉沦';
-      else if (sed >= 2) form = '噬心（刺客形态）';
-      else if (sed === 1) form = '缠丝';
-      const sinkPct = Math.max(0, Math.min(100, sed / 3 * 100));
-      const stateCard = '<div class="card succ-state"><div class="dc-head"><span class="dc-icon">🦑</span><div><div class="tag">魅魔 · 状态机</div><h3>' + esc(form) + '</h3></div></div>' +
-        '<div class="meta">周期 ' + esc(sc.weekKey) + '</div>' +
-        '<div class="meta">已诱惑 ' + sed + ' / 3</div>' +
-        (sunk ? '<div class="meta">⚠️ 已沉沦：本周每次愿力收益减半（周一解除）</div>' : '') +
-        '<div class="bar"><i style="width:' + sinkPct + '%"></i></div>';
-      const action = sunk
-        ? '<button class="btn primary sm" disabled>本周已沉沦，无法再抵抗</button><div class="meta">沉沦效果：本周每次愿力收益减半，周一自动解除。</div>'
-        : '<button class="btn primary" onclick="openSuccubusModal()">🌹 遭遇魅魔诱惑</button><div class="meta">每次遭遇先判定：抵御成功 +1 愿力点；抵御失败计入次数（第1次免费，第2次耗1幸运点/拆天命点，第3次沉沦）。</div>';
-      return '<div class="section-title">🌹 魅魔 <span class="game-tag">每周计数 · 周一重置</span></div>' + stateCard + action;
-    }
     function openSuccubusModal() {
       const sc = (DATA && DATA.succubus) || {};
       if (sc.sunk) { toast('你已沉沦于魔渊，本周无法再抵抗。', 'warn'); return; }
@@ -2681,7 +2679,7 @@ function closeRealm() { document.querySelectorAll('.realm-modal').forEach(m => m
     async function encounterSuccubus(result) {
       try {
         const old = { wp: num(player().willpower, 0), lp: num(player().lucky, 0), dp: num(player().destiny, 0) };
-        const j = await (await fetch('/api/succubus', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'encounter', result }) })).json();
+        const j = await (await jfetch('/api/succubus', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'encounter', result }) })).json();
         if (j.ok) {
           DATA.succubus = j.succubus;
           if (DATA.player) { DATA.player.willpower = j.willpower; DATA.player.lucky = j.lucky; DATA.player.destiny = j.destiny; }
@@ -2759,7 +2757,7 @@ async function claimWeekly(id) {
   try { lsSet('lifeos_weeklyClaimed', JSON.stringify(claimed)); } catch (e) {}
   renderMain(CUR);
   try {
-    const r = await fetch('/api/reward', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ willpower: def.reward, source: '周天试炼', text: def.gname }) });
+    const r = await jfetch('/api/reward', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ willpower: def.reward, source: '周天试炼', text: def.gname }) });
     const j = await r.json();
     if (j.ok && j.player) {
       DATA.player = Object.assign({}, DATA.player, { willpower: j.player.willpower, level: j.player.level, lucky: j.player.lucky, destiny: j.player.destiny });
