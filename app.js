@@ -843,7 +843,12 @@ function toggleDailyTodo(id) {
   renderMain('dashboard');
   syncTodos(true);
 }
-function deleteDailyTodo(id) {
+async function deleteDailyTodo(id) {
+  // 必须先删服务端：syncTodos 会 merge 服务端记录到本地，若服务端仍保留，
+  // 删除会被"复活"（merge 逻辑：本地没有的 remote 条目会被加回来）
+  try {
+    await fetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'game_todos', id: id }) });
+  } catch (e) {}
   const arr = dailyTodoLoad().filter(x => x.id !== id);
   dailyTodoSave(arr);
   renderMain('dashboard');
