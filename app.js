@@ -174,12 +174,12 @@ function lsRemove(k) {
   if (LS_MIRROR) delete LS_MIRROR[k];
   lsPush();
 }
-// 防抖推送（全量镜像，200ms 合并）：失败静默，下次写入再试；
-// 页面刷新/关闭时（pagehide）立即推送，避免"操作后立刻刷新丢交互"
+// 立即推送（每次 lsSet 同步发出，无防抖，确保手机端立刻看到；高频操作成本可接受）
 function lsPush() {
   if (!LS_MIRROR) return;
   clearTimeout(LS_PUSH_TIMER);
-  LS_PUSH_TIMER = setTimeout(lsPushNow, 200);
+  // 用微任务异步跑，避免阻塞当前操作；setTimeout(0) 等价于尽快 flush
+  LS_PUSH_TIMER = setTimeout(lsPushNow, 0);
 }
 function lsPushNow() {
   clearTimeout(LS_PUSH_TIMER);
@@ -191,18 +191,27 @@ function lsPushNow() {
   }
   const body = JSON.stringify({ entries });
   try {
-    // 页面卸载场景用 sendBeacon（保证送达），普通场景用 fetch
+    fetch('/api/localstore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }).catch(() => {});
+  } catch (e) {}
+}
+// 页面卸载场景：单独用 sendBeacon（保证送达，fetch 在卸载时可能被取消）
+function lsPushBeacon() {
+  if (!LS_MIRROR) return;
+  const entries = {};
+  for (const [k, v] of Object.entries(LS_MIRROR)) {
+    if (LS_EXCLUDE.has(k)) continue;
+    if (v !== undefined) entries[k] = String(v);
+  }
+  try {
     if (navigator.sendBeacon) {
-      navigator.sendBeacon('/api/localstore', new Blob([body], { type: 'application/json' }));
-    } else {
-      fetch('/api/localstore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true });
+      navigator.sendBeacon('/api/localstore', new Blob([JSON.stringify({ entries })], { type: 'application/json' }));
     }
   } catch (e) {}
 }
-// 刷新/关页前强制同步（fetch 默认 keepalive 同源可送达）
+// 刷新/关页前用 sendBeacon 兜底（fetch 在卸载时可能被取消）
 if (typeof window !== 'undefined') {
-  window.addEventListener('pagehide', () => { lsPushNow(); });
-  window.addEventListener('beforeunload', () => { lsPushNow(); });
+  window.addEventListener('pagehide', () => { lsPushBeacon(); });
+  window.addEventListener('beforeunload', () => { lsPushBeacon(); });
 }
 // 初始化：拉服务端镜像 + 一次性迁移（本地有而服务端没有 → 推上去）
 async function initLocalStore() {
