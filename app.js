@@ -396,7 +396,7 @@ function diaryTimelineHtml() {
 function renderDiary() {
   diaryCalInit();
   const moodPicks = DIARY_MOODS.map(m => '<span class="diary-mood-pick" data-m="' + m + '" onclick="selectDiaryMoodPick(this)">' + (m || '😐') + '</span>').join('');
-  return '<div class="section-title">📔 日记 <span class="game-tag">迁移自人生管理系统 · 共 ' + (DATA.diary || []).length + ' 篇</span></div>' +
+  return '<div class="section-title">📔 日记 <span class="game-tag">Obsidian 同步 · 共 ' + (DATA.diary || []).length + ' 篇</span></div>' +
     '<div class="diary-layout">' +
       '<div class="card diary-write"><div class="card-title">📝 写日记</div>' +
         '<div style="display:flex;gap:10px;"><input class="input" id="diaryDate" type="date" style="max-width:170px;" value="' + todayKey() + '">' +
@@ -468,7 +468,7 @@ function diaryReadHtml(content) {
 function openDiary(id) {
   const d = (DATA.diary || []).find(x => x.id === id); if (!d) return;
   ddMood = d.mood || '';
-  const readView = '<div class="dd-paper"><div class="dd-paper-head"><div class="dd-paper-date">' + esc(fmtDateCN(d.date)) + '</div><div class="dd-paper-week">' + weekdayCN(d.date) + '</div>' + (d.mood ? '<div class="dd-paper-mood">心情：' + esc(d.mood) + '</div>' : '') + '</div><div class="dd-paper-body">' + diaryReadHtml(d.content) + '</div><div class="dd-paper-footer">— 拾光 LifeOS · ' + esc(d.date) + ' —</div></div>';
+  const readView = '<div class="dd-paper"><div class="dd-paper-head"><div class="dd-paper-date">' + esc(fmtDateCN(d.date)) + '</div><div class="dd-paper-week">' + weekdayCN(d.date) + '</div>' + (d.mood ? '<div class="dd-paper-mood">心情：' + esc(d.mood) + '</div>' : '') + '</div><div class="dd-paper-body">' + diaryReadHtml(d.content) + '</div><div class="dd-paper-footer">— 拾光 · ' + esc(d.date) + ' —</div></div>';
   const editView = '<div id="ddEdit" style="display:none;">' +
     '<div style="display:flex;gap:10px;margin-bottom:12px;"><input class="input" id="ddDate" type="date" value="' + esc(d.date || '') + '" style="max-width:170px;"><input class="input" id="ddTitle" type="text" value="' + esc(d.title || '') + '" placeholder="标题（可选）" style="flex:1;"></div>' +
     '<div style="margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;"><span style="color:var(--muted);font-size:13px;">心情</span>' + DIARY_MOODS.map(m => '<span class="dd-mood" data-m="' + m + '" onclick="selectDdMood(this)">' + (m || '😐') + '</span>').join('') + '</div>' +

@@ -1,2 +1,19 @@
 .DS_Store
 *.log
+
+# 拾光独立数据库（隐私，不入库）
+game.db
+game.db.*
+
+# 本机敏感配置（vault 路径 / 鉴权 token，不入库）
+.vaultpath
+.lifetoken
+
+# 备份产物
+backups/
+
+# 一次性工具与下载残留（迁移脚本除外，tools/ 下 mjs 可留，但安装包不入库）
+tools/cpolar*
+tools/*.zip
+tools/*.exe
+tools/inspect-db.mjs
