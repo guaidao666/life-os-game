@@ -174,18 +174,35 @@ function lsRemove(k) {
   if (LS_MIRROR) delete LS_MIRROR[k];
   lsPush();
 }
-// 防抖推送（全量镜像，1s 合并）：失败静默，下次写入再试
+// 防抖推送（全量镜像，200ms 合并）：失败静默，下次写入再试；
+// 页面刷新/关闭时（pagehide）立即推送，避免"操作后立刻刷新丢交互"
 function lsPush() {
   if (!LS_MIRROR) return;
   clearTimeout(LS_PUSH_TIMER);
-  LS_PUSH_TIMER = setTimeout(() => {
-    const entries = {};
-    for (const [k, v] of Object.entries(LS_MIRROR)) {
-      if (LS_EXCLUDE.has(k)) continue;
-      if (v !== undefined) entries[k] = String(v);
+  LS_PUSH_TIMER = setTimeout(lsPushNow, 200);
+}
+function lsPushNow() {
+  clearTimeout(LS_PUSH_TIMER);
+  if (!LS_MIRROR) return;
+  const entries = {};
+  for (const [k, v] of Object.entries(LS_MIRROR)) {
+    if (LS_EXCLUDE.has(k)) continue;
+    if (v !== undefined) entries[k] = String(v);
+  }
+  const body = JSON.stringify({ entries });
+  try {
+    // 页面卸载场景用 sendBeacon（保证送达），普通场景用 fetch
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon('/api/localstore', new Blob([body], { type: 'application/json' }));
+    } else {
+      fetch('/api/localstore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true });
     }
-    fetch('/api/localstore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entries }) }).catch(() => {});
-  }, 1000);
+  } catch (e) {}
+}
+// 刷新/关页前强制同步（fetch 默认 keepalive 同源可送达）
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', () => { lsPushNow(); });
+  window.addEventListener('beforeunload', () => { lsPushNow(); });
 }
 // 初始化：拉服务端镜像 + 一次性迁移（本地有而服务端没有 → 推上去）
 async function initLocalStore() {
@@ -633,7 +650,7 @@ function mgmtList(kind) {
   const c = MGMT[kind]; if (!c) return [];
   if (c.store === 'api') { const arr = c.dataSub ? (((DATA[c.dataKey] || {})[c.dataSub]) || []) : (DATA[c.dataKey] || []); let out = arr.slice(); if (c.scope === 'weekly') out = out.filter(x => /周级/.test(x.grp || '')); return out; }
   if (c.store === 'local') { try { return JSON.parse(lsGet(c.localKey) || '[]'); } catch (e) { return []; } }
-  if (c.store === 'player') { const p = player(); if (c.isObj) { const o = p[c.playerField] || {}; return Object.keys(o).map(k => Object.assign({ id: k, name: k }, o[k])); } return (p[c.playerField] || []).slice(); }
+  if (c.store === 'player') { const p = player(); if (c.isObj) { const o = p[c.playerField] || {}; return Object.keys(o).map(k => Object.assign({ id: k, name: k }, o[k])); } if (c.playerField === 'inventory') { return (p[c.playerField] || []).map(it => Object.assign({}, it, { id: (it.item_type || 'x') + ':' + (it.item_key || it.name || '') })); } return (p[c.playerField] || []).slice(); }
   if (c.store === 'heart') { return heartCustom().slice(); }
   if (c.store === 'dailies') { return dailies().slice(); }
   return [];
@@ -698,7 +715,7 @@ async function mgmtUpsert(kind, id, fields) {
       await loadData();
     } else if (c.store === 'local') {
       const arr = JSON.parse(lsGet(c.localKey) || '[]');
-      if (id !== '') { const idx = arr.findIndex(x => (x.id != null ? String(x.id) : '') === id); if (idx >= 0) arr[idx] = Object.assign({}, arr[idx], fields); }
+      if (id !== '') { const idx = arr.findIndex(x => (x.id != null ? String(x.id) : (x.date || '')) === id); if (idx >= 0) arr[idx] = Object.assign({}, arr[idx], fields); }
       else { fields.id = Date.now(); arr.push(fields); }
       lsSet(c.localKey, JSON.stringify(arr));
     } else if (c.store === 'player') {
@@ -707,8 +724,16 @@ async function mgmtUpsert(kind, id, fields) {
         if (id !== '') cur[id] = Object.assign({}, cur[id] || {}, stripName(fields));
         else { const key = fields.name; if (!key) { toast('需填名称', 'warn'); return; } cur[key] = stripName(fields); }
       } else {
-        if (id !== '') { const idx = cur.findIndex(x => (x.id != null ? String(x.id) : '') === id); if (idx >= 0) cur[idx] = Object.assign({}, cur[idx], fields); }
-        else { fields.id = Date.now(); cur.push(fields); }
+        const keyId = (id !== '' && c.playerField === 'inventory') ? id : null;
+        if (keyId) {
+          const [itype, ikey] = id.split(':');
+          const idx = cur.findIndex(x => (x.item_type || 'x') + ':' + (x.item_key || x.name || '') === id);
+          if (idx >= 0) cur[idx] = Object.assign({}, cur[idx], { name: fields.name || cur[idx].name, qty: fields.count != null && fields.count !== '' ? Number(fields.count) : cur[idx].qty, location: fields.location || cur[idx].location });
+          else { toast('未找到该物品', 'warn'); return; }
+        } else {
+          if (id !== '') { const idx = cur.findIndex(x => (x.id != null ? String(x.id) : '') === id); if (idx >= 0) cur[idx] = Object.assign({}, cur[idx], fields); }
+          else { fields.id = Date.now(); cur.push(fields); }
+        }
       }
       const obj = {}; obj[c.playerField] = cur;
       if (c.playerField === 'inventory') {
@@ -736,7 +761,7 @@ async function mgmtDel(kind, id) {
   try {
     if (c.store === 'api') { const j = await fetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: c.table, id: Number(id) }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } await loadData(); }
     else if (c.store === 'local') { const arr = JSON.parse(lsGet(c.localKey) || '[]'); const idx = arr.findIndex(x => (x.id != null ? String(x.id) : (x.date || '')) === id); if (idx >= 0) arr.splice(idx, 1); lsSet(c.localKey, JSON.stringify(arr)); }
-    else if (c.store === 'player') { const p = player(); let cur = p[c.playerField]; if (c.isObj) { cur = Object.assign({}, cur || {}); delete cur[id]; } else { cur = (cur || []).filter(x => (x.id != null ? String(x.id) : '') !== id); } if (c.playerField === 'inventory') { const j = await fetch('/api/inventory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set', inventory: cur }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } if (r.inventory) DATA.player.inventory = r.inventory; } else { const obj = {}; obj[c.playerField] = cur; const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: obj }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } await loadData(); } }
+    else if (c.store === 'player') { const p = player(); let cur = p[c.playerField]; if (c.isObj) { cur = Object.assign({}, cur || {}); delete cur[id]; } else if (c.playerField === 'inventory' && id.includes(':')) { const keyId = id; cur = (cur || []).filter(x => (x.item_type || 'x') + ':' + (x.item_key || x.name || '') !== keyId); } else { cur = (cur || []).filter(x => (x.id != null ? String(x.id) : '') !== id); } if (c.playerField === 'inventory') { const j = await fetch('/api/inventory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set', inventory: cur }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } if (r.inventory) DATA.player.inventory = r.inventory; } else { const obj = {}; obj[c.playerField] = cur; const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: obj }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } await loadData(); } }
     else if (c.store === 'heart') { delHeartCustom(Number(String(id).replace('c_', ''))); return; }
     else if (c.store === 'dailies') { const arr = dailies().slice(); const idx = arr.findIndex(x => x.id === id); if (idx >= 0) arr.splice(idx, 1); saveDailies(arr); }
     else { toast('该模块不可删除', 'warn'); return; }
