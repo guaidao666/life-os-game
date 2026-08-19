@@ -131,6 +131,12 @@ try { db.exec('ALTER TABLE player_stats ADD COLUMN destiny REAL DEFAULT 0'); } c
 try { db.exec('ALTER TABLE player_stats ADD COLUMN inventory TEXT'); } catch (e) {}
 // 迁移：npcs 增加 meta（好感度/奇遇等扩展态）
 try { db.exec('ALTER TABLE npcs ADD COLUMN meta TEXT'); } catch (e) {}
+// 迁移：新增 localstore（浏览器 localStorage 服务端镜像表：key 唯一，value JSON 文本，ts 毫秒时间戳）
+try {
+  db.exec(`CREATE TABLE IF NOT EXISTS localstore (
+    key TEXT PRIMARY KEY, value TEXT, ts INTEGER DEFAULT 0
+  )`);
+} catch (e) {}
 // 魔障种子（仅当空，幂等；后续加魔只 insert，前端零改动）
 try {
   const dc = db.prepare('SELECT COUNT(*) AS c FROM demons').get();
@@ -323,6 +329,47 @@ export async function apiHandler(req, res) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, t: Date.now() }));
     return;
+  }
+
+  // 前端 localStorage 服务端镜像：GET 返回全部 entries / POST 整表替换（last-write-wins 按 ts）
+  if (url === '/api/localstore') {
+    if (req.method === 'GET') {
+      const rows = db.prepare('SELECT key,value,ts FROM localstore').all();
+      const entries = {};
+      for (const r of rows) entries[r.key] = { value: r.value, ts: r.ts || 0 };
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, entries }));
+      return;
+    }
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', c => body += c);
+      req.on('end', () => {
+        try {
+          const data = JSON.parse(body || '{}');
+          const entries = (data && typeof data.entries === 'object' && data.entries) ? data.entries : {};
+          const now = Date.now();
+          db.exec('BEGIN');
+          try {
+            // 整表替换：前端每次全量推送镜像，删除本地已移除的 key
+            db.prepare('DELETE FROM localstore').run();
+            const upsert = db.prepare('INSERT INTO localstore (key,value,ts) VALUES (?,?,?)');
+            for (const [k, v] of Object.entries(entries)) {
+              let val = v, ts = now;
+              if (v && typeof v === 'object' && ('value' in v)) { val = v.value; ts = Number(v.ts) || now; }
+              upsert.run(String(k), String(val == null ? '' : val), ts);
+            }
+            db.exec('COMMIT');
+          } catch (e2) { try { db.exec('ROLLBACK'); } catch (e3) {} throw e2; }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, count: Object.keys(entries).length }));
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: String(e && e.message || e) }));
+        }
+      });
+      return;
+    }
   }
 
   // 拾光「今日待办」专用同步接口：GET 返回全部 / POST 整表替换（前端按 ts 做 last-write-wins 合并）

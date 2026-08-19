@@ -109,8 +109,8 @@ function realmBuffSum(type) {
   return s;
 }
 function realmXpTodayKey() { return 'game_realmxp_' + todayKey(); }
-function realmXpGrantedToday() { try { return JSON.parse(localStorage.getItem(realmXpTodayKey()) || '[]'); } catch (e) { return []; } }
-function markRealmXpToday(key) { const a = realmXpGrantedToday(); if (!a.includes(key)) { a.push(key); try { localStorage.setItem(realmXpTodayKey(), JSON.stringify(a)); } catch (e) {} } }
+function realmXpGrantedToday() { try { return JSON.parse(lsGet(realmXpTodayKey()) || '[]'); } catch (e) { return []; } }
+function markRealmXpToday(key) { const a = realmXpGrantedToday(); if (!a.includes(key)) { a.push(key); try { lsSet(realmXpTodayKey(), JSON.stringify(a)); } catch (e) {} } }
 async function grantRealmXp(key, amount, opts) {
   opts = opts || {};
   if (!REALM_DEFS[key]) return;
@@ -149,6 +149,70 @@ function inv() { return player().inventory || []; }
 function stars(q) { const s = (QUA[q] || QUA[1]).star; return '★'.repeat(s) + '☆'.repeat(4 - s); }
 function safeParse(s, d) { try { return JSON.parse(s); } catch (e) { return d; } }
 
+/* ---------- localStorage 服务端镜像（重要数据存 game.db，浏览器缓存仅作本地副本） ----------
+ * 背景：娱乐记录/睡眠/心法/周本/愿力明细账等原本只存浏览器 localStorage，
+ *       清缓存/换设备就丢，且电脑手机各存各的。现改为：
+ *       读取优先服务端镜像（LS_MIRROR），写入双写（本地 + 服务端镜像），
+ *       页面加载时拉取服务端并做一次性迁移（本地有而服务端没有的 key 自动推上去）。
+ * 注意：今日待办(game_daily_todos_v1) 已有独立 game_todos 表同步，不在此镜像内，避免双真源。
+ */
+let LS_MIRROR = null;   // null = 尚未从服务端拉取（此时读写回退 localStorage）
+let LS_PUSH_TIMER = null;
+const LS_EXCLUDE = new Set(['game_daily_todos_v1']);
+function lsGet(k, d) {
+  if (LS_MIRROR && k in LS_MIRROR && LS_MIRROR[k] !== undefined) return LS_MIRROR[k];
+  try { const v = localStorage.getItem(k); return v == null ? (d === undefined ? null : d) : v; } catch (e) { return (d === undefined ? null : d); }
+}
+function lsSet(k, v) {
+  try { localStorage.setItem(k, v); } catch (e) {}
+  if (!LS_MIRROR) LS_MIRROR = {};
+  LS_MIRROR[k] = v;
+  lsPush();
+}
+function lsRemove(k) {
+  try { localStorage.removeItem(k); } catch (e) {}
+  if (LS_MIRROR) delete LS_MIRROR[k];
+  lsPush();
+}
+// 防抖推送（全量镜像，1s 合并）：失败静默，下次写入再试
+function lsPush() {
+  if (!LS_MIRROR) return;
+  clearTimeout(LS_PUSH_TIMER);
+  LS_PUSH_TIMER = setTimeout(() => {
+    const entries = {};
+    for (const [k, v] of Object.entries(LS_MIRROR)) {
+      if (LS_EXCLUDE.has(k)) continue;
+      if (v !== undefined) entries[k] = String(v);
+    }
+    fetch('/api/localstore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entries }) }).catch(() => {});
+  }, 1000);
+}
+// 初始化：拉服务端镜像 + 一次性迁移（本地有而服务端没有 → 推上去）
+async function initLocalStore() {
+  try {
+    const r = await fetch('/api/localstore');
+    const j = await r.json();
+    LS_MIRROR = {};
+    if (j && j.ok && j.entries) {
+      for (const [k, v] of Object.entries(j.entries)) {
+        if (v && typeof v === 'object' && 'value' in v) LS_MIRROR[k] = String(v.value);
+      }
+    }
+    // 一次性迁移：把浏览器本地还残留的 key（非排除项、服务端没有的）推上服务端
+    let migrated = 0;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || LS_EXCLUDE.has(k)) continue;
+        if (k in LS_MIRROR) continue;
+        const v = lsGet(k);
+        if (v !== null) { LS_MIRROR[k] = v; migrated++; }
+      }
+    } catch (e) {}
+    if (migrated > 0) lsPush();
+  } catch (e) { /* 连不上服务端时维持本地模式 */ }
+}
+
 /* ---------- 数据加载 ---------- */
 async function loadData() {
   const loading = document.getElementById('loading');
@@ -160,6 +224,8 @@ async function loadData() {
     clearTimeout(timer);
     if (!r.ok) throw new Error('HTTP ' + r.status);
     DATA = await r.json();
+    // 数据就绪后初始化 localStorage 服务端镜像（含一次性迁移）
+    initLocalStore();
     if (loading) loading.style.display = 'none';
   } catch (e) {
     clearTimeout(timer);
@@ -191,8 +257,8 @@ const LEDGER_KEYS = { wp: 'game_wp_ledger', lp: 'game_lp_ledger', dp: 'game_dp_l
 const LEDGER_LABELS = { wp: '愿力点', lp: '幸运点', dp: '天命点' };
 const LEDGER_ABBR = { wp: 'WP', lp: 'LP', dp: 'DP' };
 const LEDGER_BAL_KEY = { wp: 'willpower', lp: 'lucky', dp: 'destiny' };
-function ledgerLoad(cur) { try { return JSON.parse(localStorage.getItem(LEDGER_KEYS[cur]) || '[]'); } catch (e) { return []; } }
-function ledgerSave(cur, a) { try { localStorage.setItem(LEDGER_KEYS[cur], JSON.stringify(a)); } catch (e) {} }
+function ledgerLoad(cur) { try { return JSON.parse(lsGet(LEDGER_KEYS[cur]) || '[]'); } catch (e) { return []; } }
+function ledgerSave(cur, a) { try { lsSet(LEDGER_KEYS[cur], JSON.stringify(a)); } catch (e) {} }
 /* 仅记账：在本地明细账追加一笔（不发起请求），余额取当前 player。 */
 function ledgerAppend(cur, delta, source, text) {
   delta = Number(delta) || 0;
@@ -298,7 +364,7 @@ function renderNav() {
 let CUR = 'dashboard';   // 当前视图 id（供交互后局部重渲染）
 function go(id) {
   CUR = id;
-  try { localStorage.setItem('gameLastView', id); } catch (e) {}
+  try { lsSet('gameLastView', id); } catch (e) {}
   document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('hot', a.dataset.id === id));
   renderMain(id);
   window.scrollTo(0, 0);
@@ -566,7 +632,7 @@ function mgmtToggle(id) { EDIT[id] = !EDIT[id]; renderMain(id); }
 function mgmtList(kind) {
   const c = MGMT[kind]; if (!c) return [];
   if (c.store === 'api') { const arr = c.dataSub ? (((DATA[c.dataKey] || {})[c.dataSub]) || []) : (DATA[c.dataKey] || []); let out = arr.slice(); if (c.scope === 'weekly') out = out.filter(x => /周级/.test(x.grp || '')); return out; }
-  if (c.store === 'local') { try { return JSON.parse(localStorage.getItem(c.localKey) || '[]'); } catch (e) { return []; } }
+  if (c.store === 'local') { try { return JSON.parse(lsGet(c.localKey) || '[]'); } catch (e) { return []; } }
   if (c.store === 'player') { const p = player(); if (c.isObj) { const o = p[c.playerField] || {}; return Object.keys(o).map(k => Object.assign({ id: k, name: k }, o[k])); } return (p[c.playerField] || []).slice(); }
   if (c.store === 'heart') { return heartCustom().slice(); }
   if (c.store === 'dailies') { return dailies().slice(); }
@@ -631,10 +697,10 @@ async function mgmtUpsert(kind, id, fields) {
       else { const f2 = Object.assign({}, fields); if (c.scope === 'weekly') f2.grp = '周级'; const j = await fetch('/api/insert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: c.table, fields: f2 }) }); const r = await j.json(); if (!r.ok) { toast('新增失败：' + (r.error || ''), 'warn'); return; } }
       await loadData();
     } else if (c.store === 'local') {
-      const arr = JSON.parse(localStorage.getItem(c.localKey) || '[]');
+      const arr = JSON.parse(lsGet(c.localKey) || '[]');
       if (id !== '') { const idx = arr.findIndex(x => (x.id != null ? String(x.id) : '') === id); if (idx >= 0) arr[idx] = Object.assign({}, arr[idx], fields); }
       else { fields.id = Date.now(); arr.push(fields); }
-      localStorage.setItem(c.localKey, JSON.stringify(arr));
+      lsSet(c.localKey, JSON.stringify(arr));
     } else if (c.store === 'player') {
       const p = player(); let cur = p[c.playerField]; cur = c.isObj ? (cur || {}) : (cur || []);
       if (c.isObj) {
@@ -653,8 +719,8 @@ async function mgmtUpsert(kind, id, fields) {
         const r = await j.json(); if (!r.ok) { toast('保存失败：' + (r.error || ''), 'warn'); return; } await loadData();
       }
     } else if (c.store === 'heart') {
-      if (id !== '') { const cid = Number(String(id).replace('c_', '')); const arr = heartCustom(); const idx = arr.findIndex(x => x.id === cid); if (idx >= 0) { arr[idx] = Object.assign({}, arr[idx], { name: fields.name || arr[idx].name, effect: fields.effect || arr[idx].effect, desc: fields.desc || arr[idx].desc }); try { localStorage.setItem('lifeos_heartCustom', JSON.stringify(arr)); } catch (e) {} } }
-      else { if (!fields.name) { toast('需填心法名', 'warn'); return; } const arr = heartCustom(); arr.push({ id: Date.now(), name: fields.name, effect: fields.effect || '', desc: fields.desc || '', buff: {} }); try { localStorage.setItem('lifeos_heartCustom', JSON.stringify(arr)); } catch (e) {} }
+      if (id !== '') { const cid = Number(String(id).replace('c_', '')); const arr = heartCustom(); const idx = arr.findIndex(x => x.id === cid); if (idx >= 0) { arr[idx] = Object.assign({}, arr[idx], { name: fields.name || arr[idx].name, effect: fields.effect || arr[idx].effect, desc: fields.desc || arr[idx].desc }); try { lsSet('lifeos_heartCustom', JSON.stringify(arr)); } catch (e) {} } }
+      else { if (!fields.name) { toast('需填心法名', 'warn'); return; } const arr = heartCustom(); arr.push({ id: Date.now(), name: fields.name, effect: fields.effect || '', desc: fields.desc || '', buff: {} }); try { lsSet('lifeos_heartCustom', JSON.stringify(arr)); } catch (e) {} }
     } else if (c.store === 'dailies') {
       const arr = dailies().slice();
       if (id !== '') { const idx = arr.findIndex(x => x.id === id); if (idx >= 0) arr[idx] = Object.assign({}, arr[idx], fields); else { fields.id = id; arr.push(fields); } }
@@ -669,7 +735,7 @@ async function mgmtDel(kind, id) {
   if (!confirm('确定删除该条目？')) return;
   try {
     if (c.store === 'api') { const j = await fetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: c.table, id: Number(id) }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } await loadData(); }
-    else if (c.store === 'local') { const arr = JSON.parse(localStorage.getItem(c.localKey) || '[]'); const idx = arr.findIndex(x => (x.id != null ? String(x.id) : '') === id); if (idx >= 0) arr.splice(idx, 1); localStorage.setItem(c.localKey, JSON.stringify(arr)); }
+    else if (c.store === 'local') { const arr = JSON.parse(lsGet(c.localKey) || '[]'); const idx = arr.findIndex(x => (x.id != null ? String(x.id) : '') === id); if (idx >= 0) arr.splice(idx, 1); lsSet(c.localKey, JSON.stringify(arr)); }
     else if (c.store === 'player') { const p = player(); let cur = p[c.playerField]; if (c.isObj) { cur = Object.assign({}, cur || {}); delete cur[id]; } else { cur = (cur || []).filter(x => (x.id != null ? String(x.id) : '') !== id); } if (c.playerField === 'inventory') { const j = await fetch('/api/inventory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set', inventory: cur }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } if (r.inventory) DATA.player.inventory = r.inventory; } else { const obj = {}; obj[c.playerField] = cur; const j = await fetch('/api/player-set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: obj }) }); const r = await j.json(); if (!r.ok) { toast('删除失败：' + (r.error || ''), 'warn'); return; } await loadData(); } }
     else if (c.store === 'heart') { delHeartCustom(Number(String(id).replace('c_', ''))); return; }
     else if (c.store === 'dailies') { const arr = dailies().slice(); const idx = arr.findIndex(x => x.id === id); if (idx >= 0) arr.splice(idx, 1); saveDailies(arr); }
@@ -727,10 +793,10 @@ function dashTop5() {
 const DAILY_TODO_KEY = 'game_daily_todos_v1';
 const TODO_PRIO = { high: { label: '高', cls: 'high' }, mid: { label: '中', cls: 'mid' }, low: { label: '低', cls: 'low' } };
 function dailyTodoLoad() {
-  try { return JSON.parse(localStorage.getItem(DAILY_TODO_KEY) || '[]'); } catch (e) { return []; }
+  try { return JSON.parse(lsGet(DAILY_TODO_KEY) || '[]'); } catch (e) { return []; }
 }
 function dailyTodoSave(a) {
-  try { localStorage.setItem(DAILY_TODO_KEY, JSON.stringify(a)); } catch (e) {}
+  try { lsSet(DAILY_TODO_KEY, JSON.stringify(a)); } catch (e) {}
 }
 /* 日清：昨天未完成的待办移到今天；8 天前已完成的清理掉。 */
 function dailyTodoCarry() {
@@ -1187,14 +1253,14 @@ const DEFAULT_DAILIES = [
 const DAILY_KEY = 'game_dailies';
 function dailies() {
   try {
-    const raw = localStorage.getItem(DAILY_KEY);
+    const raw = lsGet(DAILY_KEY);
     if (raw) { const a = JSON.parse(raw); if (Array.isArray(a) && a.length) return a; }
   } catch (e) {}
   const seed = DEFAULT_DAILIES.map(d => Object.assign({}, d));
-  try { localStorage.setItem(DAILY_KEY, JSON.stringify(seed)); } catch (e) {}
+  try { lsSet(DAILY_KEY, JSON.stringify(seed)); } catch (e) {}
   return seed;
 }
-function saveDailies(a) { try { localStorage.setItem(DAILY_KEY, JSON.stringify(a)); } catch (e) {} }
+function saveDailies(a) { try { lsSet(DAILY_KEY, JSON.stringify(a)); } catch (e) {} }
 function dungeonDef(id) { return dailies().find(d => d.id === id); }
 function leadEmoji(s) { const m = /^[\s]*([\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{2700}-\u{27BF}])/u.exec(s || ''); return m ? m[1] : '•'; }
 function wpBadge(id, wp) { wp = Number(wp) || 0; return wp > 0 ? '<span class="dc-reward">+' + wp + '愿</span>' : ''; }
@@ -1211,18 +1277,18 @@ async function grantDungeonWp(id, day, amount) {
   if (amount == null) amount = Number(def.wp) || 0;
   if (!amount) return;
   const f = dwpFlag(id, day);
-  try { if (localStorage.getItem(f) === '1') return; } catch (e) {}
+  try { if (lsGet(f) === '1') return; } catch (e) {}
   try {
     await grantWP(amount, '每日秘境', def.name || id);
-    try { localStorage.setItem(f, String(amount)); } catch (e) {}
+    try { lsSet(f, String(amount)); } catch (e) {}
   } catch (e) {}
 }
 async function revokeDungeonWp(id, day) {
   const f = dwpFlag(id, day);
   let amt = 0;
   try {
-    const v = localStorage.getItem(f);
-    if (v) { amt = Number(v) || 0; localStorage.removeItem(f); }
+    const v = lsGet(f);
+    if (v) { amt = Number(v) || 0; lsRemove(f); }
   } catch (e) {}
   if (amt > 0) {
     const def = dungeonDef(id);
@@ -1240,7 +1306,7 @@ function cstDateKey(d) {
 function todayKey() { return cstDateKey(new Date()); }
 function yesterdayKey() { return cstDateKey(new Date(Date.now() - 86400000)); }
 function dungeonFlag(id) { return 'game_dungeon_' + todayKey() + '_' + id; }
-function dungeonDone(id) { try { return localStorage.getItem(dungeonFlag(id)) === '1'; } catch (e) { return false; } }
+function dungeonDone(id) { try { return lsGet(dungeonFlag(id)) === '1'; } catch (e) { return false; } }
 function xinmoHpFromDungeons() { const all = dailies(); const done = all.filter(d => dungeonDone(d.id)).length; return Math.max(0, 100 - Math.round(done / all.length * 100)); }
 function renderDungeon() {
   const all = dailies();
@@ -1287,7 +1353,7 @@ async function top5Click(id) {
   if (dungeonDone(id)) await setDungeonOff(id); else await clearDungeon(id);
 }
 async function setDungeonOff(id) {
-  try { localStorage.setItem(dungeonFlag(id), '0'); } catch (e) {}
+  try { lsSet(dungeonFlag(id), '0'); } catch (e) {}
   const refunded = await revokeDungeonWp(id, todayKey());
   if (refunded > 0) toast('↩️ 已取消完成，扣回 ' + refunded + ' 愿力', 'warn');
   renderMain('dungeon');
@@ -1319,13 +1385,13 @@ async function toggleWeeklyTask(id, done) {
     const pts = Number(t && t.points) || 0;
     const wk = yearWeekCST();
     const key = 'lifeos_weeklyTaskWP_' + wk;
-    let got = {}; try { got = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { got = {}; }
+    let got = {}; try { got = JSON.parse(lsGet(key) || '{}'); } catch (e) { got = {}; }
     if (done) {
       await grantNpcAffinityByText(t ? (t.text || '') : '');
       // 勾选：本周首次完成才发放奖励（防跨周/重复刷）
       if (pts > 0 && !got[id]) {
         got[id] = true;
-        try { localStorage.setItem(key, JSON.stringify(got)); } catch (e) {}
+        try { lsSet(key, JSON.stringify(got)); } catch (e) {}
         await grantWP(pts, '周级任务', (t && t.text) || '周级任务');
         toast('🎯 周级任务「' + (t && t.text || '') + '」完成，+' + pts + ' 愿力', 'good');
       }
@@ -1333,7 +1399,7 @@ async function toggleWeeklyTask(id, done) {
       // 取消勾选：若本周已发放奖励，则扣回愿力，并清除已发放标记（允许本周内重新完成再发）
       if (pts > 0 && got[id]) {
         delete got[id];
-        try { localStorage.setItem(key, JSON.stringify(got)); } catch (e) {}
+        try { lsSet(key, JSON.stringify(got)); } catch (e) {}
         await grantWP(-pts, '周级任务·取消', (t && t.text) || '周级任务');
         toast('↩️ 已取消「' + (t && t.text || '') + '」，扣回 ' + pts + ' 愿力', 'warn');
       }
@@ -1345,7 +1411,7 @@ async function clearDungeon(id) {
   if (id === 'econ') { go('economist'); return; }
   if (id === 'diary') { go('diary'); return; }
   if (id === 'cook') { cookTab = 'wheel'; go('cook'); return; }
-  try { localStorage.setItem(dungeonFlag(id), '1'); } catch (e) {}
+  try { lsSet(dungeonFlag(id), '1'); } catch (e) {}
   const xm = (demons() || []).find(d => d.key === 'xinmo');
   if (xm) xm.hp = xinmoHpFromDungeons();
   const def = dailies().find(d => d.id === id);
@@ -1354,8 +1420,8 @@ async function clearDungeon(id) {
   const done = dailies().filter(d => dungeonDone(d.id)).length;
   if (done === dailies().length) {
     const f = 'game_defeated_' + todayKey();
-    if (!localStorage.getItem(f)) {
-      localStorage.setItem(f, '1');
+    if (!lsGet(f)) {
+      lsSet(f, '1');
       try {
         const bonus = 5 + Math.min(20, realmBuffSum('taskBonus'));
         const j = await fetch('/api/reward', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ willpower: bonus, source: '心魔击败', text: '每日秘境全完成' }) });
@@ -1374,8 +1440,8 @@ async function clearDungeon(id) {
 /* ==================== 体重（对应境界 · 体魄录） ==================== */
 const WEIGHT_KEY = 'game_weight_log';
 function weightLoad() { return (DATA.weight || []).map(x => ({ id: x.id, date: x.date, kg: Number(x.weight) || 0 })); }
-function weightUnit() { try { return localStorage.getItem('game_weight_unit') || 'kg'; } catch (e) { return 'kg'; } }
-function weightSetUnit(u) { try { localStorage.setItem('game_weight_unit', u); } catch (e) {} }
+function weightUnit() { try { return lsGet('game_weight_unit') || 'kg'; } catch (e) { return 'kg'; } }
+function weightSetUnit(u) { try { lsSet('game_weight_unit', u); } catch (e) {} }
 function weightStreak() {
   const log = weightLoad().slice().sort((a, b) => a.date < b.date ? 1 : -1);
   let s = 0;
@@ -1496,8 +1562,8 @@ async function saveWeight() {
 
 /* ==================== 睡眠（三档） ==================== */
 const SLEEP_KEY = 'game_sleep_log';
-function sleepLoad() { try { return JSON.parse(localStorage.getItem(SLEEP_KEY) || '[]'); } catch (e) { return []; } }
-function sleepSave(a) { try { localStorage.setItem(SLEEP_KEY, JSON.stringify(a)); } catch (e) {} }
+function sleepLoad() { try { return JSON.parse(lsGet(SLEEP_KEY) || '[]'); } catch (e) { return []; } }
+function sleepSave(a) { try { lsSet(SLEEP_KEY, JSON.stringify(a)); } catch (e) {} }
 function sleepTier(bed) {
   const m = /^(\d{1,2}):(\d{2})$/.exec(bed || '');
   if (!m) return null;
@@ -1573,7 +1639,7 @@ async function cancelSleep() {
   sleepSave(log);
   const sd = dungeonDef('sleep') || {};
   const wamt = rec.tier === 'early' ? (Number(sd.wpEarly) || 2) : rec.tier === 'ontime' ? (Number(sd.wpOntime) || 1) : 0;
-  if (wamt) { try { await grantWP(-wamt, '休养', '取消早睡'); } catch (e) {} try { localStorage.removeItem(dwpFlag('sleep', date)); } catch (e) {} }
+  if (wamt) { try { await grantWP(-wamt, '休养', '取消早睡'); } catch (e) {} try { lsRemove(dwpFlag('sleep', date)); } catch (e) {} }
   toast('已取消 ' + date + ' 记录，愿力已回退', 'good');
   renderMain('sleep');
 }
@@ -1582,8 +1648,8 @@ async function cancelSleep() {
 const FUN_KEY = 'game_fun_log';
 const FUN_TYPES = ['电视剧', '电影', '动漫', '漫画', '书', '游戏', '歌曲'];
 let funFilt = 'all';
-function funLoad() { try { return JSON.parse(localStorage.getItem(FUN_KEY) || '[]'); } catch (e) { return []; } }
-function funSave(a) { try { localStorage.setItem(FUN_KEY, JSON.stringify(a)); } catch (e) {} }
+function funLoad() { try { return JSON.parse(lsGet(FUN_KEY) || '[]'); } catch (e) { return []; } }
+function funSave(a) { try { lsSet(FUN_KEY, JSON.stringify(a)); } catch (e) {} }
 function funStars(r) { return '★'.repeat(Number(r) || 0) + '☆'.repeat(5 - (Number(r) || 0)); }
 function renderFun() {
   const log = funLoad();
@@ -1646,7 +1712,7 @@ function renderCook() {
 }
 function cookRecipesHtml(recipes) {
   if (!recipes.length) return renderPlaceholder('菜谱库', '暂无菜谱。去主站烟火食记加菜谱会同步过来。');
-  let term = ''; try { term = localStorage.getItem('cookSearch') || ''; } catch (e) {}
+  let term = ''; try { term = lsGet('cookSearch') || ''; } catch (e) {}
   const q = term.trim().toLowerCase();
   const list = q ? recipes.filter(r => (r.name || '').toLowerCase().includes(q) || (r.category || '').toLowerCase().includes(q)) : recipes;
   const cards = list.map(r => {
@@ -1664,7 +1730,7 @@ function cookRecipesHtml(recipes) {
     search +
     '<div class="cards">' + (cards || '<div class="game-empty">没有匹配的菜谱</div>') + '</div>';
 }
-function cookSearchOn(v) { try { localStorage.setItem('cookSearch', v); } catch (e) {} renderMain('cook'); }
+function cookSearchOn(v) { try { lsSet('cookSearch', v); } catch (e) {} renderMain('cook'); }
 function cookWheelHtml(recipes) {
   if (!recipes.length) return renderPlaceholder('今天吃什么', '暂无菜谱可抽。');
   const pick = cookWheelPick ? (recipes.find(x => x.id === cookWheelPick) || null) : null;
@@ -1732,9 +1798,9 @@ async function saveCookPost() {
 /* 做菜联动每日秘境「烟火做饭」：当天首次做菜标记完成并发配置愿力；当天做菜 ≤5 道才计愿力（防刷）。 */
 async function completeCookDungeon() {
   const date = todayKey();
-  let count = 0; try { count = Number(localStorage.getItem('game_cookCount_' + date)) || 0; } catch (e) {}
-  count++; try { localStorage.setItem('game_cookCount_' + date, String(count)); } catch (e) {}
-  if (!dungeonDone('cook')) { try { localStorage.setItem(dungeonFlag('cook'), '1'); } catch (e) {} }
+  let count = 0; try { count = Number(lsGet('game_cookCount_' + date)) || 0; } catch (e) {}
+  count++; try { lsSet('game_cookCount_' + date, String(count)); } catch (e) {}
+  if (!dungeonDone('cook')) { try { lsSet(dungeonFlag('cook'), '1'); } catch (e) {} }
   const def = dungeonDef('cook');
   const wp = def ? (Number(def.wp) || 0) : 0;
   if (wp && count <= 5) {
@@ -1746,11 +1812,11 @@ async function completeCookDungeon() {
 }
 async function maybeUncompleteCook() {
   const date = todayKey();
-  let count = 0; try { count = Number(localStorage.getItem('game_cookCount_' + date)) || 0; } catch (e) {}
+  let count = 0; try { count = Number(lsGet('game_cookCount_' + date)) || 0; } catch (e) {}
   count = Math.max(0, count - 1);
-  try { localStorage.setItem('game_cookCount_' + date, String(count)); } catch (e) {}
+  try { lsSet('game_cookCount_' + date, String(count)); } catch (e) {}
   if (count === 0) {
-    try { localStorage.setItem(dungeonFlag('cook'), '0'); } catch (e) {}
+    try { lsSet(dungeonFlag('cook'), '0'); } catch (e) {}
     const refunded = await revokeDungeonWp('cook', date);
     if (refunded > 0) toast('↩️ 烟火做饭已取消，扣回 ' + refunded + ' 愿力', 'warn');
   }
@@ -1838,11 +1904,11 @@ async function undoCook(mealId) {
 
 /* ---------- 背包仓库交互（接 /api/inventory） ---------- */
 let bagView = 'bag';     // 'bag' | 'warehouse'
-try { const _bv = localStorage.getItem('gameBagView'); if (_bv === 'bag' || _bv === 'warehouse') bagView = _bv; } catch (e) {}
+try { const _bv = lsGet('gameBagView'); if (_bv === 'bag' || _bv === 'warehouse') bagView = _bv; } catch (e) {}
 let bagSub = 'all';      // 'all' | 'fridge'（仅 warehouse 下）
-try { const _bs = localStorage.getItem('gameBagSub'); if (_bs === 'all' || _bs === 'fridge') bagSub = _bs; } catch (e) {}
-function setBagView(v) { bagView = v; try { localStorage.setItem('gameBagView', v); } catch (e) {} renderMain('bag'); }
-function setBagSub(v) { bagSub = v; try { localStorage.setItem('gameBagSub', v); } catch (e) {} renderMain('bag'); }
+try { const _bs = lsGet('gameBagSub'); if (_bs === 'all' || _bs === 'fridge') bagSub = _bs; } catch (e) {}
+function setBagView(v) { bagView = v; try { lsSet('gameBagView', v); } catch (e) {} renderMain('bag'); }
+function setBagSub(v) { bagSub = v; try { lsSet('gameBagSub', v); } catch (e) {} renderMain('bag'); }
 function invIcon_(type) { return type === 'ingredient' ? '🥬' : (type === 'dish' ? '🍲' : (type === 'item' ? '🔮' : '📦')); }
 const RARITY_INFO = { 1:{label:'普通',c:'#9aa0a6'}, 2:{label:'良好',c:'#73b888'}, 3:{label:'稀有',c:'#5b8def'}, 4:{label:'史诗',c:'#a855f7'}, 5:{label:'传说',c:'#c9a227'} };
 function getWhCap() {
@@ -2098,8 +2164,8 @@ function closeRealm() { document.querySelectorAll('.realm-modal').forEach(m => m
       return { rel: rel, title: cfg.title, stage: cfg.stages[idx], aff: aff, pct: Math.min(100, Math.round(aff / 150 * 100)) };
     }
     function npcAffTodayKey() { return 'game_npcaff_' + todayKey(); }
-    function npcAffGrantedToday() { try { return JSON.parse(localStorage.getItem(npcAffTodayKey()) || '[]'); } catch (e) { return []; } }
-    function markNpcAffToday(id) { const a = npcAffGrantedToday(); if (!a.includes(id)) { a.push(id); try { localStorage.setItem(npcAffTodayKey(), JSON.stringify(a)); } catch (e) {} } }
+    function npcAffGrantedToday() { try { return JSON.parse(lsGet(npcAffTodayKey()) || '[]'); } catch (e) { return []; } }
+    function markNpcAffToday(id) { const a = npcAffGrantedToday(); if (!a.includes(id)) { a.push(id); try { lsSet(npcAffTodayKey(), JSON.stringify(a)); } catch (e) {} } }
     async function grantNpcAffinityByText(text) {
       if (!text) return;
       for (const n of npcsArr()) {
@@ -2349,9 +2415,9 @@ function closeRealm() { document.querySelectorAll('.realm-modal').forEach(m => m
       { id: 'mingjing', tab: 'adv',   name: '明镜台', effect: '任务愿力 +8%',  desc: '愿力产出更丰，需「万卷书」参悟≥3 层。', buff: { taskBonus: 8 }, unlock: { realm: '万卷书', layer: 3, text: '需万卷书≥3层' } },
       { id: 'qianji',   tab: 'adv',   name: '千机变', effect: '魅魔抵抗 +12%', desc: '魅魔抵抗大幅提升，需「千面法」参悟≥3 层。', buff: { meimoResist: 12 }, unlock: { realm: '千面法', layer: 3, text: '需千面法≥3层' } }
     ];
-    function heartCustom() { try { return JSON.parse(localStorage.getItem('lifeos_heartCustom') || '[]'); } catch (e) { return []; } }
-    function heartActive() { try { return JSON.parse(localStorage.getItem('lifeos_heartActive') || '[]'); } catch (e) { return []; } }
-    function heartFav() { try { return JSON.parse(localStorage.getItem('lifeos_heartFav') || '[]'); } catch (e) { return []; } }
+    function heartCustom() { try { return JSON.parse(lsGet('lifeos_heartCustom') || '[]'); } catch (e) { return []; } }
+    function heartActive() { try { return JSON.parse(lsGet('lifeos_heartActive') || '[]'); } catch (e) { return []; } }
+    function heartFav() { try { return JSON.parse(lsGet('lifeos_heartFav') || '[]'); } catch (e) { return []; } }
     function heartUnlocked(def) { if (!def.unlock) return true; return realmLayer(def.unlock.realm) >= def.unlock.layer; }
     function heartBuffSum(type) {
       let s = 0;
@@ -2363,14 +2429,14 @@ function closeRealm() { document.querySelectorAll('.realm-modal').forEach(m => m
     function toggleHeartActive(id) {
       const a = heartActive(); const i = a.indexOf(id);
       if (i >= 0) a.splice(i, 1); else a.push(id);
-      localStorage.setItem('lifeos_heartActive', JSON.stringify(a));
+      lsSet('lifeos_heartActive', JSON.stringify(a));
       toast(a.includes(id) ? '🧠 心法已激活' : '心法已停用', a.includes(id) ? 'good' : '');
       renderMain('heart');
     }
     function toggleHeartFav(id) {
       const f = heartFav(); const i = f.indexOf(id);
       if (i >= 0) f.splice(i, 1); else f.push(id);
-      localStorage.setItem('lifeos_heartFav', JSON.stringify(f));
+      lsSet('lifeos_heartFav', JSON.stringify(f));
       renderMain('heart');
     }
     function parseBuffText(t) {
@@ -2386,15 +2452,15 @@ function closeRealm() { document.querySelectorAll('.realm-modal').forEach(m => m
       const custom = heartCustom();
       const id = Date.now();
       custom.push({ id: id, name: name.trim(), effect: gv('hfEffect'), desc: gv('hfDesc'), buff: parseBuffText(gv('hfEffect')) });
-      localStorage.setItem('lifeos_heartCustom', JSON.stringify(custom));
+      lsSet('lifeos_heartCustom', JSON.stringify(custom));
       toast('🧠 已录入自创心法', 'good');
       renderMain('heart');
     }
     function delHeartCustom(id) {
       showConfirm('⚠ 删除自创心法', '确定删除该自创心法？', function () {
-        localStorage.setItem('lifeos_heartCustom', JSON.stringify(heartCustom().filter(c => c.id !== id)));
-        localStorage.setItem('lifeos_heartActive', JSON.stringify(heartActive().filter(x => x !== 'c_' + id)));
-        localStorage.setItem('lifeos_heartFav', JSON.stringify(heartFav().filter(x => x !== 'c_' + id)));
+        lsSet('lifeos_heartCustom', JSON.stringify(heartCustom().filter(c => c.id !== id)));
+        lsSet('lifeos_heartActive', JSON.stringify(heartActive().filter(x => x !== 'c_' + id)));
+        lsSet('lifeos_heartFav', JSON.stringify(heartFav().filter(x => x !== 'c_' + id)));
         renderMain('heart');
       });
     }
@@ -2565,7 +2631,7 @@ const WEEKLY_DEFAULTS = [
 ];
 function weeklyDefs() {
   let custom = [];
-  try { custom = JSON.parse(localStorage.getItem('lifeos_weeklyDefs') || '[]'); } catch (e) { custom = []; }
+  try { custom = JSON.parse(lsGet('lifeos_weeklyDefs') || '[]'); } catch (e) { custom = []; }
   const map = {};
   WEEKLY_DEFAULTS.forEach(d => map[String(d.id)] = Object.assign({}, d));
   custom.forEach(d => { if (map[String(d.id)]) map[String(d.id)] = Object.assign({}, map[String(d.id)], d, { fixed: true }); else map[String(d.id)] = Object.assign({}, d); });
@@ -2583,7 +2649,7 @@ function yearWeekCST() {
   return y + '-W' + String(week).padStart(2, '0');
 }
 function weeklyClaimed() {
-  try { return JSON.parse(localStorage.getItem('lifeos_weeklyClaimed') || '{}'); } catch (e) { return {}; }
+  try { return JSON.parse(lsGet('lifeos_weeklyClaimed') || '{}'); } catch (e) { return {}; }
 }
 /* 进度：从任务板「周级」任务实时计算（匹配文本 + 已完成）。
    匹配规则：周本关键词 与 任务文本 任一方包含另一方即算命中
@@ -2613,7 +2679,7 @@ async function claimWeekly(id) {
   }
   // 先标记已领取，防止快速重复点击造成双发
   claimed[wk] = claimed[wk] || {}; claimed[wk][id] = true;
-  try { localStorage.setItem('lifeos_weeklyClaimed', JSON.stringify(claimed)); } catch (e) {}
+  try { lsSet('lifeos_weeklyClaimed', JSON.stringify(claimed)); } catch (e) {}
   renderMain(CUR);
   try {
     const r = await fetch('/api/reward', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ willpower: def.reward, source: '周天试炼', text: def.gname }) });
@@ -2715,9 +2781,9 @@ function addWeeklyDef() {
   const reward = parseInt((document.getElementById('wkReward') || {}).value) || 5;
   if (!tasks.length) { toast('请填写匹配任务文本', 'warn'); return; }
   let custom = [];
-  try { custom = JSON.parse(localStorage.getItem('lifeos_weeklyDefs') || '[]'); } catch (e) { custom = []; }
+  try { custom = JSON.parse(lsGet('lifeos_weeklyDefs') || '[]'); } catch (e) { custom = []; }
   custom.push({ id: Date.now(), name: name.trim(), gname: gname.trim(), icon: icon, tasks: tasks, need: need, reward: reward, unlock: null, fixed: false });
-  try { localStorage.setItem('lifeos_weeklyDefs', JSON.stringify(custom)); } catch (e) {}
+  try { lsSet('lifeos_weeklyDefs', JSON.stringify(custom)); } catch (e) {}
   toast('🗡️ 已新增周本', 'good');
   const m = document.getElementById('weeklyManageModal'); if (m) m.remove();
   renderMain(CUR);
@@ -2727,9 +2793,9 @@ function delWeeklyDef(id) {
   if (def && def.fixed) { toast('默认周本不可删除，可用编辑修改', 'warn'); return; }
   showConfirm('删除周本', '确定删除这个自定义周本？', function () {
     let custom = [];
-    try { custom = JSON.parse(localStorage.getItem('lifeos_weeklyDefs') || '[]'); } catch (e) { custom = []; }
+    try { custom = JSON.parse(lsGet('lifeos_weeklyDefs') || '[]'); } catch (e) { custom = []; }
     custom = custom.filter(d => String(d.id) !== String(id));
-    try { localStorage.setItem('lifeos_weeklyDefs', JSON.stringify(custom)); } catch (e) {}
+    try { lsSet('lifeos_weeklyDefs', JSON.stringify(custom)); } catch (e) {}
     toast('已删除自定义周本');
     const m = document.getElementById('weeklyManageModal'); if (m) m.remove();
     renderMain(CUR);
@@ -2767,13 +2833,13 @@ function saveWeeklyDef(id, fixed) {
   const reward = parseInt((document.getElementById('wekReward') || {}).value) || 5;
   if (!tasks.length) { toast('请填写匹配任务文本', 'warn'); return; }
   let custom = [];
-  try { custom = JSON.parse(localStorage.getItem('lifeos_weeklyDefs') || '[]'); } catch (e) { custom = []; }
+  try { custom = JSON.parse(lsGet('lifeos_weeklyDefs') || '[]'); } catch (e) { custom = []; }
   let base = {};
   if (fixed) { const o = WEEKLY_DEFAULTS.find(x => String(x.id) === String(id)); if (o) base = o; }
   const entry = { id: fixed ? String(id) : (custom.find(d => String(d.id) === String(id)) ? id : Date.now()), name: name.trim(), gname: gname.trim(), icon: icon, tasks: tasks, need: need, reward: reward, unlock: base.unlock || null, fixed: !!fixed };
   const idx = custom.findIndex(d => String(d.id) === String(id));
   if (idx >= 0) custom[idx] = entry; else custom.push(entry);
-  try { localStorage.setItem('lifeos_weeklyDefs', JSON.stringify(custom)); } catch (e) {}
+  try { lsSet('lifeos_weeklyDefs', JSON.stringify(custom)); } catch (e) {}
   toast('🗡️ 已保存周本', 'good');
   const em = document.getElementById('weeklyEditModal'); if (em) em.remove();
   const mm = document.getElementById('weeklyManageModal'); if (mm) mm.remove();
@@ -2819,19 +2885,19 @@ function render() {
   renderResbar();
   renderNav();
   let last = 'dashboard';
-  try { last = localStorage.getItem('gameLastView') || 'dashboard'; } catch (e) {}
+  try { last = lsGet('gameLastView') || 'dashboard'; } catch (e) {}
   go(last);
 }
 
 /* ---------- 主题切换 ---------- */
 function applyTheme(t) {
   document.documentElement.dataset.theme = t;
-  try { localStorage.setItem('gametheme', t); } catch (e) {}
+  try { lsSet('gametheme', t); } catch (e) {}
   document.querySelectorAll('#themes button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
 }
 (function initTheme() {
   let t = 'xuanzhi';
-  try { t = localStorage.getItem('gametheme') || 'xuanzhi'; } catch (e) {}
+  try { t = lsGet('gametheme') || 'xuanzhi'; } catch (e) {}
   applyTheme(t);
   document.querySelectorAll('#themes button').forEach(b => {
     b.onclick = () => applyTheme(b.dataset.t);
