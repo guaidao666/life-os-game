@@ -147,7 +147,7 @@ async function jfetch(url, opt, timeoutMs) {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), timeoutMs || 15000);
   try {
-    return await jfetch(url, Object.assign({}, opt || {}, { signal: ctl.signal }));
+    return await fetch(url, Object.assign({}, opt || {}, { signal: ctl.signal }));
   } finally {
     clearTimeout(t);
   }
