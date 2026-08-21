@@ -608,7 +608,18 @@ function diaryReadHtml(content) {
   for (const raw of lines) {
     const line = raw.trim();
     if (!line) { flush(); continue; }
-    if (line.charAt(0) === '>') { flush(); html += '<blockquote>' + bold(esc(line.slice(1).trim())) + '</blockquote>'; continue; }
+    if (line.charAt(0) === '>') {
+      flush();
+      const q = line.slice(1).trim();
+      // 阿夕签名放行：Obsidian 里用 <p align="right">——阿夕</p>，这里渲染为右对齐
+      const signMatch = q.match(/^<p\s+align=["']right["']\s*>([\s\S]*?)<\/p>$/i);
+      if (signMatch) {
+        html += '<div class="dd-sign" style="text-align:right;">' + esc(signMatch[1]) + '</div>';
+      } else {
+        html += '<blockquote>' + bold(esc(q)) + '</blockquote>';
+      }
+      continue;
+    }
     if (line.startsWith('——')) { flush(); html += '<div class="dd-sign">' + esc(line) + '</div>'; continue; }
     para.push(bold(esc(line)));
   }
