@@ -611,10 +611,11 @@ function diaryReadHtml(content) {
     if (line.charAt(0) === '>') {
       flush();
       const q = line.slice(1).trim();
-      // 阿夕签名放行：Obsidian 里用 <p align="right">——阿夕</p>，这里渲染为右对齐
+      if (!q) continue; // 忽略 Obsidian 里感悟与签名之间的空 blockquote 分隔行
+      // 阿夕签名：Obsidian 里用 <p align="right">——阿夕</p>，渲染为右对齐 blockquote（与感悟同框）
       const signMatch = q.match(/^<p\s+align=["']right["']\s*>([\s\S]*?)<\/p>$/i);
       if (signMatch) {
-        html += '<div class="dd-sign" style="text-align:right;">' + esc(signMatch[1]) + '</div>';
+        html += '<blockquote style="text-align:right;">' + esc(signMatch[1]) + '</blockquote>';
       } else {
         html += '<blockquote>' + bold(esc(q)) + '</blockquote>';
       }
