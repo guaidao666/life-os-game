@@ -612,10 +612,16 @@ function diaryReadHtml(content) {
       flush();
       const q = line.slice(1).trim();
       if (!q) continue; // 忽略 Obsidian 里感悟与签名之间的空 blockquote 分隔行
-      // 阿夕签名：Obsidian 里用 <p align="right">——阿夕</p>，渲染为右对齐 blockquote（与感悟同框）
+      // 阿夕签名：Obsidian 里用 <p align="right">——阿夕</p>
+      // 若紧跟在前一个 blockquote 后面，则并入感悟框内、右端对齐；否则独立右对齐 blockquote
       const signMatch = q.match(/^<p\s+align=["']right["']\s*>([\s\S]*?)<\/p>$/i);
       if (signMatch) {
-        html += '<blockquote style="text-align:right;">' + esc(signMatch[1]) + '</blockquote>';
+        const signHtml = '<div class="dd-sign" style="text-align:right;">' + esc(signMatch[1]) + '</div>';
+        if (html.endsWith('</blockquote>')) {
+          html = html.slice(0, -'</blockquote>'.length) + signHtml + '</blockquote>';
+        } else {
+          html += '<blockquote style="text-align:right;">' + esc(signMatch[1]) + '</blockquote>';
+        }
       } else {
         html += '<blockquote>' + bold(esc(q)) + '</blockquote>';
       }
